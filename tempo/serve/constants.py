@@ -1,0 +1,5 @@
+SKLEARN_MODEL = "sklearn"
+XGBOOST_MODEL = "xgboost"
+TENSORFLOW_MODEL = "tensorflow"
+PYTORCH_MODEL = "pytorch"
+ONNX_MODEL = "onnx"
