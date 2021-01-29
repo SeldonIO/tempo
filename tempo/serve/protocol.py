@@ -3,8 +3,8 @@ from __future__ import annotations
 import abc
 import attr
 
-from typing import Dict, Type, Any, Optional, List
-
+from typing import Dict, Any, List
+from tempo.serve.metadata import ModelDataArgs
 
 @attr.s(auto_attribs=True)
 class Protocol(abc.ABC):
@@ -18,11 +18,11 @@ class Protocol(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def from_protocol_request(self, res: Dict, tys: List[Type]) -> Any:
+    def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
         pass
 
     @abc.abstractmethod
-    def from_protocol_response(self, res: Dict, tys: List[Type]) -> Any:
+    def from_protocol_response(self, res: Dict, tys: ModelDataArgs) -> Any:
         pass
 
     @abc.abstractmethod

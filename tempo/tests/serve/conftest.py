@@ -11,8 +11,6 @@ from kubernetes import client, config
 
 from tempo.serve.metadata import (
     ModelFramework,
-    MetadataTensorParameters,
-    MetadataTensor,
 )
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
@@ -20,6 +18,7 @@ from tempo.serve.utils import pipeline
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.serve.utils import model
 
 TESTS_PATH = os.path.dirname(os.path.dirname(__file__))
 EXAMPLES_PATH = os.path.join(TESTS_PATH, "examples")
@@ -100,15 +99,7 @@ def sklearn_model(sklearn_iris_path: str, docker_runtime: SeldonDockerRuntime) -
         runtime=docker_runtime,
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder=sklearn_iris_path,
-        outputs=[
-            MetadataTensor(
-                name="output-0",
-                datatype="FP32",
-                shape=[2, 3],
-                parameters=MetadataTensorParameters(ext_datatype=np.ndarray),
-            )
-        ],
+        local_folder=sklearn_iris_path
     )
 
 
@@ -119,15 +110,7 @@ def xgboost_model(xgboost_iris_path: str, docker_runtime: SeldonDockerRuntime) -
         runtime=docker_runtime,
         platform=ModelFramework.XGBoost,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder=xgboost_iris_path,
-        outputs=[
-            MetadataTensor(
-                name="output-0",
-                datatype="FP32",
-                shape=[1, 3],
-                parameters=MetadataTensorParameters(ext_datatype=np.ndarray),
-            )
-        ],
+        local_folder=xgboost_iris_path
     )
 
 
@@ -137,15 +120,7 @@ def inference_pipeline(
 ) -> Generator[Pipeline, None, None]:
     @pipeline(name="inference-pipeline",
               runtime=docker_runtime,
-              models=[sklearn_model, xgboost_model],
-              inputs = [
-                  MetadataTensor(
-                      name="input-0",
-                      datatype="FP32",
-                      shape=[-1, 4],
-                      parameters=MetadataTensorParameters(ext_datatype=np.ndarray),
-                  )
-              ],
+              models=[sklearn_model, xgboost_model]
               )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
@@ -173,23 +148,7 @@ def inference_pipeline_v2(
 ) -> Generator[Pipeline, None, None]:
     @pipeline(name="inference-pipeline",
               runtime=docker_runtime_v2,
-              models=[sklearn_model, xgboost_model],
-              inputs = [
-                  MetadataTensor(
-                      name="input0",
-                      datatype="FP32",
-                      shape=[-1, 4],
-                      parameters=MetadataTensorParameters(ext_datatype=np.ndarray),
-                  )
-              ],
-              outputs=[
-                  MetadataTensor(
-                      name="output0",
-                      datatype="FP32",
-                      shape=[1],
-                      parameters=MetadataTensorParameters(ext_datatype=np.ndarray),
-                  )
-              ],
+              models=[sklearn_model, xgboost_model]
               )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
@@ -208,3 +167,4 @@ def inference_pipeline_v2(
     except docker.errors.NotFound:
         # Ignore if the pipeline was already undeployed
         pass
+

@@ -1,26 +1,30 @@
 import types
 import requests
 
-from typing import Any, Type, Optional, List
+from typing import Any, Type, List, Callable, Dict, Optional
 
 from tempo.utils import logger
 from tempo.serve.metadata import ModelDetails
 from tempo.serve.runtime import Runtime
-from tempo.serve.metadata import ModelFramework, MetadataTensor
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.base import BaseModel
+from tempo.serve.constants import ModelDataType
 
-
-class Model:
+class Model(BaseModel):
     def __init__(self, name: str,
                  runtime: Runtime = None,
                  local_folder: str = None,
                  uri: str = None,
                  platform: ModelFramework = None,
-                 inputs: List[MetadataTensor] = None,
-                 outputs: List[MetadataTensor] = None
+                 inputs: ModelDataType = None,
+                 outputs: ModelDataType = None,
+                 model_func: Callable[[Any], Any] = None,
                  ):
+        super().__init__(name, model_func, runtime, inputs, outputs)
         self._runtime = runtime
+        self._model_func = model_func
 
-        self._details = ModelDetails(name=name, local_folder=local_folder, uri=uri, platform=platform, outputs=outputs)
+        self._details = ModelDetails(name=name, local_folder=local_folder, uri=uri, platform=platform, inputs=inputs, outputs=outputs)
 
         # Cached / mocked prediction
         self._prediction = None
@@ -41,32 +45,22 @@ class Model:
         self._prediction = prediction
 
     def __call__(self, *args, **kwargs) -> Any:
-        endpoint = self._runtime.get_endpoint(self._details)
-        protocol = self._runtime.get_protocol()
+        if self._model_func is not None:
+            return self._model_func(*args, **kwargs)
+        else:
+            endpoint = self._runtime.get_endpoint(self._details)
+            protocol = self._runtime.get_protocol()
 
-        logger.debug(f"Call {self._details.name} {endpoint}")
+            logger.debug(f"Call {self._details.name} {endpoint}")
 
-        if self._prediction is not None:
-            return self._prediction
+            if self._prediction is not None:
+                return self._prediction
 
-        req = protocol.to_protocol_request(*args, **kwargs)
-        res = self._predict(req)
+            req = protocol.to_protocol_request(*args, **kwargs)
+            res = self._predict(req)
 
-        expected_return_types = self._get_output_types()
-        return protocol.from_protocol_response(res, expected_return_types)
+            return protocol.from_protocol_response(res, self.outputs)
 
-    def _get_output_types(self) -> List[Type]:
-        if not self._details.outputs:
-            return []
-
-        tys = []
-        for output_meta in self._details.outputs:
-            parameters = output_meta.parameters
-            if not parameters:
-                tys.append(None)
-            else:
-                tys.append(parameters.ext_datatype)
-        return tys
 
     def deploy(self):
         self._runtime.deploy(self._details)

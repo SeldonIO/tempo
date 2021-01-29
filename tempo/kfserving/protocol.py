@@ -1,6 +1,7 @@
 import numpy as np
-from typing import Union, Type, Optional, Dict, List, Any
+from typing import Type, Dict, Any, List, Tuple
 from tempo.serve.protocol import Protocol
+from tempo.serve.metadata import ModelDataArgs
 
 _v2tymap = {
     "BOOL":np.dtype('bool'),
@@ -59,6 +60,16 @@ class KFServingV2Protocol(Protocol):
             else:
                 raise ValueError(f"Unknown input type {raw_type}")
 
+    @staticmethod
+    def get_ty(name:str , idx: int, tys: ModelDataArgs) -> Type:
+        ty = tys[name]
+        if ty is None:
+            ty = tys[idx]
+        if ty is None:
+            return np.ndarray
+        return ty
+
+
     def to_protocol_response(self, *args, **kwargs) -> Dict:
         outputs = []
         for idx,raw in enumerate(args):
@@ -80,13 +91,11 @@ class KFServingV2Protocol(Protocol):
                 raise ValueError(f"Unknown input type {raw_type}")
         return {"model_name":self.model_name, "outputs":outputs}
 
-    def from_protocol_request(self, res: dict, tys: List[Type]) -> Any:
+    def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
         inp = {}
         for idx, input in enumerate(res["inputs"]):
-            if tys is not None and len(tys) > idx:
-                ty = tys[idx]
-            else:
-                ty = np.ndarray
+            ty = KFServingV2Protocol.get_ty(input["name"],idx,tys)
+
             if ty == np.ndarray:
                 arr = KFServingV2Protocol.create_np_from_v2(input["data"], input["datatype"],
                                                             input["shape"])
@@ -99,16 +108,14 @@ class KFServingV2Protocol(Protocol):
         else:
             return inp
 
-    def from_protocol_response(self, res: Dict, tys: List[Type]) -> Any:
+    def from_protocol_response(self, res: Dict, tys: ModelDataArgs) -> Any:
         out = {}
         for idx, output in enumerate(res["outputs"]):
-            if tys is not None and len(tys) > idx:
-                ty = tys[idx]
-            else:
-                ty = np.ndarray
+            ty = KFServingV2Protocol.get_ty(output["name"],idx,tys)
+
             if ty == np.ndarray:
-                arr = KFServingV2Protocol.create_np_from_v2(input["data"], input["datatype"],
-                                                            input["shape"])
+                arr = KFServingV2Protocol.create_np_from_v2(output["data"], output["datatype"],
+                                                            output["shape"])
                 out[output["name"]] = arr
             else:
                 raise ValueError(f"Unknown ty {ty} in conversion")

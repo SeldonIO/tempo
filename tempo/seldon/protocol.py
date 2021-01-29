@@ -6,6 +6,7 @@ from typing import Union, Type, Optional, Dict, List, Any
 from tensorflow.core.framework.tensor_pb2 import TensorProto
 from google.protobuf import json_format
 from tempo.serve.protocol import Protocol
+from tempo.serve.metadata import ModelDataArgs
 
 
 class SeldonProtocol(Protocol):
@@ -37,15 +38,17 @@ class SeldonProtocol(Protocol):
     def to_protocol_response(self, *args, **kwargs) -> Dict:
         return self.to_protocol_request(*args, **kwargs)
 
-    def from_protocol_request(self, res: dict, tys: List[Type]) -> Union[dict, np.ndarray]:
+    def from_protocol_request(self, res: dict, tys: ModelDataArgs) -> Union[dict, np.ndarray]:
         if len(tys) > 1:
             raise ValueError("Seldon protocol can only return a single type")
 
-        if len(tys) == 0 or tys[0] == dict:
+        if tys[0] == Dict:
             # Return as-is
             return res
-
-        ty = tys[0]
+        elif len(tys) == 0:
+            ty = np.ndarray
+        else:
+            ty = tys[0]
 
         if ty == np.ndarray:
             if "data" in res:
@@ -64,5 +67,5 @@ class SeldonProtocol(Protocol):
 
         raise ValueError(f"unknown type {ty}")
 
-    def from_protocol_response(self, res: Dict, tys: List[Type]) -> Any:
+    def from_protocol_response(self, res: Dict, tys: ModelDataArgs) -> Any:
         return self.from_protocol_request(res, tys)
