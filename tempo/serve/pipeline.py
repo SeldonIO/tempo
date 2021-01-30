@@ -15,7 +15,9 @@ class Pipeline(BaseModel):
             runtime: Runtime = None,
             models: List[Model] = None,
             inputs: ModelDataType = None,
-            outputs: ModelDataType = None
+            outputs: ModelDataType = None,
+            remote_artifact_uri: str = None,
+            local_artifact_folder: str = None,
     ):
         super().__init__(name,pipeline_func,runtime,inputs,outputs)
         if models is None:
@@ -25,23 +27,33 @@ class Pipeline(BaseModel):
         self._runtime = runtime
         self._models = models
 
-
-    def deploy(self):
+    def deploy_models(self):
         """
-        Deploy all models and the pipeline.
+        Deploy all the models
         """
         logger.info("deploying models for %s", self._name)
         for model in self._models:
             logger.info(f"Found model {model._details.name}")
             model.deploy()
 
+    def deploy(self):
+        """
+        Deploy all models and the pipeline.
+        """
+        self.deploy_models()
+        #TODO add deploy pipeline itself
+
+    def undeploy_models(self):
+        logger.info("undeploying models for %s", self._name)
+        for model in self._models:
+            model.undeploy()
+
     def undeploy(self):
         """
         Undeploy all models and pipeline.
         """
-        logger.info("undeploying models for %s", self._name)
-        for model in self._models:
-            model.undeploy()
+        self.undeploy_models()
+        #TODO undeploy pipeline
 
     def __call__(self, raw: Any) -> Any:
         return self._pipeline_func(raw)

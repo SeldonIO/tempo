@@ -6,7 +6,7 @@ from typing import Tuple, List
 import pytest
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
-
+from tempo.serve.model import Model
 import numpy as np
 
 #
@@ -32,6 +32,26 @@ def test_custom_model(v2_input,expected):
     response = custom_model.request(v2_input)
     assert response == expected
 
+#
+# Test lambda function
+#
+@pytest.mark.parametrize(
+    "input, expected",
+    [
+        (np.array([[0,0,0,1]]), np.array([[0,0,1]]))
+    ]
+)
+def test_lambda(input,expected):
+    model = Model(name="test-iris-sklearn",
+           runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol(model_name="custom")),
+           platform=ModelFramework.SKLearn,
+           uri="gs://seldon-models/sklearn",
+           local_folder="sklearn/model",
+           model_func=lambda x: np.array([[0,0,1]])
+           )
+
+    response = model(input)
+    np.testing.assert_allclose(response, expected, atol=1e-2)
 
 #
 # Test single input output model with type annotations
