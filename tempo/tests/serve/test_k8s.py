@@ -6,7 +6,7 @@ from kubernetes import client
 from tempo.serve.model import Model
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 
-
+@pytest.mark.skip(reason="needs k8s cluster")
 def test_deploy_k8s(k8s_sklearn_model: Model, k8s_runtime: SeldonKubernetesRuntime):
     crd_api = client.CustomObjectsApi()
     sdep = crd_api.get_namespaced_custom_object(
@@ -19,7 +19,7 @@ def test_deploy_k8s(k8s_sklearn_model: Model, k8s_runtime: SeldonKubernetesRunti
 
     assert sdep["status"]["state"] == "Available"
 
-
+@pytest.mark.skip(reason="needs k8s cluster")
 @pytest.mark.parametrize(
     "x_input",
     [[[1, 2, 3, 4]], np.array([[1, 2, 3, 4]]), {"data": {"ndarray": [[1, 2, 3, 4]]}}],

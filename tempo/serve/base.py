@@ -52,6 +52,10 @@ class BaseModel:
                 input_args.append(ModelDataArg(ty=inputs))
         self.inputs: ModelDataArgs = ModelDataArgs(args=input_args)
         self.outputs: ModelDataArgs = ModelDataArgs(args=output_args)
+        self.cls = None
+
+    def set_cls(self, cls):
+        self.cls = cls
 
     @classmethod
     def load(cls, file_path: str):
@@ -65,11 +69,20 @@ class BaseModel:
 
         req_converted = protocol.from_protocol_request(req, self.inputs)
         if type(req_converted) == dict:
-            response = self._user_func(**req_converted)
+            if self.cls is not None:
+                response = self._user_func(self.cls, **req_converted)
+            else:
+                response = self._user_func(**req_converted)
         elif type(req_converted) == list or type(req_converted) == tuple:
-            response = self._user_func(*req_converted)
+            if self.cls is not None:
+                response = self._user_func(self.cls, *req_converted)
+            else:
+                response = self._user_func(*req_converted)
         else:
-            response = self._user_func(req_converted)
+            if self.cls is not None:
+                response = self._user_func(self.cls, req_converted)
+            else:
+                response = self._user_func(req_converted)
         if type(response) == dict:
             response_converted = protocol.to_protocol_response(**response)
         elif type(response) == list or type(response) == tuple:

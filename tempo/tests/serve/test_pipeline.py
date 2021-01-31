@@ -73,6 +73,6 @@ async def test_pipeline_save(inference_pipeline: Pipeline, tmp_path: str):
 
     loaded_pipeline = Pipeline.load(pipeline_path)
 
-    y_pred = await loaded_pipeline(np.array([[4.9, 3.1, 1.5, 0.2]]))
+    y_pred = loaded_pipeline(np.array([[4.9, 3.1, 1.5, 0.2]]))
 
     np.testing.assert_allclose(y_pred, [[0.8, 0.19, 0.01]], atol=1e-2)
