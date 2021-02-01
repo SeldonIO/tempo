@@ -80,3 +80,6 @@ class SeldonDockerRuntime(Runtime):
 
     def _get_container_name(self, model_details: ModelDetails):
         return model_details.name
+
+    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
+        return ""

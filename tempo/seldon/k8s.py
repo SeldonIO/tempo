@@ -1,5 +1,5 @@
 import os
-
+import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
@@ -17,6 +17,9 @@ class SeldonKubernetesRuntime(Runtime):
     Implementations = {
         ModelFramework.SKLearn: "SKLEARN_SERVER",
         ModelFramework.XGBoost: "XGBOOST_SERVER",
+        ModelFramework.MLFlow: "MLFLOW_SERVER",
+        ModelFramework.Tensorflow: "TENSORFLOW_SERVER",
+        ModelFramework.Triton: "TRITON_SERVER"
     }
 
     def __init__(self, namespace="default", replicas=1, protocol = None):
@@ -112,3 +115,7 @@ class SeldonKubernetesRuntime(Runtime):
                 ]
             },
         }
+
+    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
+        d = self._get_spec(model_details)
+        return yaml.safe_dump(d)

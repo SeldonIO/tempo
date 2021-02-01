@@ -6,6 +6,9 @@ from tempo.serve.constants import ModelDataType
 class ModelFramework(Enum):
     SKLearn = "sklearn"
     XGBoost = "xgboost"
+    MLFlow = "mlflow"
+    Tensorflow = "tensorflow"
+    Triton = "triton"
     Custom = "custom"
 
 class ModelDataArg(BaseModel):
