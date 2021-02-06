@@ -18,7 +18,7 @@ from tempo.serve.utils import pipeline
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.serve.utils import model
+from tempo.serve.utils import predictmethod
 
 TESTS_PATH = os.path.dirname(os.path.dirname(__file__))
 EXAMPLES_PATH = os.path.join(TESTS_PATH, "examples")
@@ -168,3 +168,38 @@ def inference_pipeline_v2(
         # Ignore if the pipeline was already undeployed
         pass
 
+@pytest.fixture
+def inference_pipeline_v3(
+        sklearn_model: Model, xgboost_model: Model, docker_runtime_v2: SeldonDockerRuntime) :
+    @pipeline(name="mypipeline",
+              runtime=docker_runtime_v2,
+              models=[sklearn_model, xgboost_model])
+    class MyClass(object):
+
+        def __init__(self):
+            self.counter = 0
+
+        @predictmethod
+        def p(self, payload: np.ndarray) -> np.ndarray:
+            self.counter += 1
+            res1 = sklearn_model(payload)
+            if res1[0][0] > 0.7:
+                return res1
+            else:
+                return xgboost_model(payload)
+
+        def get_counter(self):
+            return self.counter
+
+    myc = MyClass()
+    myc.pipeline.deploy()
+
+    time.sleep(2)
+
+    yield myc
+
+    try:
+        myc.undeploy()
+    except docker.errors.NotFound:
+        # Ignore if the pipeline was already undeployed
+        pass

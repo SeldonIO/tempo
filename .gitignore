@@ -115,8 +115,6 @@ examples/*.h5
 # Test datasets
 tempo/tests/examples
 
-# Test notebooks
-notebooks
 
 #mlflow
 mlruns

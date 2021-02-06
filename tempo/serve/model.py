@@ -8,6 +8,7 @@ from tempo.serve.runtime import Runtime
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
+from tempo.serve.loader import download, upload
 
 
 class Model(BaseModel):
@@ -21,7 +22,6 @@ class Model(BaseModel):
                  model_func: Callable[[Any], Any] = None
                  ):
         super().__init__(name, model_func, runtime, inputs, outputs)
-        self._runtime = runtime
         self._model_func = model_func
         self._details = ModelDetails(name=name, local_folder=local_folder, uri=uri, platform=platform, inputs=inputs, outputs=outputs)
 
@@ -56,16 +56,16 @@ class Model(BaseModel):
         """
         Get k8s yaml
         """
-        pass
+        return self._runtime.to_k8s_yaml(self._details)
 
     def upload(self):
         """
         Upload from local folder to uri
         """
-        pass
+        upload(self._details.local_folder, self._details.uri)
 
     def download(self):
         """
         Download from uri to local folder
         """
-        pass
+        download(self._details.uri, self._details.local_folder)

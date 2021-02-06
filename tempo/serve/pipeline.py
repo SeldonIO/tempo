@@ -1,4 +1,5 @@
-from typing import Callable, List, Any, Dict, Optional, Type
+from typing import Callable, List, Any, Dict, Optional, Type, ClassVar
+import types
 
 from tempo.serve.constants import ModelDataType
 from tempo.serve.model import Model
@@ -11,7 +12,8 @@ class Pipeline(BaseModel):
     def __init__(
         self,
             name: str,
-            pipeline_func: Callable[[Any], Any],
+            pipeline_func: Callable[[Any], Any] = None,
+            pipeline_cls: ClassVar = None,
             runtime: Runtime = None,
             models: List[Model] = None,
             inputs: ModelDataType = None,
@@ -57,3 +59,4 @@ class Pipeline(BaseModel):
 
     def __call__(self, raw: Any) -> Any:
         return self._pipeline_func(raw)
+

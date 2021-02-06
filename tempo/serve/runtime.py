@@ -22,7 +22,6 @@ class Runtime(abc.ABC):
     def get_protocol(self):
         pass
 
-
-# @abc.abstractmethod
-# def to_yaml(self) -> str:
-#     pass
+    @abc.abstractmethod
+    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
+        pass

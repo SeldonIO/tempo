@@ -4,6 +4,8 @@ from tempo.serve.pipeline import Pipeline
 from tempo.serve.runtime import Runtime
 from tempo.serve.model import Model
 from tempo.serve.metadata import ModelFramework
+import inspect
+
 
 def pipeline(name: str,
             runtime: Runtime = None,
@@ -12,9 +14,42 @@ def pipeline(name: str,
             outputs: ModelDataType = None
              ):
     def _pipeline(f):
-        return Pipeline(name,runtime=runtime, models=models, inputs=inputs, outputs=outputs, pipeline_func=f)
+        if inspect.isclass(f):
+            K = f
+            func = None
+
+
+            for a in dir(K):
+                if not a.startswith('__') and callable(getattr(K, a)) and hasattr(getattr(K, a), 'predict'):
+                    func = getattr(K, a)
+                    break
+            K.pipeline = Pipeline(name, runtime=runtime, models=models, inputs=inputs,
+                                   outputs=outputs,
+                                   pipeline_func=func)
+            setattr(K, "deploy", K.pipeline.deploy)
+            setattr(K, "deploy_models", K.pipeline.deploy_models)
+            setattr(K, "undeploy", K.pipeline.undeploy)
+            setattr(K, "undeploy_models", K.pipeline.undeploy_models)
+            setattr(K, "request", K.pipeline.request)
+
+            orig_init = K.__init__
+            # Make copy of original __init__, so we can call it without recursion
+            def __init__(self, *args, **kws):
+                K.pipeline.set_cls(self)
+                orig_init(self, *args, **kws)  # Call the original __init__
+            K.__init__ = __init__  # Set the class' __init__ to the new one
+
+            return K
+        else:
+            return Pipeline(name, runtime=runtime, models=models, inputs=inputs, outputs=outputs,
+                            pipeline_func=f)
 
     return _pipeline
+
+
+def predictmethod(f):
+    f.predict = True
+    return f
 
 
 def model(name: str,
