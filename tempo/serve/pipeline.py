@@ -21,7 +21,7 @@ class Pipeline(BaseModel):
             remote_artifact_uri: str = None,
             local_artifact_folder: str = None,
     ):
-        super().__init__(name,pipeline_func,runtime,inputs,outputs)
+        super().__init__(name,pipeline_func,runtime.get_protocol(),inputs,outputs)
         if models is None:
             models = []
         self._name = name

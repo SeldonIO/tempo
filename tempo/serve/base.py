@@ -2,7 +2,7 @@ from typing import Callable, List, Any, Dict, Optional, Type, get_type_hints, Tu
 import typing
 
 from tempo.serve.loader import load_custom, save_custom
-from tempo.serve.runtime import Runtime
+from tempo.serve.protocol import Protocol
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelDataArgs, ModelDataArg
 
@@ -11,12 +11,12 @@ class BaseModel:
 
     def __init__(self, name: str,
                  user_func: Callable[[Any], Any],
-                 runtime: Runtime = None,
+                 protocol: Protocol = None,
                  inputs: ModelDataType = None,
                  outputs: ModelDataType = None):
         self._name = name
         self._user_func = user_func
-        self._runtime = runtime
+        self.protocol = protocol
         input_args = []
         output_args = []
         if inputs is None and outputs is None:
@@ -65,9 +65,7 @@ class BaseModel:
         save_custom(self, file_path)
 
     def request(self, req: Dict) -> Dict:
-        protocol = self._runtime.get_protocol()
-
-        req_converted = protocol.from_protocol_request(req, self.inputs)
+        req_converted = self.protocol.from_protocol_request(req, self.inputs)
         if type(req_converted) == dict:
             if self.cls is not None:
                 response = self._user_func(self.cls, **req_converted)
@@ -84,10 +82,10 @@ class BaseModel:
             else:
                 response = self._user_func(req_converted)
         if type(response) == dict:
-            response_converted = protocol.to_protocol_response(**response)
+            response_converted = self.protocol.to_protocol_response(**response)
         elif type(response) == list or type(response) == tuple:
-            response_converted = protocol.to_protocol_response(*response)
+            response_converted = self.protocol.to_protocol_response(*response)
         else:
-            response_converted = protocol.to_protocol_response(response)
+            response_converted = self.protocol.to_protocol_response(response)
         return response_converted
 
