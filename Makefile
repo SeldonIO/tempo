@@ -28,6 +28,8 @@ mypy:
 tempo/metadata/grpc_core_service.proto:
 	wget https://raw.githubusercontent.com/triton-inference-server/server/master/docs/protocol/grpc_core_service.proto -O tempo/metadata/grpc_core_service.proto
 
+install-rclone:
+	curl https://rclone.org/install.sh | sudo bash
 
 build-protos: tempo
 	cd tempo && python \
