@@ -11,6 +11,7 @@ from tempo.seldon.protocol import SeldonProtocol
 
 
 class SeldonDockerRuntime(Runtime):
+
     Images = {
         ModelFramework.SKLearn: "seldonio/sklearnserver:1.6.0-dev",
         ModelFramework.XGBoost: "seldonio/xgboostserver:1.6.0-dev",
@@ -57,7 +58,10 @@ class SeldonDockerRuntime(Runtime):
             detach=True,
         )
 
-        # TODO: Wait until the container is up and running?
+    def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
+        container = self._get_container(model_details)
+        print(container.status)
+        return container.status == "Running"
 
     def _get_available_port(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -82,4 +86,4 @@ class SeldonDockerRuntime(Runtime):
         return model_details.name
 
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
-        return ""
+        raise NotImplementedError()

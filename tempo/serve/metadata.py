@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional, List, Type, Dict, Union
 from tempo.serve.constants import ModelDataType
 
+
 class ModelFramework(Enum):
     SKLearn = "sklearn"
     XGBoost = "xgboost"
@@ -11,10 +12,12 @@ class ModelFramework(Enum):
     Triton = "triton"
     Custom = "custom"
 
+
 class ModelDataArg(BaseModel):
 
     ty : Type
     name: str = None
+
 
 class ModelDataArgs(BaseModel):
 
@@ -38,6 +41,7 @@ class ModelDataArgs(BaseModel):
     def __len__(self):
         return len(self.args)
 
+
 class ModelDetails(BaseModel):
     name: str
     local_folder: str
@@ -45,3 +49,10 @@ class ModelDetails(BaseModel):
     platform: ModelFramework
     inputs: ModelDataType
     outputs: ModelDataType
+
+
+class KubernetesOptions(BaseModel):
+    replicas: int = 1
+    namespace = "default"
+    minReplicas: int = None
+    maxReplicas: int = None

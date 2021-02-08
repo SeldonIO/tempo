@@ -32,7 +32,8 @@ setup(
         "requests",
         "pydantic",
         "cloudpickle",
-        "python-rclone"
+        "python-rclone",
+        "seldon-deploy-sdk"
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,
