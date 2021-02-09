@@ -15,7 +15,7 @@ class ModelFramework(Enum):
 
 class ModelDataArg(BaseModel):
 
-    ty : Type
+    ty: Type
     name: str = None
 
 
@@ -29,7 +29,7 @@ class ModelDataArgs(BaseModel):
                 return arg.ty
         return None
 
-    def __getitem__(self, idx: Union[str,int]) -> Optional[Type]:
+    def __getitem__(self, idx: Union[str, int]) -> Optional[Type]:
         if type(idx) == str:
             return self._get_type_by_name(idx)
         else:

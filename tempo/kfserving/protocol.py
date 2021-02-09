@@ -4,33 +4,37 @@ from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs
 
 _v2tymap = {
-    "BOOL":np.dtype('bool'),
-    "UINT8": np.dtype('uint8'),
-    "UINT16": np.dtype('uint16'),
-    "UINT32": np.dtype('uint32'),
-    "UINT64": np.dtype('uint64'),
-    "INT8": np.dtype('int8'),
-    "INT16": np.dtype('int16'),
-    "INT32": np.dtype('int32'),
-    "INT64": np.dtype('int64'),
-    "FP16": np.dtype('float32'),
-    "FP32": np.dtype('float32'),
-    "FP64": np.dtype('float64')
+    "BOOL": np.dtype("bool"),
+    "UINT8": np.dtype("uint8"),
+    "UINT16": np.dtype("uint16"),
+    "UINT32": np.dtype("uint32"),
+    "UINT64": np.dtype("uint64"),
+    "INT8": np.dtype("int8"),
+    "INT16": np.dtype("int16"),
+    "INT32": np.dtype("int32"),
+    "INT64": np.dtype("int64"),
+    "FP16": np.dtype("float32"),
+    "FP32": np.dtype("float32"),
+    "FP64": np.dtype("float64"),
 }
 
 _nptymap = dict([reversed(i) for i in _v2tymap.items()])
-_nptymap[np.dtype('float32')] = "FP32" #Ensure correct mapping for ambiguous type
+_nptymap[np.dtype("float32")] = "FP32"  # Ensure correct mapping for ambiguous type
 
 
 class KFServingV2Protocol(Protocol):
-
-    def __init__(self, model_name:str):
+    def __init__(self, model_name: str):
         self.model_name = model_name
 
     @staticmethod
     def create_v2_from_np(arr: np.ndarray, name: str) -> Dict:
         if arr.dtype in _nptymap:
-            return { "name": name, "datatype":_nptymap[arr.dtype], "data": arr.flatten().tolist(), "shape":list(arr.shape)}
+            return {
+                "name": name,
+                "datatype": _nptymap[arr.dtype],
+                "data": arr.flatten().tolist(),
+                "shape": list(arr.shape),
+            }
         else:
             raise ValueError(f"Unknown numpy type {arr.dtype}")
 
@@ -52,7 +56,7 @@ class KFServingV2Protocol(Protocol):
             raise ValueError("KFserving V2 protocol only supports named arguments")
 
         inputs = []
-        for (name,raw) in kwargs.items():
+        for (name, raw) in kwargs.items():
             raw_type = type(raw)
 
             if raw_type == np.ndarray:
@@ -61,7 +65,7 @@ class KFServingV2Protocol(Protocol):
                 raise ValueError(f"Unknown input type {raw_type}")
 
     @staticmethod
-    def get_ty(name:str , idx: int, tys: ModelDataArgs) -> Type:
+    def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Type:
         ty = tys[name]
         if ty is None:
             ty = tys[idx]
@@ -69,36 +73,39 @@ class KFServingV2Protocol(Protocol):
             return np.ndarray
         return ty
 
-
     def to_protocol_response(self, *args, **kwargs) -> Dict:
         outputs = []
-        for idx,raw in enumerate(args):
+        for idx, raw in enumerate(args):
             raw_type = type(raw)
 
             if raw_type == np.ndarray:
-                outputs.append(KFServingV2Protocol.create_v2_from_np(raw,"output"+str(idx)))
+                outputs.append(
+                    KFServingV2Protocol.create_v2_from_np(raw, "output" + str(idx))
+                )
             else:
                 raise ValueError(f"Unknown input type {raw_type}")
-        for name,raw in kwargs.items():
+        for name, raw in kwargs.items():
             raw_type = type(raw)
 
             if raw_type == np.ndarray:
                 shape = list(raw.shape)
                 data = raw.flatten().tolist()
                 outputs.append(
-                    {"name": name, "datatype": "FP32", "shape": shape, "data": data})
+                    {"name": name, "datatype": "FP32", "shape": shape, "data": data}
+                )
             else:
                 raise ValueError(f"Unknown input type {raw_type}")
-        return {"model_name":self.model_name, "outputs":outputs}
+        return {"model_name": self.model_name, "outputs": outputs}
 
     def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
         inp = {}
         for idx, input in enumerate(res["inputs"]):
-            ty = KFServingV2Protocol.get_ty(input["name"],idx,tys)
+            ty = KFServingV2Protocol.get_ty(input["name"], idx, tys)
 
             if ty == np.ndarray:
-                arr = KFServingV2Protocol.create_np_from_v2(input["data"], input["datatype"],
-                                                            input["shape"])
+                arr = KFServingV2Protocol.create_np_from_v2(
+                    input["data"], input["datatype"], input["shape"]
+                )
                 inp[input["name"]] = arr
             else:
                 raise ValueError(f"Unknown ty {ty} in conversion")
@@ -111,11 +118,12 @@ class KFServingV2Protocol(Protocol):
     def from_protocol_response(self, res: Dict, tys: ModelDataArgs) -> Any:
         out = {}
         for idx, output in enumerate(res["outputs"]):
-            ty = KFServingV2Protocol.get_ty(output["name"],idx,tys)
+            ty = KFServingV2Protocol.get_ty(output["name"], idx, tys)
 
             if ty == np.ndarray:
-                arr = KFServingV2Protocol.create_np_from_v2(output["data"], output["datatype"],
-                                                            output["shape"])
+                arr = KFServingV2Protocol.create_np_from_v2(
+                    output["data"], output["datatype"], output["shape"]
+                )
                 out[output["name"]] = arr
             else:
                 raise ValueError(f"Unknown ty {ty} in conversion")
@@ -124,5 +132,3 @@ class KFServingV2Protocol(Protocol):
             return list(out.values())[0]
         else:
             return out
-
-

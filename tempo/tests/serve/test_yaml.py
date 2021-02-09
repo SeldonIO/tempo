@@ -3,9 +3,11 @@ from tempo.serve.model import Model
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import ModelFramework
 
+
 @pytest.mark.parametrize(
-    "expected", [
-"""apiVersion: machinelearning.seldon.io/v1
+    "expected",
+    [
+        """apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
   name: test-iris-sklearn
@@ -19,7 +21,7 @@ spec:
     name: default
     replicas: 1
 """
-    ]
+    ],
 )
 def test_seldon_sklearn_model_yaml(expected):
     m = Model(
@@ -27,13 +29,15 @@ def test_seldon_sklearn_model_yaml(expected):
         runtime=SeldonKubernetesRuntime(),
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder="")
+        local_folder="",
+    )
     assert m.to_k8s_yaml() == expected
 
 
 @pytest.mark.parametrize(
-    "expected", [
-"""apiVersion: machinelearning.seldon.io/v1
+    "expected",
+    [
+        """apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
   name: test-iris-xgboost
@@ -47,7 +51,7 @@ spec:
     name: default
     replicas: 1
 """
-    ]
+    ],
 )
 def test_seldon_xgboost_model_yaml(expected):
     m = Model(
@@ -55,5 +59,6 @@ def test_seldon_xgboost_model_yaml(expected):
         runtime=SeldonKubernetesRuntime(),
         platform=ModelFramework.XGBoost,
         uri="gs://seldon-models/xgboost/iris",
-        local_folder="")
+        local_folder="",
+    )
     assert m.to_k8s_yaml() == expected

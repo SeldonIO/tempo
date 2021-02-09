@@ -11,17 +11,17 @@ from tempo.serve.base import BaseModel
 class Pipeline(BaseModel):
     def __init__(
         self,
-            name: str,
-            pipeline_func: Callable[[Any], Any] = None,
-            pipeline_cls: ClassVar = None,
-            runtime: Runtime = None,
-            models: List[Model] = None,
-            inputs: ModelDataType = None,
-            outputs: ModelDataType = None,
-            remote_artifact_uri: str = None,
-            local_artifact_folder: str = None,
+        name: str,
+        pipeline_func: Callable[[Any], Any] = None,
+        pipeline_cls: ClassVar = None,
+        runtime: Runtime = None,
+        models: List[Model] = None,
+        inputs: ModelDataType = None,
+        outputs: ModelDataType = None,
+        remote_artifact_uri: str = None,
+        local_artifact_folder: str = None,
     ):
-        super().__init__(name,pipeline_func,runtime.get_protocol(),inputs,outputs)
+        super().__init__(name, pipeline_func, runtime.get_protocol(), inputs, outputs)
         if models is None:
             models = []
         self._name = name
@@ -43,7 +43,7 @@ class Pipeline(BaseModel):
         Deploy all models and the pipeline.
         """
         self.deploy_models()
-        #TODO add deploy pipeline itself
+        # TODO add deploy pipeline itself
 
     def undeploy_models(self):
         logger.info("undeploying models for %s", self._name)
@@ -55,8 +55,7 @@ class Pipeline(BaseModel):
         Undeploy all models and pipeline.
         """
         self.undeploy_models()
-        #TODO undeploy pipeline
+        # TODO undeploy pipeline
 
     def __call__(self, raw: Any) -> Any:
         return self._pipeline_func(raw)
-

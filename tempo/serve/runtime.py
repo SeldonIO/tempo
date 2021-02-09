@@ -6,12 +6,12 @@ from tempo.serve.metadata import ModelDetails
 
 @attr.s(auto_attribs=True)
 class Runtime(abc.ABC):
-    #TODO change to deploy_model
+    # TODO change to deploy_model
     @abc.abstractmethod
     def deploy(self, model_details: ModelDetails):
         pass
 
-    #TODO change to undeploy_model
+    # TODO change to undeploy_model
     @abc.abstractmethod
     def undeploy(self, model_details: ModelDetails):
         pass
@@ -24,8 +24,8 @@ class Runtime(abc.ABC):
     def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
         pass
 
-    #@abc.abstractmethod
-    #def predict_model(self, model_details:ModelDetails, request: dict):
+    # @abc.abstractmethod
+    # def predict_model(self, model_details:ModelDetails, request: dict):
     #    pass
 
     # @abc.abstractmethod
@@ -36,18 +36,18 @@ class Runtime(abc.ABC):
     def get_protocol(self):
         pass
 
-    #TODO change to to_yaml
+    # TODO change to to_yaml
     @abc.abstractmethod
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
         pass
 
-    #@abc.abstractmethod
-    #def deploy_pipeline(self):
+    # @abc.abstractmethod
+    # def deploy_pipeline(self):
     #    pass
 
-    #@abc.abstractmethod
-    #def undeploy_pipeline(self):
+    # @abc.abstractmethod
+    # def undeploy_pipeline(self):
     #    pass
 
-    #TODO add predict_pipeline
-    #OR add separate model_runtime and pipeline_runtime interfaces?
+    # TODO add predict_pipeline
+    # OR add separate model_runtime and pipeline_runtime interfaces?

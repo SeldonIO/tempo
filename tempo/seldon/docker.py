@@ -19,7 +19,7 @@ class SeldonDockerRuntime(Runtime):
 
     ContainerPort = "9000/tcp"
 
-    def __init__(self, protocol = None):
+    def __init__(self, protocol=None):
         if protocol is None:
             self.protocol = SeldonProtocol()
         else:

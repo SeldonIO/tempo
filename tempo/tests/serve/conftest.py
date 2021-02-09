@@ -9,9 +9,7 @@ from typing import Generator
 
 from kubernetes import client, config
 
-from tempo.serve.metadata import (
-    ModelFramework,
-)
+from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline
@@ -46,6 +44,7 @@ def docker_runtime_v2() -> Generator[KFServingV2Protocol, None, None]:
     runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol("test"))
 
     yield runtime
+
 
 @pytest.fixture
 def k8s_namespace() -> Generator[str, None, None]:
@@ -99,7 +98,7 @@ def sklearn_model(sklearn_iris_path: str, docker_runtime: SeldonDockerRuntime) -
         runtime=docker_runtime,
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder=sklearn_iris_path
+        local_folder=sklearn_iris_path,
     )
 
 
@@ -110,7 +109,7 @@ def xgboost_model(xgboost_iris_path: str, docker_runtime: SeldonDockerRuntime) -
         runtime=docker_runtime,
         platform=ModelFramework.XGBoost,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder=xgboost_iris_path
+        local_folder=xgboost_iris_path,
     )
 
 
@@ -118,10 +117,11 @@ def xgboost_model(xgboost_iris_path: str, docker_runtime: SeldonDockerRuntime) -
 def inference_pipeline(
     sklearn_model: Model, xgboost_model: Model, docker_runtime: SeldonDockerRuntime
 ) -> Generator[Pipeline, None, None]:
-    @pipeline(name="inference-pipeline",
-              runtime=docker_runtime,
-              models=[sklearn_model, xgboost_model]
-              )
+    @pipeline(
+        name="inference-pipeline",
+        runtime=docker_runtime,
+        models=[sklearn_model, xgboost_model],
+    )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
         if res1[0][0] > 0.7:
@@ -139,17 +139,17 @@ def inference_pipeline(
     except docker.errors.NotFound:
         # Ignore if the pipeline was already undeployed
         pass
-
 
 
 @pytest.fixture
 def inference_pipeline_v2(
     sklearn_model: Model, xgboost_model: Model, docker_runtime_v2: SeldonDockerRuntime
 ) -> Generator[Pipeline, None, None]:
-    @pipeline(name="inference-pipeline",
-              runtime=docker_runtime_v2,
-              models=[sklearn_model, xgboost_model]
-              )
+    @pipeline(
+        name="inference-pipeline",
+        runtime=docker_runtime_v2,
+        models=[sklearn_model, xgboost_model],
+    )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
         if res1[0][0] > 0.7:
@@ -168,14 +168,17 @@ def inference_pipeline_v2(
         # Ignore if the pipeline was already undeployed
         pass
 
+
 @pytest.fixture
 def inference_pipeline_v3(
-        sklearn_model: Model, xgboost_model: Model, docker_runtime_v2: SeldonDockerRuntime) :
-    @pipeline(name="mypipeline",
-              runtime=docker_runtime_v2,
-              models=[sklearn_model, xgboost_model])
+    sklearn_model: Model, xgboost_model: Model, docker_runtime_v2: SeldonDockerRuntime
+):
+    @pipeline(
+        name="mypipeline",
+        runtime=docker_runtime_v2,
+        models=[sklearn_model, xgboost_model],
+    )
     class MyClass(object):
-
         def __init__(self):
             self.counter = 0
 

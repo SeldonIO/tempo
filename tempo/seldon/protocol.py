@@ -38,7 +38,9 @@ class SeldonProtocol(Protocol):
     def to_protocol_response(self, *args, **kwargs) -> Dict:
         return self.to_protocol_request(*args, **kwargs)
 
-    def from_protocol_request(self, res: dict, tys: ModelDataArgs) -> Union[dict, np.ndarray]:
+    def from_protocol_request(
+        self, res: dict, tys: ModelDataArgs
+    ) -> Union[dict, np.ndarray]:
         if len(tys) > 1:
             raise ValueError("Seldon protocol can only return a single type")
 

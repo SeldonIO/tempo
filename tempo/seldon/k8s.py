@@ -13,18 +13,16 @@ from tempo.serve.metadata import ModelDetails, ModelFramework, KubernetesOptions
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
 Implementations = {
-        ModelFramework.SKLearn: "SKLEARN_SERVER",
-        ModelFramework.XGBoost: "XGBOOST_SERVER",
-        ModelFramework.MLFlow: "MLFLOW_SERVER",
-        ModelFramework.Tensorflow: "TENSORFLOW_SERVER",
-        ModelFramework.Triton: "TRITON_SERVER"
-    }
+    ModelFramework.SKLearn: "SKLEARN_SERVER",
+    ModelFramework.XGBoost: "XGBOOST_SERVER",
+    ModelFramework.MLFlow: "MLFLOW_SERVER",
+    ModelFramework.Tensorflow: "TENSORFLOW_SERVER",
+    ModelFramework.Triton: "TRITON_SERVER",
+}
 
 
 class SeldonKubernetesRuntime(Runtime):
-
-
-    def __init__(self, k8s_options: KubernetesOptions = None, protocol = None):
+    def __init__(self, k8s_options: KubernetesOptions = None, protocol=None):
         if k8s_options is None:
             k8s_options = KubernetesOptions()
         self.k8s_options = k8s_options
@@ -47,7 +45,9 @@ class SeldonKubernetesRuntime(Runtime):
             config.load_kube_config()
 
     def get_endpoint(self, model_details: ModelDetails):
-        endpoint = Endpoint(model_details.name, self.k8s_options.namespace, self.protocol)
+        endpoint = Endpoint(
+            model_details.name, self.k8s_options.namespace, self.protocol
+        )
         return endpoint.get_url()
 
     def undeploy(self, model_details: ModelDetails):
@@ -113,7 +113,7 @@ class SeldonKubernetesRuntime(Runtime):
             ready = existing["status"]["state"] == "Available"
             if timeout_secs is not None:
                 t1 = time.time()
-                if t1-t0 > timeout_secs:
+                if t1 - t0 > timeout_secs:
                     return ready
         return ready
 
@@ -122,7 +122,10 @@ class SeldonKubernetesRuntime(Runtime):
         return {
             "apiVersion": "machinelearning.seldon.io/v1",
             "kind": "SeldonDeployment",
-            "metadata": {"name": model_details.name, "namespace": self.k8s_options.namespace},
+            "metadata": {
+                "name": model_details.name,
+                "namespace": self.k8s_options.namespace,
+            },
             "spec": {
                 "predictors": [
                     {

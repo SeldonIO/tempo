@@ -32,11 +32,11 @@ def test_pipeline_docker(inference_pipeline: Pipeline, x_input):
 
 @pytest.mark.parametrize(
     "x_input, expected",
-    [
-        ({"data": {"ndarray": [[0.4, 2, 3, 4]]}},{"data":{"ndarray":[2.0]}})
-    ]
+    [({"data": {"ndarray": [[0.4, 2, 3, 4]]}}, {"data": {"ndarray": [2.0]}})],
 )
-def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, expected):
+def test_seldon_pipeline_request_docker(
+    inference_pipeline: Pipeline, x_input, expected
+):
     y_pred = inference_pipeline.request(x_input)
 
     assert y_pred == expected
@@ -45,16 +45,30 @@ def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, e
 @pytest.mark.parametrize(
     "x_input, expected",
     [
-        ({"inputs":[{"name":"input0","datatype":"FP64","shape":[1,4],"data":[0.4,2,3,4]}]},
-         {"model_name":"test","outputs":[{"name":"output0","datatype":"FP64","shape":[1],"data":[2.0]}]})
-    ]
+        (
+            {
+                "inputs": [
+                    {
+                        "name": "input0",
+                        "datatype": "FP64",
+                        "shape": [1, 4],
+                        "data": [0.4, 2, 3, 4],
+                    }
+                ]
+            },
+            {
+                "model_name": "test",
+                "outputs": [
+                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
+                ],
+            },
+        )
+    ],
 )
 def test_v2_pipeline_request_docker(inference_pipeline_v2: Pipeline, x_input, expected):
     y_pred = inference_pipeline_v2.request(x_input)
 
     assert y_pred == expected
-
-
 
 
 def test_undeploy_pipeline_docker(

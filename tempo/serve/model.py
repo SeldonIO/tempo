@@ -12,19 +12,28 @@ from tempo.serve.loader import download, upload
 
 
 class Model(BaseModel):
-    def __init__(self, name: str,
-                 runtime: Runtime = None,
-                 local_folder: str = None,
-                 uri: str = None,
-                 platform: ModelFramework = None,
-                 inputs: ModelDataType = None,
-                 outputs: ModelDataType = None,
-                 model_func: Callable[[Any], Any] = None
-                 ):
+    def __init__(
+        self,
+        name: str,
+        runtime: Runtime = None,
+        local_folder: str = None,
+        uri: str = None,
+        platform: ModelFramework = None,
+        inputs: ModelDataType = None,
+        outputs: ModelDataType = None,
+        model_func: Callable[[Any], Any] = None,
+    ):
         super().__init__(name, model_func, runtime.get_protocol(), inputs, outputs)
         self._model_func = model_func
         self._runtime = runtime
-        self._details = ModelDetails(name=name, local_folder=local_folder, uri=uri, platform=platform, inputs=inputs, outputs=outputs)
+        self._details = ModelDetails(
+            name=name,
+            local_folder=local_folder,
+            uri=uri,
+            platform=platform,
+            inputs=inputs,
+            outputs=outputs,
+        )
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -45,7 +54,6 @@ class Model(BaseModel):
             req = protocol.to_protocol_request(*args, **kwargs)
             res = self._predict(req)
             return protocol.from_protocol_response(res, self.outputs)
-
 
     def deploy(self):
         self._runtime.deploy(self._details)
@@ -79,4 +87,4 @@ class Model(BaseModel):
         return self._runtime.get_endpoint(self._details)
 
     def wait_ready(self, timeout_secs=None):
-        return self._runtime.wait_ready(self._details,timeout_secs=timeout_secs)
+        return self._runtime.wait_ready(self._details, timeout_secs=timeout_secs)

@@ -7,25 +7,34 @@ from tempo.serve.metadata import ModelFramework
 import inspect
 
 
-def pipeline(name: str,
-            runtime: Runtime = None,
-            models: List[Model] = None,
-            inputs: ModelDataType = None,
-            outputs: ModelDataType = None
-             ):
+def pipeline(
+    name: str,
+    runtime: Runtime = None,
+    models: List[Model] = None,
+    inputs: ModelDataType = None,
+    outputs: ModelDataType = None,
+):
     def _pipeline(f):
         if inspect.isclass(f):
             K = f
             func = None
 
-
             for a in dir(K):
-                if not a.startswith('__') and callable(getattr(K, a)) and hasattr(getattr(K, a), 'predict'):
+                if (
+                    not a.startswith("__")
+                    and callable(getattr(K, a))
+                    and hasattr(getattr(K, a), "predict")
+                ):
                     func = getattr(K, a)
                     break
-            K.pipeline = Pipeline(name, runtime=runtime, models=models, inputs=inputs,
-                                   outputs=outputs,
-                                   pipeline_func=func)
+            K.pipeline = Pipeline(
+                name,
+                runtime=runtime,
+                models=models,
+                inputs=inputs,
+                outputs=outputs,
+                pipeline_func=func,
+            )
             setattr(K, "deploy", K.pipeline.deploy)
             setattr(K, "deploy_models", K.pipeline.deploy_models)
             setattr(K, "undeploy", K.pipeline.undeploy)
@@ -37,12 +46,19 @@ def pipeline(name: str,
             def __init__(self, *args, **kws):
                 K.pipeline.set_cls(self)
                 orig_init(self, *args, **kws)  # Call the original __init__
+
             K.__init__ = __init__  # Set the class' __init__ to the new one
 
             return K
         else:
-            return Pipeline(name, runtime=runtime, models=models, inputs=inputs, outputs=outputs,
-                            pipeline_func=f)
+            return Pipeline(
+                name,
+                runtime=runtime,
+                models=models,
+                inputs=inputs,
+                outputs=outputs,
+                pipeline_func=f,
+            )
 
     return _pipeline
 
@@ -52,15 +68,25 @@ def predictmethod(f):
     return f
 
 
-def model(name: str,
-          runtime: Runtime = None,
-          local_folder: str = None,
-          uri: str = None,
-          platform: ModelFramework = None,
-          inputs: ModelDataType = None,
-          outputs: ModelDataType = None
-          ):
+def model(
+    name: str,
+    runtime: Runtime = None,
+    local_folder: str = None,
+    uri: str = None,
+    platform: ModelFramework = None,
+    inputs: ModelDataType = None,
+    outputs: ModelDataType = None,
+):
     def _model(f):
-        return Model(name, runtime=runtime, local_folder=local_folder,uri=uri,platform=platform,inputs=inputs,outputs=outputs, model_func=f)
+        return Model(
+            name,
+            runtime=runtime,
+            local_folder=local_folder,
+            uri=uri,
+            platform=platform,
+            inputs=inputs,
+            outputs=outputs,
+            model_func=f,
+        )
 
     return _model

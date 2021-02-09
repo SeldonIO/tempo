@@ -13,7 +13,10 @@ class Endpoint(object):
     Only handles istio and seldon at present.
 
     """
-    def __init__(self, model_name, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY):
+
+    def __init__(
+        self, model_name, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY
+    ):
         self.inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         try:
             if self.inside_cluster:
@@ -33,21 +36,25 @@ class Endpoint(object):
         if self.gateway == ISTIO_GATEWAY:
             if self.inside_cluster is None:
                 api_instance = client.CoreV1Api()
-                res = api_instance.list_namespaced_service('istio-system',
-                                                           field_selector="metadata.name=istio-ingressgateway")
+                res = api_instance.list_namespaced_service(
+                    "istio-system", field_selector="metadata.name=istio-ingressgateway"
+                )
                 ingress_ip = res.items[0].status.load_balancer.ingress[0].ip
-                return f"http://{ingress_ip}/seldon/{self.namespace}/{self.model_name}"+self.protocol.get_predict_path()
+                return (
+                    f"http://{ingress_ip}/seldon/{self.namespace}/{self.model_name}"
+                    + self.protocol.get_predict_path()
+                )
             else:
-                #TODO check why needed this here
+                # TODO check why needed this here
                 config.load_incluster_config()
                 api_instance = client.CustomObjectsApi()
                 api_response = api_instance.get_namespaced_custom_object_status(
-                     'machinelearning.seldon.io',
-                     "v1",self.namespace,
-                     'seldondeployments', self.model_name)
+                    "machinelearning.seldon.io",
+                    "v1",
+                    self.namespace,
+                    "seldondeployments",
+                    self.model_name,
+                )
                 return api_response["status"]["address"]["url"]
         else:
             raise ValueError(f"gateway {self.gateway} unknown")
-
-
-

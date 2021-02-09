@@ -8,12 +8,14 @@ from tempo.serve.metadata import ModelDataArgs, ModelDataArg
 
 
 class BaseModel:
-
-    def __init__(self, name: str,
-                 user_func: Callable[[Any], Any],
-                 protocol: Protocol = None,
-                 inputs: ModelDataType = None,
-                 outputs: ModelDataType = None):
+    def __init__(
+        self,
+        name: str,
+        user_func: Callable[[Any], Any],
+        protocol: Protocol = None,
+        inputs: ModelDataType = None,
+        outputs: ModelDataType = None,
+    ):
         self._name = name
         self._user_func = user_func
         self.protocol = protocol
@@ -22,7 +24,7 @@ class BaseModel:
         if inputs is None and outputs is None:
             if user_func is not None:
                 hints = get_type_hints(user_func)
-                for k,v in hints.items():
+                for k, v in hints.items():
                     if k == "return":
                         if isinstance(v, typing._GenericAlias):
                             targs = v.__args__
@@ -31,11 +33,11 @@ class BaseModel:
                         else:
                             output_args.append(ModelDataArg(ty=v))
                     else:
-                        input_args.append(ModelDataArg(name=k,ty=v))
+                        input_args.append(ModelDataArg(name=k, ty=v))
         else:
             if type(outputs) == Dict:
-                for k,v in outputs.items():
-                    output_args.append(ModelDataArg(name=k,ty=v))
+                for k, v in outputs.items():
+                    output_args.append(ModelDataArg(name=k, ty=v))
             elif type(outputs) == Tuple:
                 for ty in list(outputs):
                     output_args.append(ModelDataArg(ty=ty))
@@ -88,4 +90,3 @@ class BaseModel:
         else:
             response_converted = self.protocol.to_protocol_response(response)
         return response_converted
-

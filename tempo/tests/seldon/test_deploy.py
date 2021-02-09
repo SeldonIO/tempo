@@ -6,35 +6,42 @@ import os
 import pytest
 import numpy as np
 
-#@pytest.mark.skip
+# @pytest.mark.skip
 def test_deploy():
-    rt = SeldonDeployRuntime(host="http://34.105.136.157/seldon-deploy/api/v1alpha1",
-                             user="admin@kubeflow.org",
-                             password= "12341234",
-                             k8s_options=KubernetesOptions(namespace="seldon"))
+    rt = SeldonDeployRuntime(
+        host="http://34.105.136.157/seldon-deploy/api/v1alpha1",
+        user="admin@kubeflow.org",
+        password="12341234",
+        k8s_options=KubernetesOptions(namespace="seldon"),
+    )
 
     sklearn_model = Model(
         name="test-iris-sklearn",
         runtime=rt,
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder=os.getcwd() + "/sklearn")
+        local_folder=os.getcwd() + "/sklearn",
+    )
 
-    #sklearn_model.deploy()
+    # sklearn_model.deploy()
     sklearn_model(np.array([[4.9, 3.1, 1.5, 0.2]]))
 
+
 def test_deploy_yaml():
-    rt = SeldonDeployRuntime(host="http://34.105.136.157/seldon-deploy/api/v1alpha1",
-                             user="admin@kubeflow.org",
-                             password="12341234",
-                             k8s_options=KubernetesOptions(namespace="seldon"))
+    rt = SeldonDeployRuntime(
+        host="http://34.105.136.157/seldon-deploy/api/v1alpha1",
+        user="admin@kubeflow.org",
+        password="12341234",
+        k8s_options=KubernetesOptions(namespace="seldon"),
+    )
 
     sklearn_model = Model(
-            name="test-iris-sklearn",
-            runtime=rt,
-            platform=ModelFramework.SKLearn,
-            uri="gs://seldon-models/sklearn/iris",
-            local_folder=os.getcwd() + "/sklearn")
+        name="test-iris-sklearn",
+        runtime=rt,
+        platform=ModelFramework.SKLearn,
+        uri="gs://seldon-models/sklearn/iris",
+        local_folder=os.getcwd() + "/sklearn",
+    )
 
     srt = SeldonKubernetesRuntime(k8s_options=KubernetesOptions(namespace="seldon"))
     sklearn_model.set_runtime(srt)
