@@ -19,11 +19,20 @@ class BaseModel:
         self._name = name
         self._user_func = user_func
         self.protocol = protocol
+        input_args, output_args = self._get_args(inputs, outputs)
+        self.inputs: ModelDataArgs = ModelDataArgs(args=input_args)
+        self.outputs: ModelDataArgs = ModelDataArgs(args=output_args)
+        self.cls = None
+
+    def _get_args(
+        self, inputs: ModelDataType = None, outputs: ModelDataType = None
+    ) -> Tuple[ModelDataArgs, ModelDataArgs]:
         input_args = []
         output_args = []
+
         if inputs is None and outputs is None:
-            if user_func is not None:
-                hints = get_type_hints(user_func)
+            if self._user_func is not None:
+                hints = get_type_hints(self._user_func)
                 for k, v in hints.items():
                     if k == "return":
                         if isinstance(v, typing._GenericAlias):
@@ -52,9 +61,8 @@ class BaseModel:
                     input_args.append(ModelDataArg(ty=ty))
             else:
                 input_args.append(ModelDataArg(ty=inputs))
-        self.inputs: ModelDataArgs = ModelDataArgs(args=input_args)
-        self.outputs: ModelDataArgs = ModelDataArgs(args=output_args)
-        self.cls = None
+
+        return ModelDataArgs(args=input_args), ModelDataArgs(args=output_args)
 
     def set_cls(self, cls):
         self.cls = cls
@@ -65,6 +73,12 @@ class BaseModel:
 
     def save(self, file_path: str):
         save_custom(self, file_path)
+
+    def upload(self):
+        pass
+
+    def download(self):
+        pass
 
     def request(self, req: Dict) -> Dict:
         req_converted = self.protocol.from_protocol_request(req, self.inputs)
@@ -83,6 +97,7 @@ class BaseModel:
                 response = self._user_func(self.cls, req_converted)
             else:
                 response = self._user_func(req_converted)
+
         if type(response) == dict:
             response_converted = self.protocol.to_protocol_response(**response)
         elif type(response) == list or type(response) == tuple:
