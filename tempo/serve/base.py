@@ -1,27 +1,44 @@
-from typing import Callable, List, Any, Dict, Optional, Type, get_type_hints, Tuple
+from typing import Callable, Any, Dict, get_type_hints, Tuple
 import typing
 
-from tempo.serve.loader import load_custom, save_custom
+from tempo.serve.loader import download, upload, load_custom, save_custom
 from tempo.serve.protocol import Protocol
 from tempo.serve.constants import ModelDataType
-from tempo.serve.metadata import ModelDataArgs, ModelDataArg
+from tempo.serve.metadata import (
+    ModelDetails,
+    ModelDataArgs,
+    ModelDataArg,
+    ModelFramework,
+)
 
 
 class BaseModel:
     def __init__(
         self,
         name: str,
-        user_func: Callable[[Any], Any],
+        user_func: Callable[[Any], Any] = None,
         protocol: Protocol = None,
+        local_folder: str = None,
+        uri: str = None,
+        platform: ModelFramework = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
     ):
         self._name = name
         self._user_func = user_func
         self.protocol = protocol
-        input_args, output_args = self._get_args(inputs, outputs)
-        self.inputs: ModelDataArgs = ModelDataArgs(args=input_args)
-        self.outputs: ModelDataArgs = ModelDataArgs(args=output_args)
+
+        inputs, outputs = self._get_args(inputs, outputs)
+
+        self._details = ModelDetails(
+            name=name,
+            local_folder=local_folder,
+            uri=uri,
+            platform=platform,
+            inputs=inputs,
+            outputs=outputs,
+        )
+
         self.cls = None
 
     def _get_args(
@@ -75,10 +92,16 @@ class BaseModel:
         save_custom(self, file_path)
 
     def upload(self):
-        pass
+        """
+        Upload from local folder to uri
+        """
+        upload(self._details.local_folder, self._details.uri)
 
     def download(self):
-        pass
+        """
+        Download from uri to local folder
+        """
+        download(self._details.uri, self._details.local_folder)
 
     def request(self, req: Dict) -> Dict:
         req_converted = self.protocol.from_protocol_request(req, self.inputs)

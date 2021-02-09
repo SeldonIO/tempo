@@ -1,9 +1,8 @@
 import types
 import requests
 
-from typing import Any, Type, List, Callable, Dict, Optional
+from typing import Any, Callable
 
-from tempo.serve.metadata import ModelDetails
 from tempo.serve.runtime import Runtime
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.base import BaseModel
@@ -23,17 +22,18 @@ class Model(BaseModel):
         outputs: ModelDataType = None,
         model_func: Callable[[Any], Any] = None,
     ):
-        super().__init__(name, model_func, runtime.get_protocol(), inputs, outputs)
-        self._model_func = model_func
-        self._runtime = runtime
-        self._details = ModelDetails(
-            name=name,
+        super().__init__(
+            name,
+            user_func=model_func,
+            protocol=runtime.get_protocol(),
             local_folder=local_folder,
             uri=uri,
             platform=platform,
             inputs=inputs,
             outputs=outputs,
         )
+
+        self._runtime = runtime
 
     def __get__(self, instance, owner):
         if instance is None:
@@ -47,8 +47,8 @@ class Model(BaseModel):
         return response_raw.json()
 
     def __call__(self, *args, **kwargs) -> Any:
-        if self._model_func is not None:
-            return self._model_func(*args, **kwargs)
+        if self._user_func is not None:
+            return self._user_func(*args, **kwargs)
         else:
             protocol = self._runtime.get_protocol()
             req = protocol.to_protocol_request(*args, **kwargs)

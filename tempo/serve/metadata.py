@@ -11,6 +11,7 @@ class ModelFramework(Enum):
     Tensorflow = "tensorflow"
     Triton = "triton"
     Custom = "custom"
+    TempoPipeline = "tempo"
 
 
 class ModelDataArg(BaseModel):
