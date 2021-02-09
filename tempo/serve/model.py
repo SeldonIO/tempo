@@ -24,7 +24,9 @@ class Model(BaseModel):
     ):
         super().__init__(
             name,
+            # TODO: Should we unify names?
             user_func=model_func,
+            # TODO: What should happen if runtime is None?
             protocol=runtime.get_protocol(),
             local_folder=local_folder,
             uri=uri,
@@ -66,18 +68,6 @@ class Model(BaseModel):
         Get k8s yaml
         """
         return self._runtime.to_k8s_yaml(self._details)
-
-    def upload(self):
-        """
-        Upload from local folder to uri
-        """
-        upload(self._details.local_folder, self._details.uri)
-
-    def download(self):
-        """
-        Download from uri to local folder
-        """
-        download(self._details.uri, self._details.local_folder)
 
     def set_runtime(self, runtime: Runtime):
         self._runtime = runtime

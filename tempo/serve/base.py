@@ -1,5 +1,7 @@
-from typing import Callable, Any, Dict, get_type_hints, Tuple
 import typing
+import tempfile
+
+from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
 
 from tempo.serve.loader import download, upload, load_custom, save_custom
 from tempo.serve.protocol import Protocol
@@ -28,6 +30,7 @@ class BaseModel:
         self._user_func = user_func
         self.protocol = protocol
 
+        local_folder = self._get_local_folder(local_folder)
         inputs, outputs = self._get_args(inputs, outputs)
 
         self._details = ModelDetails(
@@ -81,26 +84,43 @@ class BaseModel:
 
         return ModelDataArgs(args=input_args), ModelDataArgs(args=output_args)
 
+    def _get_local_folder(self, local_folder: str = None) -> Optional[str]:
+        if not local_folder:
+            # TODO: Should we do cleanup at some point?
+            local_folder = tempfile.mkdtemp()
+
+        return local_folder
+
     def set_cls(self, cls):
         self.cls = cls
 
     @classmethod
-    def load(cls, file_path: str):
+    def load(cls, file_path: str) -> "BaseModel":
         return load_custom(file_path)
 
-    def save(self, file_path: str):
+    def save(self, file_path: str = None):
+        if not self._user_func:
+            return
+
+        if file_path is None:
+            file_path = self._details.local_folder
+
         save_custom(self, file_path)
 
     def upload(self):
         """
         Upload from local folder to uri
         """
+        # Save to local_folder before uploading
+        self.save()
+
         upload(self._details.local_folder, self._details.uri)
 
     def download(self):
         """
         Download from uri to local folder
         """
+        # TODO: This doesn't make sense for custom methods?
         download(self._details.uri, self._details.local_folder)
 
     def request(self, req: Dict) -> Dict:
