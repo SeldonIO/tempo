@@ -1,11 +1,12 @@
 import typing
 import tempfile
+import os
 
 from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
 
 from tempo.serve.loader import download, upload, load_custom, save_custom
 from tempo.serve.protocol import Protocol
-from tempo.serve.constants import ModelDataType
+from tempo.serve.constants import ModelDataType, DefaultModelFilename
 from tempo.serve.metadata import (
     ModelDetails,
     ModelDataArgs,
@@ -100,10 +101,11 @@ class BaseModel:
 
     def save(self, file_path: str = None):
         if not self._user_func:
+            # Nothing to save
             return
 
         if file_path is None:
-            file_path = self._details.local_folder
+            file_path = os.path.join(self._details.local_folder, DefaultModelFilename)
 
         save_custom(self, file_path)
 
