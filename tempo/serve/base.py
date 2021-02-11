@@ -4,9 +4,9 @@ import os
 
 from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
 
-from tempo.serve.loader import download, upload, load_custom, save_custom
+from tempo.serve.loader import download, upload, load_custom, save_custom, save_environment
 from tempo.serve.protocol import Protocol
-from tempo.serve.constants import ModelDataType, DefaultModelFilename
+from tempo.serve.constants import ModelDataType, DefaultModelFilename, DefaultEnvFilename
 from tempo.serve.metadata import (
     ModelDetails,
     ModelDataArgs,
@@ -115,6 +115,11 @@ class BaseModel:
         """
         # Save to local_folder before uploading
         self.save()
+
+        # Save environment as well in `local_folder`
+        # TODO: Should this be handled in `file_path`?
+        file_path = os.path.join(self._details.local_folder, DefaultEnvFilename)
+        save_environment(file_path=file_path)
 
         upload(self._details.local_folder, self._details.uri)
 
