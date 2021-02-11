@@ -4,7 +4,6 @@ import re
 import conda_pack
 import yaml
 import uuid
-import os
 
 from typing import Optional
 from tempfile import NamedTemporaryFile

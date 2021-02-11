@@ -2,6 +2,7 @@ import pytest
 import os
 
 from tempo.serve.loader import (
+    save_environment,
     _to_rclone,
     _get_environment,
     _add_required_deps,
@@ -20,6 +21,13 @@ from tempo.serve.constants import MLServerEnvDeps, DefaultEnvFilename
 )
 def test_rclone_conversion(path, expected):
     assert _to_rclone(path) == expected
+
+
+def test_save_environment(tmp_path):
+    env_path = os.path.join(tmp_path, DefaultEnvFilename)
+    save_environment(file_path=env_path, env_name='base')
+
+    assert os.path.isfile(env_path)
 
 
 def test_pack_environment(tmp_path):
