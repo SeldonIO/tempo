@@ -1,6 +1,5 @@
-SHELL := /bin/bash
+SHELL := /bin/bash 
 VERSION = $(shell sed 's/^__version__ = "\(.*\)"/\1/' ./tempo/version.py)
-IMAGE=mlops
 
 .PHONY: install
 install:
@@ -54,6 +53,19 @@ tempo/tests/examples/sklearn:
 
 clean_test_data:
 	rm -rf tempo/tests/examples
+
+
+build: clean
+	python setup.py sdist bdist_wheel
+
+clean:
+	rm -rf ./dist ./build *.egg-info
+
+push-test:
+	twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+push:
+	twine upload dist/*
 
 
 version:

@@ -27,7 +27,9 @@ def _load_description() -> str:
 
 
 setup(
-    name=PKG_NAME,
+    #  name=PKG_NAME,
+    # TODO: Update once we've got consensus on package name
+    name="mlops-tempo",
     author="Seldon Technologies Ltd.",
     author_email="hello@seldon.io",
     version=_load_version(),
