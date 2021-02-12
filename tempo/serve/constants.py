@@ -14,5 +14,4 @@ DefaultModelFilename = "model.pickle"
 DefaultEnvFilename = "environment.tar.gz"
 
 # TODO: Update once tempo is published
-#  MLServerEnvDeps = ["mlserver==0.3.1.dev0", "mlserver-tempo==0.3.1.dev0"]
-MLServerEnvDeps = ["mlserver==0.3.0.dev1"]
+MLServerEnvDeps = ["mlserver==0.3.1.dev1", "mlserver-tempo==0.3.1.dev1"]
