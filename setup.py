@@ -1,26 +1,40 @@
+import os
+
+from typing import Dict
 from setuptools import find_packages, setup
-from tempo import __version__
 
 
-def readme():
-    with open("README.md") as f:
-        return f.read()
+ROOT_PATH = os.path.dirname(__file__)
+PKG_NAME = "tempo"
+PKG_PATH = os.path.join(ROOT_PATH, PKG_NAME)
 
 
-# read version file
-exec(open("tempo/version.py").read())
+def _load_version() -> str:
+    version = ""
+    version_path = os.path.join(PKG_PATH, "version.py")
+    with open(version_path) as fp:
+        version_module: Dict[str, str] = {}
+        exec(fp.read(), version_module)
+        version = version_module["__version__"]
+
+    return version
+
+
+def _load_description() -> str:
+    readme_path = os.path.join(ROOT_PATH, "README.md")
+    with open(readme_path) as fp:
+        return fp.read()
 
 
 setup(
-    name="tempo",
+    #  name=PKG_NAME,
+    # TODO: Update once we've got consensus on package name
+    name="mlops-tempo",
     author="Seldon Technologies Ltd.",
     author_email="hello@seldon.io",
-    version=__version__,  # type: ignore # noqa F821
+    version=_load_version(),
     description="Machine Learning Operations Toolkit",
-    long_description=readme(),
-    long_description_content_type="text/markdown",
     url="https://github.com/SeldonIO/tempo",
-    license="Apache 2.0",
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.6",
@@ -37,4 +51,7 @@ setup(
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,
+    long_description=_load_description(),
+    long_description_content_type="text/markdown",
+    license="Apache 2.0",
 )

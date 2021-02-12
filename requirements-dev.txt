@@ -1,12 +1,16 @@
-# Test and linters
+# Code generation
+grpcio-tools==1.35.0
+
+# Linting and formatting
 black==19.10b0
 flake8==3.8.1
 mypy<0.783
-Pillow==7.2.0
+mypy-protobuf==1.22
+
+# Testing
 pytest==5.4.2
 pytest-cov==2.10.1
 pytest-asyncio==0.14.0
-tox<4.0.0
-grpcio-tools==1.31.0
-mypy-protobuf==1.22
 
+# Pushing to PyPi
+twine==3.3.0
