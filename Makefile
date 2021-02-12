@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-VERSION := 0.1
+VERSION = $(shell sed 's/^__version__ = "\(.*\)"/\1/' ./tempo/version.py)
 IMAGE=mlops
 
 .PHONY: install
@@ -56,3 +56,5 @@ clean_test_data:
 	rm -rf tempo/tests/examples
 
 
+version:
+	@echo ${VERSION}
