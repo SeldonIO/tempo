@@ -7,7 +7,6 @@ from tempo.serve.runtime import Runtime
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
-from tempo.serve.loader import download, upload
 
 
 class Model(BaseModel):
@@ -44,7 +43,7 @@ class Model(BaseModel):
         return types.MethodType(self, instance)
 
     def _predict(self, req: dict) -> dict:
-        endpoint = self._runtime.get_endpoint(self._details)
+        endpoint = self._runtime.get_endpoint(self.details)
         response_raw = requests.post(endpoint, json=req)
         return response_raw.json()
 
@@ -55,26 +54,26 @@ class Model(BaseModel):
             protocol = self._runtime.get_protocol()
             req = protocol.to_protocol_request(*args, **kwargs)
             res = self._predict(req)
-            return protocol.from_protocol_response(res, self.outputs)
+            return protocol.from_protocol_response(res, self.details.outputs)
 
     def deploy(self):
-        self._runtime.deploy(self._details)
+        self._runtime.deploy(self.details)
 
     def undeploy(self):
-        self._runtime.undeploy(self._details)
+        self._runtime.undeploy(self.details)
 
     def to_k8s_yaml(self) -> str:
         """
         Get k8s yaml
         """
-        return self._runtime.to_k8s_yaml(self._details)
+        return self._runtime.to_k8s_yaml(self.details)
 
     def set_runtime(self, runtime: Runtime):
         self._runtime = runtime
         self.protocol = runtime.get_protocol()
 
     def get_endpoint(self):
-        return self._runtime.get_endpoint(self._details)
+        return self._runtime.get_endpoint(self.details)
 
     def wait_ready(self, timeout_secs=None):
-        return self._runtime.wait_ready(self._details, timeout_secs=timeout_secs)
+        return self._runtime.wait_ready(self.details, timeout_secs=timeout_secs)

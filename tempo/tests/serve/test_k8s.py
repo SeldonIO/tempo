@@ -15,7 +15,7 @@ def test_deploy_k8s(k8s_sklearn_model: Model, k8s_runtime: SeldonKubernetesRunti
         "v1",
         k8s_runtime.namespace,
         "seldondeployments",
-        k8s_sklearn_model._details.name,
+        k8s_sklearn_model.details.name,
     )
 
     assert sdep["status"]["state"] == "Available"
