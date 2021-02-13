@@ -1,6 +1,6 @@
-from typing import Callable, List, Any, Dict, Optional, Type, ClassVar
-import types
+from typing import Callable, List, Any
 
+from tempo.serve.metadata import ModelFramework
 from tempo.serve.constants import ModelDataType
 from tempo.serve.model import Model
 from tempo.utils import logger
@@ -13,19 +13,27 @@ class Pipeline(BaseModel):
         self,
         name: str,
         pipeline_func: Callable[[Any], Any] = None,
-        pipeline_cls: ClassVar = None,
         runtime: Runtime = None,
         models: List[Model] = None,
+        uri: str = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
-        remote_artifact_uri: str = None,
-        local_artifact_folder: str = None,
     ):
-        super().__init__(name, pipeline_func, runtime.get_protocol(), inputs, outputs)
+        super().__init__(
+            name=name,
+            # TODO: Should we unify names?
+            user_func=pipeline_func,
+            # TODO: What if `runtime` is None?
+            protocol=runtime.get_protocol(),
+            uri=uri,
+            platform=ModelFramework.TempoPipeline,
+            inputs=inputs,
+            outputs=outputs,
+        )
+
         if models is None:
             models = []
-        self._name = name
-        self._pipeline_func = pipeline_func
+
         self._runtime = runtime
         self._models = models
 
@@ -33,7 +41,7 @@ class Pipeline(BaseModel):
         """
         Deploy all the models
         """
-        logger.info("deploying models for %s", self._name)
+        logger.info("deploying models for %s", self._details._name)
         for model in self._models:
             logger.info(f"Found model {model._details.name}")
             model.deploy()
@@ -46,7 +54,7 @@ class Pipeline(BaseModel):
         # TODO add deploy pipeline itself
 
     def undeploy_models(self):
-        logger.info("undeploying models for %s", self._name)
+        logger.info("undeploying models for %s", self._details._name)
         for model in self._models:
             model.undeploy()
 
@@ -58,4 +66,4 @@ class Pipeline(BaseModel):
         # TODO undeploy pipeline
 
     def __call__(self, raw: Any) -> Any:
-        return self._pipeline_func(raw)
+        return self._user_func(raw)

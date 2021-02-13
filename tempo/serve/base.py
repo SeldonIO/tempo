@@ -1,29 +1,59 @@
-from typing import Callable, List, Any, Dict, Optional, Type, get_type_hints, Tuple
 import typing
+import tempfile
+import os
 
-from tempo.serve.loader import load_custom, save_custom
+from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
+
+from tempo.serve.loader import download, upload, load_custom, save_custom, save_environment
 from tempo.serve.protocol import Protocol
-from tempo.serve.constants import ModelDataType
-from tempo.serve.metadata import ModelDataArgs, ModelDataArg
+from tempo.serve.constants import ModelDataType, DefaultModelFilename, DefaultEnvFilename
+from tempo.serve.metadata import (
+    ModelDetails,
+    ModelDataArgs,
+    ModelDataArg,
+    ModelFramework,
+)
 
 
 class BaseModel:
     def __init__(
         self,
         name: str,
-        user_func: Callable[[Any], Any],
+        user_func: Callable[[Any], Any] = None,
         protocol: Protocol = None,
+        local_folder: str = None,
+        uri: str = None,
+        platform: ModelFramework = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
     ):
         self._name = name
         self._user_func = user_func
         self.protocol = protocol
+
+        local_folder = self._get_local_folder(local_folder)
+        inputs, outputs = self._get_args(inputs, outputs)
+
+        self._details = ModelDetails(
+            name=name,
+            local_folder=local_folder,
+            uri=uri,
+            platform=platform,
+            inputs=inputs,
+            outputs=outputs,
+        )
+
+        self.cls = None
+
+    def _get_args(
+        self, inputs: ModelDataType = None, outputs: ModelDataType = None
+    ) -> Tuple[ModelDataArgs, ModelDataArgs]:
         input_args = []
         output_args = []
+
         if inputs is None and outputs is None:
-            if user_func is not None:
-                hints = get_type_hints(user_func)
+            if self._user_func is not None:
+                hints = get_type_hints(self._user_func)
                 for k, v in hints.items():
                     if k == "return":
                         if isinstance(v, typing._GenericAlias):
@@ -52,19 +82,53 @@ class BaseModel:
                     input_args.append(ModelDataArg(ty=ty))
             else:
                 input_args.append(ModelDataArg(ty=inputs))
-        self.inputs: ModelDataArgs = ModelDataArgs(args=input_args)
-        self.outputs: ModelDataArgs = ModelDataArgs(args=output_args)
-        self.cls = None
+
+        return ModelDataArgs(args=input_args), ModelDataArgs(args=output_args)
+
+    def _get_local_folder(self, local_folder: str = None) -> Optional[str]:
+        if not local_folder:
+            # TODO: Should we do cleanup at some point?
+            local_folder = tempfile.mkdtemp()
+
+        return local_folder
 
     def set_cls(self, cls):
         self.cls = cls
 
     @classmethod
-    def load(cls, file_path: str):
+    def load(cls, file_path: str) -> "BaseModel":
         return load_custom(file_path)
 
-    def save(self, file_path: str):
+    def save(self, file_path: str = None):
+        if not self._user_func:
+            # Nothing to save
+            return
+
+        if file_path is None:
+            file_path = os.path.join(self._details.local_folder, DefaultModelFilename)
+
         save_custom(self, file_path)
+
+    def upload(self):
+        """
+        Upload from local folder to uri
+        """
+        # Save to local_folder before uploading
+        self.save()
+
+        # Save environment as well in `local_folder`
+        # TODO: Should this be handled in `file_path`?
+        file_path = os.path.join(self._details.local_folder, DefaultEnvFilename)
+        save_environment(file_path=file_path)
+
+        upload(self._details.local_folder, self._details.uri)
+
+    def download(self):
+        """
+        Download from uri to local folder
+        """
+        # TODO: This doesn't make sense for custom methods?
+        download(self._details.uri, self._details.local_folder)
 
     def request(self, req: Dict) -> Dict:
         req_converted = self.protocol.from_protocol_request(req, self.inputs)
@@ -83,6 +147,7 @@ class BaseModel:
                 response = self._user_func(self.cls, req_converted)
             else:
                 response = self._user_func(req_converted)
+
         if type(response) == dict:
             response_converted = self.protocol.to_protocol_response(**response)
         elif type(response) == list or type(response) == tuple:
