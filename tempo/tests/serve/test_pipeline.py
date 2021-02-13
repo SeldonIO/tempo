@@ -12,7 +12,7 @@ def test_deploy_pipeline_docker(
     inference_pipeline: Pipeline, docker_runtime: SeldonDockerRuntime
 ):
     for model in inference_pipeline._models:
-        container = docker_runtime._get_container(model._details)
+        container = docker_runtime._get_container(model.details)
         assert container.status == "running"
 
 
@@ -78,7 +78,7 @@ def test_undeploy_pipeline_docker(
 
     for model in inference_pipeline._models:
         with pytest.raises(docker.errors.NotFound):
-            docker_runtime._get_container(model._details)
+            docker_runtime._get_container(model.details)
 
 
 async def test_pipeline_save(inference_pipeline: Pipeline, tmp_path: str):

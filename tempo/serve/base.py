@@ -30,11 +30,13 @@ class BaseModel:
         self._name = name
         self._user_func = user_func
         self.protocol = protocol
+        if uri is None:
+            uri = ""
 
         local_folder = self._get_local_folder(local_folder)
         inputs, outputs = self._get_args(inputs, outputs)
 
-        self._details = ModelDetails(
+        self.details = ModelDetails(
             name=name,
             local_folder=local_folder,
             uri=uri,
@@ -105,7 +107,7 @@ class BaseModel:
             return
 
         if file_path is None:
-            file_path = os.path.join(self._details.local_folder, DefaultModelFilename)
+            file_path = os.path.join(self.details.local_folder, DefaultModelFilename)
 
         save_custom(self, file_path)
 
@@ -118,20 +120,20 @@ class BaseModel:
 
         # Save environment as well in `local_folder`
         # TODO: Should this be handled in `file_path`?
-        file_path = os.path.join(self._details.local_folder, DefaultEnvFilename)
+        file_path = os.path.join(self.details.local_folder, DefaultEnvFilename)
         save_environment(file_path=file_path)
 
-        upload(self._details.local_folder, self._details.uri)
+        upload(self.details.local_folder, self.details.uri)
 
     def download(self):
         """
         Download from uri to local folder
         """
         # TODO: This doesn't make sense for custom methods?
-        download(self._details.uri, self._details.local_folder)
+        download(self.details.uri, self.details.local_folder)
 
     def request(self, req: Dict) -> Dict:
-        req_converted = self.protocol.from_protocol_request(req, self.inputs)
+        req_converted = self.protocol.from_protocol_request(req, self.details.inputs)
         if type(req_converted) == dict:
             if self.cls is not None:
                 response = self._user_func(self.cls, **req_converted)

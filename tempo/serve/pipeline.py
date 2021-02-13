@@ -15,6 +15,7 @@ class Pipeline(BaseModel):
         pipeline_func: Callable[[Any], Any] = None,
         runtime: Runtime = None,
         models: List[Model] = None,
+        local_folder: str = None,
         uri: str = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
@@ -25,6 +26,7 @@ class Pipeline(BaseModel):
             user_func=pipeline_func,
             # TODO: What if `runtime` is None?
             protocol=runtime.get_protocol(),
+            local_folder=local_folder,
             uri=uri,
             platform=ModelFramework.TempoPipeline,
             inputs=inputs,
@@ -41,9 +43,9 @@ class Pipeline(BaseModel):
         """
         Deploy all the models
         """
-        logger.info("deploying models for %s", self._details._name)
+        logger.info("deploying models for %s", self.details.name)
         for model in self._models:
-            logger.info(f"Found model {model._details.name}")
+            logger.info(f"Found model {model.details.name}")
             model.deploy()
 
     def deploy(self):
@@ -54,7 +56,7 @@ class Pipeline(BaseModel):
         # TODO add deploy pipeline itself
 
     def undeploy_models(self):
-        logger.info("undeploying models for %s", self._details._name)
+        logger.info("undeploying models for %s", self.details.name)
         for model in self._models:
             model.undeploy()
 

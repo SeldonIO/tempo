@@ -48,8 +48,8 @@ class ModelDetails(BaseModel):
     local_folder: str
     uri: str
     platform: ModelFramework
-    inputs: ModelDataType
-    outputs: ModelDataType
+    inputs: ModelDataArgs
+    outputs: ModelDataArgs
 
 
 class KubernetesOptions(BaseModel):

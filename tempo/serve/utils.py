@@ -10,6 +10,8 @@ import inspect
 def pipeline(
     name: str,
     runtime: Runtime = None,
+    local_folder: str = None,
+    uri: str = None,
     models: List[Model] = None,
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
@@ -30,6 +32,8 @@ def pipeline(
             K.pipeline = Pipeline(
                 name,
                 runtime=runtime,
+                local_folder=local_folder,
+                uri=uri,
                 models=models,
                 inputs=inputs,
                 outputs=outputs,
@@ -54,6 +58,8 @@ def pipeline(
             return Pipeline(
                 name,
                 runtime=runtime,
+                local_folder=local_folder,
+                uri=uri,
                 models=models,
                 inputs=inputs,
                 outputs=outputs,

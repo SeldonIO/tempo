@@ -22,7 +22,7 @@ from tempo.serve.constants import MLServerEnvDeps, DefaultEnvFilename
 def test_rclone_conversion(path, expected):
     assert _to_rclone(path) == expected
 
-
+@pytest.mark.skip(reason="very slow")
 def test_save_environment(tmp_path):
     env_path = os.path.join(tmp_path, DefaultEnvFilename)
     save_environment(file_path=env_path, env_name='base')
