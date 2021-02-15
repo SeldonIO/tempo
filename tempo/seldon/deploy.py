@@ -16,6 +16,7 @@ from seldon_deploy_sdk.auth import SessionAuthenticator
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from http import cookies
 from enum import Enum
+from typing import Dict
 import time
 
 
@@ -24,6 +25,7 @@ class SeldonDeployAuthType(Enum):
 
 
 class SeldonDeployRuntime(Runtime):
+
     def __init__(
         self,
         host: str,
@@ -115,6 +117,9 @@ class SeldonDeployRuntime(Runtime):
             model_details.name, self._k8s_options.namespace, self.protocol
         )
         return endpoint.get_url()
+
+    def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
+        return {}
 
     def get_protocol(self):
         return self.protocol

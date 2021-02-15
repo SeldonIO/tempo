@@ -28,7 +28,7 @@ class SeldonDockerRuntime(Runtime):
     def get_protocol(self) -> Protocol:
         return self.protocol
 
-    def get_endpoint(self, model_details: ModelDetails):
+    def get_endpoint(self, model_details: ModelDetails) -> str:
         container = self._get_container(model_details)
         host_ports = container.ports[self.ContainerPort]
 
@@ -36,9 +36,12 @@ class SeldonDockerRuntime(Runtime):
         host_port = host_ports[0]["HostPort"]
 
         protocol = self.get_protocol()
-        predict_path = protocol.get_predict_path()
+        predict_path = protocol.get_predict_path(model_details)
 
         return f"http://{host_ip}:{host_port}{predict_path}"
+
+    def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
+        return {}
 
     def deploy(self, model_details: ModelDetails):
         parameters = [{"name": "model_uri", "value": "/mnt/models", "type": "STRING"}]

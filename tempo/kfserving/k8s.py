@@ -3,9 +3,10 @@ import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import time
+from typing import Dict
 
-from tempo.seldon.endpoint import Endpoint
-from tempo.seldon.protocol import SeldonProtocol
+from tempo.kfserving.endpoint import Endpoint
+from tempo.kfserving.protocol import KFServingV1Protocol
 from tempo.serve.runtime import Runtime
 from tempo.utils import logger
 from tempo.serve.metadata import ModelDetails, ModelFramework, KubernetesOptions
@@ -13,25 +14,23 @@ from tempo.serve.metadata import ModelDetails, ModelFramework, KubernetesOptions
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
 Implementations = {
-    ModelFramework.SKLearn: "SKLEARN_SERVER",
-    ModelFramework.XGBoost: "XGBOOST_SERVER",
-    ModelFramework.MLFlow: "MLFLOW_SERVER",
-    ModelFramework.Tensorflow: "TENSORFLOW_SERVER",
-    ModelFramework.PyTorch: "TRITON_SERVER",
-    ModelFramework.ONNX: "TRITON_SERVER",
-    ModelFramework.TensorRT: "TRITON_SERVER",
+    ModelFramework.SKLearn: "sklearn",
+    ModelFramework.XGBoost: "xgboost",
+    ModelFramework.Tensorflow: "tensorflow",
+    ModelFramework.PyTorch: "triton",
+    ModelFramework.ONNX: "triton",
+    ModelFramework.TensorRT: "triton",
 }
 
 
-class SeldonKubernetesRuntime(Runtime):
-
+class KFServingKubernetesRuntime(Runtime):
     def __init__(self, k8s_options: KubernetesOptions = None, protocol=None):
         if k8s_options is None:
             k8s_options = KubernetesOptions()
         self.k8s_options = k8s_options
         self.create_k8s_client()
         if protocol is None:
-            self.protocol = SeldonProtocol()
+            self.protocol = KFServingV1Protocol()
         else:
             self.protocol = protocol
 
@@ -49,20 +48,24 @@ class SeldonKubernetesRuntime(Runtime):
 
     def get_endpoint(self, model_details: ModelDetails) -> str:
         endpoint = Endpoint(
-            model_details.name, self.k8s_options.namespace, self.protocol
+            model_details, self.k8s_options.namespace, self.protocol
         )
         return endpoint.get_url()
 
     def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
-        return {}
+        endpoint = Endpoint(
+            model_details, self.k8s_options.namespace, self.protocol
+        )
+        service_host = endpoint.get_service_host()
+        return {"Host":service_host}
 
     def undeploy(self, model_details: ModelDetails):
         api_instance = client.CustomObjectsApi()
         api_instance.delete_namespaced_custom_object(
-            "machinelearning.seldon.io",
-            "v1",
+            "serving.kubeflow.org",
+            "v1alpha2",
             self.k8s_options.namespace,
-            "seldondeployments",
+            "inferenceservices",
             model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
         )
@@ -75,30 +78,30 @@ class SeldonKubernetesRuntime(Runtime):
 
         try:
             existing = api_instance.get_namespaced_custom_object(
-                "machinelearning.seldon.io",
-                "v1",
+                "serving.kubeflow.org",
+                "v1alpha2",
                 self.k8s_options.namespace,
-                "seldondeployments",
+                "inferenceservices",
                 model_details.name,
             )
             model_spec["metadata"]["resourceVersion"] = existing["metadata"][
                 "resourceVersion"
             ]
             api_instance.replace_namespaced_custom_object(
-                "machinelearning.seldon.io",
-                "v1",
+                "serving.kubeflow.org",
+                "v1alpha2",
                 self.k8s_options.namespace,
-                "seldondeployments",
+                "inferenceservices",
                 model_details.name,
                 model_spec,
             )
         except ApiException as e:
             if e.status == 404:
                 api_instance.create_namespaced_custom_object(
-                    "machinelearning.seldon.io",
-                    "v1",
+                    "serving.kubeflow.org",
+                    "v1alpha2",
                     self.k8s_options.namespace,
-                    "seldondeployments",
+                    "inferenceservices",
                     model_spec,
                 )
             else:
@@ -110,13 +113,20 @@ class SeldonKubernetesRuntime(Runtime):
         while not ready:
             api_instance = client.CustomObjectsApi()
             existing = api_instance.get_namespaced_custom_object(
-                "machinelearning.seldon.io",
-                "v1",
+                "serving.kubeflow.org",
+                "v1alpha2",
                 self.k8s_options.namespace,
-                "seldondeployments",
+                "inferenceservices",
                 model_details.name,
             )
-            ready = existing["status"]["state"] == "Available"
+            default_ready = False
+            routes_ready = False
+            for item in existing["status"]["conditions"]:
+                if item["type"] == "DefaultPredictorReady":
+                    default_ready = item["status"] == "True"
+                elif item["type"] == "RoutesReady":
+                    routes_ready = item["status"] == "True"
+            ready = default_ready and routes_ready
             if timeout_secs is not None:
                 t1 = time.time()
                 if t1 - t0 > timeout_secs:
@@ -126,24 +136,21 @@ class SeldonKubernetesRuntime(Runtime):
     def _get_spec(self, model_details: ModelDetails) -> dict:
         model_implementation = Implementations[model_details.platform]
         return {
-            "apiVersion": "machinelearning.seldon.io/v1",
-            "kind": "SeldonDeployment",
+            "apiVersion": "serving.kubeflow.org/v1alpha2",
+            "kind": "InferenceService",
             "metadata": {
                 "name": model_details.name,
                 "namespace": self.k8s_options.namespace,
             },
             "spec": {
-                "predictors": [
-                    {
-                        "graph": {
-                            "implementation": model_implementation,
-                            "modelUri": model_details.uri,
-                            "name": "classifier",
-                        },
-                        "name": "default",
-                        "replicas": self.k8s_options.replicas,
-                    }
-                ]
+                "default": {
+                  "predictor":
+                  {
+                    model_implementation: {
+                      "storageUri": model_details.uri
+                     },
+                  },
+                },
             },
         }
 

@@ -44,7 +44,8 @@ class Model(BaseModel):
 
     def _predict(self, req: dict) -> dict:
         endpoint = self._runtime.get_endpoint(self.details)
-        response_raw = requests.post(endpoint, json=req)
+        headers = self._runtime.get_headers(self.details)
+        response_raw = requests.post(endpoint, json=req, headers=headers)
         return response_raw.json()
 
     def __call__(self, *args, **kwargs) -> Any:

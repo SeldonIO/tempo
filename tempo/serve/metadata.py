@@ -9,7 +9,9 @@ class ModelFramework(Enum):
     XGBoost = "xgboost"
     MLFlow = "mlflow"
     Tensorflow = "tensorflow"
-    Triton = "triton"
+    PyTorch = "pytorch"
+    ONNX = "ONNX"
+    TensorRT = "tensorrt"
     Custom = "custom"
     TempoPipeline = "tempo"
 
