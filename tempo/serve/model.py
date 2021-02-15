@@ -42,20 +42,12 @@ class Model(BaseModel):
 
         return types.MethodType(self, instance)
 
-    def _predict(self, req: dict) -> dict:
-        endpoint = self._runtime.get_endpoint(self.details)
-        headers = self._runtime.get_headers(self.details)
-        response_raw = requests.post(endpoint, json=req, headers=headers)
-        return response_raw.json()
 
     def __call__(self, *args, **kwargs) -> Any:
         if self._user_func is not None:
             return self._user_func(*args, **kwargs)
         else:
-            protocol = self._runtime.get_protocol()
-            req = protocol.to_protocol_request(*args, **kwargs)
-            res = self._predict(req)
-            return protocol.from_protocol_response(res, self.details.outputs)
+            return self._runtime.remote(self.details, *args, **kwargs)
 
     def deploy(self):
         self._runtime.deploy(self.details)

@@ -14,7 +14,7 @@ class Protocol(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def to_protocol_response(self, *args, **kwargs) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         pass
 
     @abc.abstractmethod

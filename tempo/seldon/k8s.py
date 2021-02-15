@@ -3,6 +3,8 @@ import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import time
+from typing import Any
+import requests
 
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.protocol import SeldonProtocol
@@ -51,10 +53,14 @@ class SeldonKubernetesRuntime(Runtime):
         endpoint = Endpoint(
             model_details.name, self.k8s_options.namespace, self.protocol
         )
-        return endpoint.get_url()
+        return endpoint.get_url(model_details)
 
-    def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
-        return {}
+    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+        protocol = self.get_protocol()
+        req = protocol.to_protocol_request(*args, **kwargs)
+        endpoint = self.get_endpoint(model_details)
+        response_raw = requests.post(endpoint, json=req)
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def undeploy(self, model_details: ModelDetails):
         api_instance = client.CustomObjectsApi()
@@ -116,7 +122,8 @@ class SeldonKubernetesRuntime(Runtime):
                 "seldondeployments",
                 model_details.name,
             )
-            ready = existing["status"]["state"] == "Available"
+            if "status" in existing and "state" in existing["status"]:
+                ready = existing["status"]["state"] == "Available"
             if timeout_secs is not None:
                 t1 = time.time()
                 if t1 - t0 > timeout_secs:

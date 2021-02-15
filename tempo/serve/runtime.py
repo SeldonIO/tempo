@@ -17,16 +17,12 @@ class Runtime(abc.ABC):
     def undeploy(self, model_details: ModelDetails):
         pass
 
-    #@abc.abstractmethod
-    #def remote(self, *args, **kwargs) -> Any:
-    #    pass
-
     @abc.abstractmethod
-    def get_endpoint(self, model_details: ModelDetails) -> str:
+    def remote(self, *args, **kwargs) -> Any:
         pass
 
     @abc.abstractmethod
-    def get_headers(self, model_details: ModelDetails) -> Dict[str,str]:
+    def get_endpoint(self, model_details: ModelDetails) -> str:
         pass
 
     @abc.abstractmethod

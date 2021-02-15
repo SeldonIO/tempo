@@ -2,7 +2,9 @@ from tempo.kfserving.k8s import KFServingKubernetesRuntime
 from tempo.serve.model import Model
 from tempo.serve.metadata import ModelFramework
 import numpy as np
+import pytest
 
+@pytest.mark.skip(reason="needs k8s cluster")
 def test_kfserving():
     model = Model(
         name="sklearn-iris2",

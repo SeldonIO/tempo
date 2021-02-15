@@ -2,6 +2,7 @@ from kubernetes import client, config
 import os
 from tempo.utils import logger
 from tempo.serve.protocol import Protocol
+from tempo.serve.metadata import ModelDetails
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 ISTIO_GATEWAY = "istio"
@@ -32,7 +33,7 @@ class Endpoint(object):
         self.namespace = namespace
         self.protocol = protocol
 
-    def get_url(self):
+    def get_url(self, model_details: ModelDetails):
         if self.gateway == ISTIO_GATEWAY:
             if self.inside_cluster is None:
                 api_instance = client.CoreV1Api()
@@ -42,7 +43,7 @@ class Endpoint(object):
                 ingress_ip = res.items[0].status.load_balancer.ingress[0].ip
                 return (
                     f"http://{ingress_ip}/seldon/{self.namespace}/{self.model_name}"
-                    + self.protocol.get_predict_path()
+                    + self.protocol.get_predict_path(model_details)
                 )
             else:
                 # TODO check why needed this here

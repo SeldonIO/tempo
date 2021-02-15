@@ -71,7 +71,7 @@ class KFServingV2Protocol(Protocol):
             return np.ndarray
         return ty
 
-    def to_protocol_response(self, *args, **kwargs) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         outputs = []
         for idx, raw in enumerate(args):
             raw_type = type(raw)
@@ -93,7 +93,7 @@ class KFServingV2Protocol(Protocol):
                 )
             else:
                 raise ValueError(f"Unknown input type {raw_type}")
-        return {"outputs": outputs}
+        return {"model_name":model_details.name, "outputs": outputs}
 
     def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
         inp = {}
@@ -182,7 +182,7 @@ class KFServingV1Protocol(Protocol):
             return np.ndarray
         return ty
 
-    def to_protocol_response(self, *args, **kwargs) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         outputs = []
         if len(args) > 0:
             for idx, raw in enumerate(args):

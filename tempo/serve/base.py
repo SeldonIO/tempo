@@ -151,9 +151,9 @@ class BaseModel:
                 response = self._user_func(req_converted)
 
         if type(response) == dict:
-            response_converted = self.protocol.to_protocol_response(**response)
+            response_converted = self.protocol.to_protocol_response(self.details, **response)
         elif type(response) == list or type(response) == tuple:
-            response_converted = self.protocol.to_protocol_response(*response)
+            response_converted = self.protocol.to_protocol_response(self.details, *response)
         else:
-            response_converted = self.protocol.to_protocol_response(response)
+            response_converted = self.protocol.to_protocol_response(self.details, response)
         return response_converted

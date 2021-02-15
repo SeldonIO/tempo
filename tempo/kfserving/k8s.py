@@ -3,7 +3,8 @@ import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 import time
-from typing import Dict
+from typing import Dict, Any
+import requests
 
 from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV1Protocol
@@ -58,6 +59,14 @@ class KFServingKubernetesRuntime(Runtime):
         )
         service_host = endpoint.get_service_host()
         return {"Host":service_host}
+
+    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+        protocol = self.get_protocol()
+        req = protocol.to_protocol_request(*args, **kwargs)
+        endpoint = self.get_endpoint(model_details)
+        headers = self.get_headers(model_details)
+        response_raw = requests.post(endpoint, json=req, headers=headers)
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def undeploy(self, model_details: ModelDetails):
         api_instance = client.CustomObjectsApi()

@@ -1,8 +1,10 @@
 import docker
 import json
 import socket
+import requests
 
 from docker.models.containers import Container
+from typing import Any
 
 from tempo.serve.protocol import Protocol
 from tempo.serve.runtime import Runtime
@@ -40,8 +42,12 @@ class SeldonDockerRuntime(Runtime):
 
         return f"http://{host_ip}:{host_port}{predict_path}"
 
-    def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
-        return {}
+    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+        protocol = self.get_protocol()
+        req = protocol.to_protocol_request(*args, **kwargs)
+        endpoint = self.get_endpoint(model_details)
+        response_raw = requests.post(endpoint, json=req)
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def deploy(self, model_details: ModelDetails):
         parameters = [{"name": "model_uri", "value": "/mnt/models", "type": "STRING"}]

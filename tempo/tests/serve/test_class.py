@@ -21,7 +21,7 @@ import pytest
                 ]
             },
             {
-                "model_name": "test",
+                "model_name": "mypipeline",
                 "outputs": [
                     {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
                 ],

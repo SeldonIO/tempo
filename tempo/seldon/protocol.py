@@ -35,7 +35,7 @@ class SeldonProtocol(Protocol):
 
         raise ValueError(f"Unknown input type {raw_type}")
 
-    def to_protocol_response(self, *args, **kwargs) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         return self.to_protocol_request(*args, **kwargs)
 
     def from_protocol_request(
