@@ -117,7 +117,7 @@ class SeldonDeployRuntime(Runtime):
         endpoint = Endpoint(
             model_details.name, self._k8s_options.namespace, self.protocol
         )
-        return endpoint.get_url()
+        return endpoint.get_url(model_details)
 
     def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
         return {}

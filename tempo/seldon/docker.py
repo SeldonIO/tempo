@@ -70,7 +70,7 @@ class SeldonDockerRuntime(Runtime):
     def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
         container = self._get_container(model_details)
         print(container.status)
-        return container.status == "Running"
+        return container.status == "running"
 
     def _get_available_port(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

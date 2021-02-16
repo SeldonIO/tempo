@@ -42,13 +42,6 @@ class Model(BaseModel):
 
         return types.MethodType(self, instance)
 
-
-    def __call__(self, *args, **kwargs) -> Any:
-        if self._user_func is not None:
-            return self._user_func(*args, **kwargs)
-        else:
-            return self._runtime.remote(self.details, *args, **kwargs)
-
     def deploy(self):
         self._runtime.deploy(self.details)
 
@@ -70,3 +63,12 @@ class Model(BaseModel):
 
     def wait_ready(self, timeout_secs=None):
         return self._runtime.wait_ready(self.details, timeout_secs=timeout_secs)
+
+    def remote(self, *args, **kwargs):
+        return self._runtime.remote(self.details, *args, **kwargs)
+
+    def __call__(self, *args, **kwargs) -> Any:
+        if self._user_func is not None:
+            return self._user_func(*args, **kwargs)
+        else:
+            return self._runtime.remote(self.details, *args, **kwargs)

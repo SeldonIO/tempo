@@ -41,9 +41,12 @@ def pipeline(
             )
             setattr(K, "deploy", K.pipeline.deploy)
             setattr(K, "deploy_models", K.pipeline.deploy_models)
+            setattr(K, "wait_ready", K.pipeline.wait_ready)
             setattr(K, "undeploy", K.pipeline.undeploy)
             setattr(K, "undeploy_models", K.pipeline.undeploy_models)
             setattr(K, "request", K.pipeline.request)
+            setattr(K, "set_runtime", K.pipeline.set_runtime)
+            setattr(K, "to_k8s_yaml", K.pipeline.to_k8s_yaml)
 
             orig_init = K.__init__
             # Make copy of original __init__, so we can call it without recursion
