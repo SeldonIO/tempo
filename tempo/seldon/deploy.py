@@ -1,12 +1,13 @@
+import requests
+
 from tempo.serve.metadata import ModelDetails, KubernetesOptions
 from tempo.serve.runtime import Runtime
-from seldon_deploy_sdk import ApiClient
 from seldon_deploy_sdk.models.seldon_deployment import SeldonDeployment
 from seldon_deploy_sdk.models.seldon_deployment_spec import SeldonDeploymentSpec
 from seldon_deploy_sdk.models.predictor_spec import PredictorSpec
 from seldon_deploy_sdk.models.predictive_unit import PredictiveUnit
 from seldon_deploy_sdk.models.object_meta import ObjectMeta
-from seldon_deploy_sdk import SeldonDeploymentsApi
+from seldon_deploy_sdk import SeldonDeploymentsApi, PredictApi
 
 from tempo.seldon.k8s import Implementations
 from tempo.seldon.protocol import SeldonProtocol
@@ -16,6 +17,7 @@ from seldon_deploy_sdk.auth import SessionAuthenticator
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from http import cookies
 from enum import Enum
+from typing import Dict, Any
 import time
 
 
@@ -24,6 +26,7 @@ class SeldonDeployAuthType(Enum):
 
 
 class SeldonDeployRuntime(Runtime):
+
     def __init__(
         self,
         host: str,
@@ -114,7 +117,18 @@ class SeldonDeployRuntime(Runtime):
         endpoint = Endpoint(
             model_details.name, self._k8s_options.namespace, self.protocol
         )
-        return endpoint.get_url()
+        return endpoint.get_url(model_details)
+
+    def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
+        return {}
+
+    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+        api_client = self._get_api_client()
+        protocol = self.get_protocol()
+        req = protocol.to_protocol_request(*args, **kwargs)
+        predict_instance = PredictApi(api_client)
+        prediction = predict_instance.predict_seldon_deployment(model_details.name, self._k8s_options.namespace, prediction=req)
+        return protocol.from_protocol_response(prediction, model_details.outputs)
 
     def get_protocol(self):
         return self.protocol

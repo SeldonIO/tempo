@@ -9,7 +9,7 @@ from typing import Generator
 
 from kubernetes import client, config
 
-from tempo.serve.metadata import ModelFramework
+from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline
@@ -41,7 +41,7 @@ def docker_runtime() -> Generator[SeldonDockerRuntime, None, None]:
 
 @pytest.fixture
 def docker_runtime_v2() -> Generator[KFServingV2Protocol, None, None]:
-    runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol("test"))
+    runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol())
 
     yield runtime
 
@@ -64,7 +64,7 @@ def k8s_namespace() -> Generator[str, None, None]:
 
 @pytest.fixture
 def k8s_runtime(k8s_namespace: str) -> SeldonKubernetesRuntime:
-    return SeldonKubernetesRuntime(k8s_namespace)
+    return SeldonKubernetesRuntime(k8s_options=KubernetesOptions(namespace=k8s_namespace))
 
 
 @pytest.fixture
@@ -74,7 +74,7 @@ def k8s_sklearn_model(
     sklearn_model._runtime = k8s_runtime
 
     sklearn_model.deploy()
-    time.sleep(40)
+    sklearn_model.wait_ready(timeout_secs=60)
 
     yield sklearn_model
 

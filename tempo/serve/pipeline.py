@@ -55,6 +55,12 @@ class Pipeline(BaseModel):
         self.deploy_models()
         # TODO add deploy pipeline itself
 
+    def wait_ready(self, timeout_secs: int=None) -> bool:
+        for model in self._models:
+            if not model.wait_ready(timeout_secs=timeout_secs):
+                return False
+        return True
+
     def undeploy_models(self):
         logger.info("undeploying models for %s", self.details.name)
         for model in self._models:
@@ -66,6 +72,21 @@ class Pipeline(BaseModel):
         """
         self.undeploy_models()
         # TODO undeploy pipeline
+
+    def set_runtime(self, runtime: Runtime):
+        for model in self._models:
+            model.set_runtime(runtime)
+
+    def remote(self, *args, **kwargs):
+        return self._runtime.remote(self.details, *args, **kwargs)
+
+    def to_k8s_yaml(self) -> str:
+        yamls = ""
+        for model in self._models:
+            y = model.to_k8s_yaml()
+            yamls += y
+            yamls += "\n---\n"
+        return yamls
 
     def __call__(self, raw: Any) -> Any:
         return self._user_func(raw)

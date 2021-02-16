@@ -4,7 +4,7 @@ import abc
 import attr
 
 from typing import Dict, Any, List
-from tempo.serve.metadata import ModelDataArgs
+from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
 
 @attr.s(auto_attribs=True)
@@ -14,7 +14,7 @@ class Protocol(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def to_protocol_response(self, *args, **kwargs) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         pass
 
     @abc.abstractmethod
@@ -26,5 +26,5 @@ class Protocol(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_predict_path(self) -> str:
+    def get_predict_path(self, model_details: ModelDetails) -> str:
         pass

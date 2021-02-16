@@ -1,8 +1,10 @@
 import docker
 import json
 import socket
+import requests
 
 from docker.models.containers import Container
+from typing import Any
 
 from tempo.serve.protocol import Protocol
 from tempo.serve.runtime import Runtime
@@ -28,7 +30,7 @@ class SeldonDockerRuntime(Runtime):
     def get_protocol(self) -> Protocol:
         return self.protocol
 
-    def get_endpoint(self, model_details: ModelDetails):
+    def get_endpoint(self, model_details: ModelDetails) -> str:
         container = self._get_container(model_details)
         host_ports = container.ports[self.ContainerPort]
 
@@ -36,9 +38,16 @@ class SeldonDockerRuntime(Runtime):
         host_port = host_ports[0]["HostPort"]
 
         protocol = self.get_protocol()
-        predict_path = protocol.get_predict_path()
+        predict_path = protocol.get_predict_path(model_details)
 
         return f"http://{host_ip}:{host_port}{predict_path}"
+
+    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+        protocol = self.get_protocol()
+        req = protocol.to_protocol_request(*args, **kwargs)
+        endpoint = self.get_endpoint(model_details)
+        response_raw = requests.post(endpoint, json=req)
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def deploy(self, model_details: ModelDetails):
         parameters = [{"name": "model_uri", "value": "/mnt/models", "type": "STRING"}]
@@ -61,7 +70,7 @@ class SeldonDockerRuntime(Runtime):
     def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
         container = self._get_container(model_details)
         print(container.status)
-        return container.status == "Running"
+        return container.status == "running"
 
     def _get_available_port(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

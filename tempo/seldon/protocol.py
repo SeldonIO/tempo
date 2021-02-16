@@ -6,11 +6,11 @@ from typing import Union, Type, Optional, Dict, List, Any
 from tensorflow.core.framework.tensor_pb2 import TensorProto
 from google.protobuf import json_format
 from tempo.serve.protocol import Protocol
-from tempo.serve.metadata import ModelDataArgs
+from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
 
 class SeldonProtocol(Protocol):
-    def get_predict_path(self):
+    def get_predict_path(self, model_details: ModelDetails):
         # TODO: K8s backend needs to add namespace and model name
         #  return f"/seldon/{model_details.namespace}/{model_details.name}/api/v1.0/predictions"
         return "/api/v1.0/predictions"
@@ -35,7 +35,7 @@ class SeldonProtocol(Protocol):
 
         raise ValueError(f"Unknown input type {raw_type}")
 
-    def to_protocol_response(self, *args, **kwargs) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         return self.to_protocol_request(*args, **kwargs)
 
     def from_protocol_request(

@@ -57,7 +57,7 @@ def test_seldon_pipeline_request_docker(
                 ]
             },
             {
-                "model_name": "test",
+                "model_name": "inference-pipeline",
                 "outputs": [
                     {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
                 ],

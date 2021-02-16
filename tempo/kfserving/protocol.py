@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Type, Dict, Any, List, Tuple
 from tempo.serve.protocol import Protocol
-from tempo.serve.metadata import ModelDataArgs
+from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
 _v2tymap = {
     "BOOL": np.dtype("bool"),
@@ -23,8 +23,6 @@ _nptymap[np.dtype("float32")] = "FP32"  # Ensure correct mapping for ambiguous t
 
 
 class KFServingV2Protocol(Protocol):
-    def __init__(self, model_name: str):
-        self.model_name = model_name
 
     @staticmethod
     def create_v2_from_np(arr: np.ndarray, name: str) -> Dict:
@@ -48,8 +46,8 @@ class KFServingV2Protocol(Protocol):
         else:
             raise ValueError(f"V2 unknown type or type that can't be coerced {ty}")
 
-    def get_predict_path(self):
-        return f"/v2/models/{self.model_name}/infer"
+    def get_predict_path(self, model_details: ModelDetails):
+        return f"/v2/models/{model_details.name}/infer"
 
     def to_protocol_request(self, *args, **kwargs) -> Dict:
         if len(args) > 0:
@@ -73,7 +71,7 @@ class KFServingV2Protocol(Protocol):
             return np.ndarray
         return ty
 
-    def to_protocol_response(self, *args, **kwargs) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         outputs = []
         for idx, raw in enumerate(args):
             raw_type = type(raw)
@@ -95,7 +93,7 @@ class KFServingV2Protocol(Protocol):
                 )
             else:
                 raise ValueError(f"Unknown input type {raw_type}")
-        return {"model_name": self.model_name, "outputs": outputs}
+        return {"model_name":model_details.name, "outputs": outputs}
 
     def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
         inp = {}
@@ -132,3 +130,123 @@ class KFServingV2Protocol(Protocol):
             return list(out.values())[0]
         else:
             return out
+
+
+class KFServingV1Protocol(Protocol):
+
+    @staticmethod
+    def create_v1_from_np(arr: np.ndarray, name: str= None) -> list:
+        return arr.tolist()
+
+    @staticmethod
+    def create_np_from_v1(data: list) -> np.array:
+        arr = np.array(data)
+        return arr
+
+    def get_predict_path(self, model_details: ModelDetails):
+        return f"/v1/models/{model_details.name}:predict"
+
+    def to_protocol_request(self, *args, **kwargs) -> Dict:
+        if len(args) > 0 and len(kwargs.values()) > 0:
+            raise ValueError("KFserving V1 protocol only supports either named or unamed arguments but not both")
+
+        inputs = []
+        if len(args) > 0:
+            for raw in args:
+                raw_type = type(raw)
+
+                if raw_type == np.ndarray:
+                    inputs.append(KFServingV1Protocol.create_v1_from_np(raw))
+        else:
+            for (name, raw) in kwargs.items():
+                raw_type = type(raw)
+
+                if raw_type == np.ndarray:
+                    inputs.append(KFServingV1Protocol.create_v1_from_np(raw, name))
+                else:
+                    raise ValueError(f"Unknown input type {raw_type}")
+
+        if len(inputs) == 1:
+            return {"instances": inputs[0]}
+        else:
+            return {"instances": inputs}
+
+    @staticmethod
+    def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Type:
+        ty = None
+        if name is not None:
+            ty = tys[name]
+        if ty is None:
+            ty = tys[idx]
+        if ty is None:
+            return np.ndarray
+        return ty
+
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
+        outputs = []
+        if len(args) > 0:
+            for idx, raw in enumerate(args):
+                raw_type = type(raw)
+
+                if raw_type == np.ndarray:
+                    outputs.append(
+                       KFServingV1Protocol.create_v1_from_np(raw)
+                    )
+                else:
+                    raise ValueError(f"Unknown input type {raw_type}")
+        else:
+            for name, raw in kwargs.items():
+                raw_type = type(raw)
+
+                if raw_type == np.ndarray:
+                    data = raw.tolist()
+                    outputs.append(
+                        {name: data}
+                    )
+                else:
+                    raise ValueError(f"Unknown input type {raw_type}")
+        return {"predictions": outputs}
+
+    def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
+        inp = {}
+        for idx, input in enumerate(res["inputs"]):
+            ty = KFServingV1Protocol.get_ty(input["name"], idx, tys)
+
+            if ty == np.ndarray:
+                arr = KFServingV2Protocol.create_np_from_v2(
+                    input["data"], input["datatype"], input["shape"]
+                )
+                inp[input["name"]] = arr
+            else:
+                raise ValueError(f"Unknown ty {ty} in conversion")
+
+        if len(inp) == 1:
+            return list(inp.values())[0]
+        else:
+            return inp
+
+    def from_protocol_response(self, res: Dict, tys: ModelDataArgs) -> Any:
+        if len(tys) <= 1:
+            ty = KFServingV1Protocol.get_ty(None, 0, tys)
+
+            if ty == np.ndarray:
+                return KFServingV1Protocol.create_np_from_v1(res["predictions"])
+            else:
+                raise ValueError(f"Unknown ty {ty} in conversion")
+        else:
+            out = []
+            for idx, output in enumerate(res["predictions"]):
+                if type(output) == list:
+                    for idx2, it in enumerate(output):
+                        ty = KFServingV1Protocol.get_ty(None, idx, tys)
+
+                        if ty == np.ndarray:
+                            arr = KFServingV1Protocol.create_np_from_v1(it)
+                            out.append(arr)
+                        else:
+                            raise ValueError(f"Unknown ty {ty} in conversion")
+
+            if len(out) == 1:
+                return out[0]
+            else:
+                return out

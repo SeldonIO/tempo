@@ -3,6 +3,7 @@ import os
 from tempo.utils import logger
 from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDetails
+from urllib.parse import urlparse
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 ISTIO_GATEWAY = "istio"
@@ -11,12 +12,10 @@ ISTIO_GATEWAY = "istio"
 class Endpoint(object):
     """A Model Endpoint
 
-    Only handles istio and seldon at present.
-
     """
 
     def __init__(
-        self, model_name, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY
+        self, model_details: ModelDetails, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY
     ):
         self.inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         try:
@@ -29,11 +28,26 @@ class Endpoint(object):
         except:
             logger.warning("Failed to load kubeconfig. Only local mode is possible.")
         self.gateway = gateway
-        self.model_name = model_name
+        self.model_details = model_details
         self.namespace = namespace
         self.protocol = protocol
 
-    def get_url(self, model_details: ModelDetails):
+    def get_service_host(self):
+        if self.inside_cluster is not None:
+            config.load_incluster_config()
+        api_instance = client.CustomObjectsApi()
+        api_response = api_instance.get_namespaced_custom_object_status(
+            "serving.kubeflow.org",
+            "v1alpha2",
+            self.namespace,
+            "inferenceservices",
+            self.model_details.name,
+        )
+        url =  api_response["status"]["url"]
+        o = urlparse(url)
+        return o.hostname
+
+    def get_url(self):
         if self.gateway == ISTIO_GATEWAY:
             if self.inside_cluster is None:
                 api_instance = client.CoreV1Api()
@@ -42,19 +56,19 @@ class Endpoint(object):
                 )
                 ingress_ip = res.items[0].status.load_balancer.ingress[0].ip
                 return (
-                    f"http://{ingress_ip}/seldon/{self.namespace}/{self.model_name}"
-                    + self.protocol.get_predict_path(model_details)
+                    f"http://{ingress_ip}"
+                    + self.protocol.get_predict_path(self.model_details)
                 )
             else:
                 # TODO check why needed this here
                 config.load_incluster_config()
                 api_instance = client.CustomObjectsApi()
                 api_response = api_instance.get_namespaced_custom_object_status(
-                    "machinelearning.seldon.io",
-                    "v1",
+                    "serving.kubeflow.org",
+                    "v1alpha2",
                     self.namespace,
-                    "seldondeployments",
-                    self.model_name,
+                    "inferenceservices",
+                    self.model_details.name,
                 )
                 return api_response["status"]["address"]["url"]
         else:

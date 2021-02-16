@@ -23,10 +23,11 @@ def test_deploy():
         local_folder=os.getcwd() + "/sklearn",
     )
 
-    # sklearn_model.deploy()
+    sklearn_model.deploy()
+    sklearn_model.wait_ready()
     sklearn_model(np.array([[4.9, 3.1, 1.5, 0.2]]))
 
-#@pytest.mark.skip("needs deploy cluster")
+@pytest.mark.skip("needs deploy cluster")
 def test_deploy_yaml():
     rt = SeldonDeployRuntime(
         host="http://34.105.136.157/seldon-deploy/api/v1alpha1",

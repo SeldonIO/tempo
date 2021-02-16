@@ -13,7 +13,7 @@ def test_deploy_k8s(k8s_sklearn_model: Model, k8s_runtime: SeldonKubernetesRunti
     sdep = crd_api.get_namespaced_custom_object(
         "machinelearning.seldon.io",
         "v1",
-        k8s_runtime.namespace,
+        k8s_runtime.k8s_options.namespace,
         "seldondeployments",
         k8s_sklearn_model.details.name,
     )
