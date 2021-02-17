@@ -40,6 +40,7 @@ setup(
     python_requires=">=3.6",
     setup_requires=["pytest-runner"],
     install_requires=[
+        "attrs",
         "numpy",
         "kubernetes",
         "docker",

@@ -53,9 +53,9 @@ class Pipeline(BaseModel):
         Deploy all models and the pipeline.
         """
         self.deploy_models()
-        # TODO add deploy pipeline itself
+        self._runtime.deploy(self.details)
 
-    def wait_ready(self, timeout_secs: int=None) -> bool:
+    def wait_ready(self, timeout_secs: int = None) -> bool:
         for model in self._models:
             if not model.wait_ready(timeout_secs=timeout_secs):
                 return False
@@ -70,8 +70,8 @@ class Pipeline(BaseModel):
         """
         Undeploy all models and pipeline.
         """
+        self._runtime.undeploy(self.details)
         self.undeploy_models()
-        # TODO undeploy pipeline
 
     def set_runtime(self, runtime: Runtime):
         for model in self._models:
