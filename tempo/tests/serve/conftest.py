@@ -40,8 +40,8 @@ def docker_runtime() -> Generator[SeldonDockerRuntime, None, None]:
 
 
 @pytest.fixture
-def docker_runtime_v2() -> Generator[KFServingV2Protocol, None, None]:
-    runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol())
+def docker_runtime_v2() -> Generator[SeldonDockerRuntime, None, None]:
+    runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol)
 
     yield runtime
 
@@ -64,7 +64,9 @@ def k8s_namespace() -> Generator[str, None, None]:
 
 @pytest.fixture
 def k8s_runtime(k8s_namespace: str) -> SeldonKubernetesRuntime:
-    return SeldonKubernetesRuntime(k8s_options=KubernetesOptions(namespace=k8s_namespace))
+    return SeldonKubernetesRuntime(
+        k8s_options=KubernetesOptions(namespace=k8s_namespace)
+    )
 
 
 @pytest.fixture
@@ -115,11 +117,11 @@ def xgboost_model(xgboost_iris_path: str, docker_runtime: SeldonDockerRuntime) -
 
 @pytest.fixture
 def inference_pipeline(
-    sklearn_model: Model, xgboost_model: Model, docker_runtime: SeldonDockerRuntime
+    sklearn_model: Model, xgboost_model: Model, docker_runtime_v2: SeldonDockerRuntime
 ) -> Generator[Pipeline, None, None]:
     @pipeline(
         name="inference-pipeline",
-        runtime=docker_runtime,
+        runtime=docker_runtime_v2,
         models=[sklearn_model, xgboost_model],
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
@@ -129,6 +131,7 @@ def inference_pipeline(
         else:
             return xgboost_model(payload)
 
+    _pipeline.save()
     _pipeline.deploy()
     time.sleep(2)
 
