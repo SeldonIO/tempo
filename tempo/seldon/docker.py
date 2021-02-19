@@ -1,6 +1,7 @@
 import docker
 import socket
 import requests
+import os
 
 from typing import Any
 
@@ -32,15 +33,19 @@ class SeldonDockerRuntime(Runtime):
         return self.protocol
 
     def get_endpoint(self, model_details: ModelDetails) -> str:
+        protocol = self.get_protocol()
+        predict_path = protocol.get_predict_path(model_details)
+
+        if self._is_inside_docker():
+            # If inside Docker, use internal networking
+            return f"http://{model_details.name}:{DefaultHTTPPort}{predict_path}"
+
         container = self._get_container(model_details)
         port_index = self._get_port_index()
         host_ports = container.ports[port_index]
 
         host_ip = host_ports[0]["HostIp"]
         host_port = host_ports[0]["HostPort"]
-
-        protocol = self.get_protocol()
-        predict_path = protocol.get_predict_path(model_details)
 
         return f"http://{host_ip}:{host_port}{predict_path}"
 
@@ -107,6 +112,15 @@ class SeldonDockerRuntime(Runtime):
 
     def _get_container_name(self, model_details: ModelDetails):
         return model_details.name
+
+    def _is_inside_docker(self) -> bool:
+        # From https://stackoverflow.com/a/48710609/5015573
+        path = "/proc/self/cgroup"
+        return (
+            os.path.exists("/.dockerenv")
+            or os.path.isfile(path)
+            and any("docker" in line for line in open(path))
+        )
 
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
         raise NotImplementedError()
