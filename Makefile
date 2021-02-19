@@ -41,7 +41,8 @@ build-protos: tempo
 	./metadata/grpc_core_service.proto
 
 
-tempo/tests/examples/sklearn:
+.PHONY: tempo/tests/examples
+tempo/tests/examples:
 	mkdir -p tempo/tests/examples
 	cd tempo/tests/examples && \
 		gsutil cp -r gs://seldon-models/sklearn . && \
