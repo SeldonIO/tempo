@@ -9,30 +9,73 @@ from tempo.seldon.docker import SeldonDockerRuntime
 
 
 def test_deploy_pipeline_docker(
-    inference_pipeline: Pipeline, docker_runtime: SeldonDockerRuntime
+    inference_pipeline: Pipeline,
+    docker_runtime: SeldonDockerRuntime,
+    docker_runtime_v2: SeldonDockerRuntime,
 ):
     for model in inference_pipeline._models:
         container = docker_runtime._get_container(model.details)
         assert container.status == "running"
 
+    pipeline_container = docker_runtime_v2._get_container(inference_pipeline.details)
+    assert pipeline_container.status == "running"
+
 
 @pytest.mark.parametrize(
     "x_input",
     [
-        [[1, 2, 3, 4]],
+        pytest.param(
+            [[1, 2, 3, 4]],
+            marks=pytest.mark.skip(reason="not supported with KFServingV2Protocol"),
+        ),
         np.array([[0.5, 2, 3, 4]]),
-        {"data": {"ndarray": [[0.4, 2, 3, 4]]}},
+        pytest.param(
+            {
+                "inputs": [
+                    {
+                        "name": "payload",
+                        "shape": [1, 4],
+                        "datatype": "INT32",
+                        "data": [[0.4, 2, 3, 4]],
+                    }
+                ]
+            },
+            marks=pytest.mark.skip(reason="not supported with KFServingV2Protocol"),
+        ),
     ],
 )
 def test_pipeline_docker(inference_pipeline: Pipeline, x_input):
-    y_pred = inference_pipeline(x_input)
+    y_pred = inference_pipeline.remote(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)
 
 
 @pytest.mark.parametrize(
     "x_input, expected",
-    [({"data": {"ndarray": [[0.4, 2, 3, 4]]}}, {"data": {"ndarray": [2.0]}})],
+    [
+        (
+            {
+                "inputs": [
+                    {
+                        "name": "payload",
+                        "data": [[0.4, 2, 3, 4]],
+                        "shape": [1, 4],
+                        "datatype": "INT32",
+                    }
+                ]
+            },
+            {
+                "inputs": [
+                    {
+                        "name": "payload",
+                        "data": [2.0],
+                        "shape": [1],
+                        "datatype": "INT32",
+                    }
+                ]
+            },
+        )
+    ],
 )
 def test_seldon_pipeline_request_docker(
     inference_pipeline: Pipeline, x_input, expected
