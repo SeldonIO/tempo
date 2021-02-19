@@ -121,18 +121,15 @@ class BaseModel:
 
         save_custom(self, file_path)
 
+        # Save environment as well in `local_folder`
+        # TODO: Should this be handled in `file_path`?
+        #  file_path = os.path.join(self.details.local_folder, DefaultEnvFilename)
+        #  save_environment(file_path=file_path)
+
     def upload(self):
         """
         Upload from local folder to uri
         """
-        # Save to local_folder before uploading
-        self.save()
-
-        # Save environment as well in `local_folder`
-        # TODO: Should this be handled in `file_path`?
-        file_path = os.path.join(self.details.local_folder, DefaultEnvFilename)
-        save_environment(file_path=file_path)
-
         upload(self.details.local_folder, self.details.uri)
 
     def download(self):
