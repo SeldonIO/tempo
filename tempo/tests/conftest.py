@@ -18,7 +18,7 @@ from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.utils import predictmethod
 
-TESTS_PATH = os.path.dirname(os.path.dirname(__file__))
+TESTS_PATH = os.path.dirname(__file__)
 EXAMPLES_PATH = os.path.join(TESTS_PATH, "examples")
 
 K8S_NAMESPACE_PREFIX = "test-tempo-"
@@ -70,6 +70,14 @@ def k8s_runtime(k8s_namespace: str) -> SeldonKubernetesRuntime:
 
 
 @pytest.fixture
+def k8s_runtime_v2(k8s_namespace: str) -> SeldonKubernetesRuntime:
+    return SeldonKubernetesRuntime(
+        k8s_options=KubernetesOptions(namespace=k8s_namespace),
+        protocol=KFServingV2Protocol(),
+    )
+
+
+@pytest.fixture
 def k8s_sklearn_model(
     sklearn_model: Model, k8s_runtime: SeldonKubernetesRuntime
 ) -> Generator[Model, None, None]:
@@ -81,6 +89,48 @@ def k8s_sklearn_model(
     yield sklearn_model
 
     sklearn_model.undeploy()
+
+
+@pytest.fixture
+def k8s_inference_pipeline(
+    sklearn_model: Model, xgboost_model: Model, k8s_runtime_v2: SeldonKubernetesRuntime,
+):
+    # TODO: Change once SKLEARN_SERVER image is fixed
+    sklearn_model._runtime = k8s_runtime_v2
+    xgboost_model._runtime = k8s_runtime_v2
+
+    @pipeline(
+        name="classifier",
+        runtime=k8s_runtime_v2,
+        models=[sklearn_model, xgboost_model],
+        uri="gs://seldon-models/tempo/test",
+    )
+    def _pipeline(payload: np.ndarray) -> np.ndarray:
+        print("DEBUG: Hello World")
+        res1 = sklearn_model(payload=payload)
+        if res1[0][0] > 0.7:
+            print("DEBUG: Hello World 2")
+            return res1
+        else:
+            print("DEBUG: Hello World 3")
+            return xgboost_model(payload=payload)
+
+    _pipeline.save()
+    _pipeline.upload()
+    _pipeline.deploy()
+    _pipeline.wait_ready(timeout_secs=60)
+
+    # TODO: Pipeline shouldn't become ready until models are ready
+    sklearn_model.wait_ready(timeout_secs=60)
+    xgboost_model.wait_ready(timeout_secs=60)
+
+    yield _pipeline
+
+    try:
+        _pipeline.undeploy()
+    except docker.errors.NotFound:
+        # Ignore if the pipeline was already undeployed
+        pass
 
 
 @pytest.fixture
@@ -110,7 +160,7 @@ def xgboost_model(xgboost_iris_path: str, docker_runtime: SeldonDockerRuntime) -
         name="test-iris-xgboost",
         runtime=docker_runtime,
         platform=ModelFramework.XGBoost,
-        uri="gs://seldon-models/sklearn/iris",
+        uri="gs://seldon-models/xgboost/iris",
         local_folder=xgboost_iris_path,
     )
 
@@ -120,7 +170,7 @@ def inference_pipeline(
     sklearn_model: Model, xgboost_model: Model, docker_runtime_v2: SeldonDockerRuntime
 ) -> Generator[Pipeline, None, None]:
     @pipeline(
-        name="inference-pipeline",
+        name="classifier",
         runtime=docker_runtime_v2,
         models=[sklearn_model, xgboost_model],
     )

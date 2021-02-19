@@ -78,6 +78,9 @@ class KubernetesSpec:
         ModelFramework.PyTorch: "TRITON_SERVER",
         ModelFramework.ONNX: "TRITON_SERVER",
         ModelFramework.TensorRT: "TRITON_SERVER",
+        # TODO: We need to set an implementation in order to get the init
+        # container injected into the spec
+        ModelFramework.TempoPipeline: "TRITON_SERVER",
     }
 
     def __init__(
@@ -106,10 +109,9 @@ class KubernetesSpec:
         }
 
     def _get_predictor(self) -> dict:
-        graph = {
-            "modelUri": self._details.uri,
-            "name": "classifier",
-        }
+        # TODO: We need to insert `type: MODEL`, otherwise the validation
+        # webhook complains
+        graph = {"modelUri": self._details.uri, "name": "classifier", "type": "MODEL"}
 
         if self._details.platform in self.Implementations:
             model_implementation = self.Implementations[self._details.platform]
@@ -141,6 +143,9 @@ class KubernetesSpec:
                             "name": "classifier",
                             "image": container_spec["image"],
                             "env": container_env,
+                            # TODO: Necessary to override Triton defaults (see
+                            # note above)
+                            "args": [],
                         }
                     ]
                 }

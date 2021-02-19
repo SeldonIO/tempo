@@ -24,6 +24,7 @@ def test_kubernetes_spec(sklearn_model: Model):
                     "graph": {
                         "modelUri": sklearn_model.details.uri,
                         "name": "classifier",
+                        "type": "MODEL",
                         "implementation": KubernetesSpec.Implementations[
                             sklearn_model.details.platform
                         ],
@@ -72,12 +73,18 @@ def test_kubernetes_spec_pipeline():
                                         "name": "classifier",
                                         "image": container_spec["image"],
                                         "env": container_env,
+                                        "args": [],
                                     }
                                 ]
                             }
                         }
                     ],
-                    "graph": {"modelUri": details.uri, "name": "classifier"},
+                    "graph": {
+                        "modelUri": details.uri,
+                        "name": "classifier",
+                        "type": "MODEL",
+                        "implementation": "TRITON_SERVER",
+                    },
                     "name": "default",
                     "replicas": options.replicas,
                 }
