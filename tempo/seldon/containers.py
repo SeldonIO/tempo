@@ -14,7 +14,7 @@ def get_container_spec(model_details: ModelDetails, protocol: Protocol) -> dict:
     if model_details.platform == ModelFramework.TempoPipeline:
         return _V2ContainerFactory.get_container_spec(model_details)
 
-    if protocol == KFServingV2Protocol:
+    if isinstance(protocol, KFServingV2Protocol):
         return _V2ContainerFactory.get_container_spec(model_details)
 
     return _V1ContainerFactory.get_container_spec(model_details)

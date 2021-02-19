@@ -41,7 +41,7 @@ def docker_runtime() -> Generator[SeldonDockerRuntime, None, None]:
 
 @pytest.fixture
 def docker_runtime_v2() -> Generator[SeldonDockerRuntime, None, None]:
-    runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol)
+    runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol())
 
     yield runtime
 
