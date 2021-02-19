@@ -44,7 +44,7 @@ def test_deploy_pipeline_docker(
         ),
     ],
 )
-def test_pipeline_docker(inference_pipeline: Pipeline, x_input):
+def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
     y_pred = inference_pipeline.remote(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)
@@ -57,22 +57,18 @@ def test_pipeline_docker(inference_pipeline: Pipeline, x_input):
             {
                 "inputs": [
                     {
-                        "name": "payload",
-                        "data": [[0.4, 2, 3, 4]],
+                        "name": "input0",
+                        "datatype": "FP64",
                         "shape": [1, 4],
-                        "datatype": "INT32",
+                        "data": [0.4, 2, 3, 4],
                     }
                 ]
             },
             {
-                "inputs": [
-                    {
-                        "name": "payload",
-                        "data": [2.0],
-                        "shape": [1],
-                        "datatype": "INT32",
-                    }
-                ]
+                "model_name": "inference-pipeline",
+                "outputs": [
+                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
+                ],
             },
         )
     ],

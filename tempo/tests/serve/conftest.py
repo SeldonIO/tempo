@@ -133,7 +133,7 @@ def inference_pipeline(
 
     _pipeline.save()
     _pipeline.deploy()
-    time.sleep(2)
+    time.sleep(3)
 
     yield _pipeline
 
