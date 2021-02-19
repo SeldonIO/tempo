@@ -13,7 +13,7 @@ from tempo.serve.protocol import Protocol
 from tempo.serve.runtime import Runtime
 from tempo.serve.metadata import ModelDetails
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.seldon.containers import (
+from tempo.seldon.specs import (
     DefaultHTTPPort,
     DefaultModelsPath,
     get_container_spec,
