@@ -106,13 +106,10 @@ def k8s_inference_pipeline(
         uri="gs://seldon-models/tempo/test",
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
-        print("DEBUG: Hello World")
         res1 = sklearn_model(payload=payload)
         if res1[0][0] > 0.7:
-            print("DEBUG: Hello World 2")
             return res1
         else:
-            print("DEBUG: Hello World 3")
             return xgboost_model(payload=payload)
 
     _pipeline.save()
