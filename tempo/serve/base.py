@@ -4,9 +4,19 @@ import os
 
 from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
 
-from tempo.serve.loader import download, upload, load_custom, save_custom, save_environment
+from tempo.serve.loader import (
+    download,
+    upload,
+    load_custom,
+    save_custom,
+    save_environment,
+)
 from tempo.serve.protocol import Protocol
-from tempo.serve.constants import ModelDataType, DefaultModelFilename, DefaultEnvFilename
+from tempo.serve.constants import (
+    ModelDataType,
+    DefaultModelFilename,
+    DefaultEnvFilename,
+)
 from tempo.serve.metadata import (
     ModelDetails,
     ModelDataArgs,
@@ -151,9 +161,15 @@ class BaseModel:
                 response = self._user_func(req_converted)
 
         if type(response) == dict:
-            response_converted = self.protocol.to_protocol_response(self.details, **response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, **response
+            )
         elif type(response) == list or type(response) == tuple:
-            response_converted = self.protocol.to_protocol_response(self.details, *response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, *response
+            )
         else:
-            response_converted = self.protocol.to_protocol_response(self.details, response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, response
+            )
         return response_converted
