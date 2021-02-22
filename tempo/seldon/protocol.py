@@ -1,10 +1,6 @@
 import numpy as np
-import tensorflow as tf
 
 from typing import Union, Type, Optional, Dict, List, Any
-
-from tensorflow.core.framework.tensor_pb2 import TensorProto
-from google.protobuf import json_format
 from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
@@ -60,10 +56,10 @@ class SeldonProtocol(Protocol):
                     return np.array(tensor["values"]).reshape(tensor["shape"])
                 elif "ndarray" in datadef:
                     return np.array(datadef["ndarray"])
-                elif "tftensor" in datadef:
-                    tf_proto = TensorProto()
-                    json_format.ParseDict(datadef["tftensor"], tf_proto)
-                    return tf.make_ndarray(tf_proto)
+                #elif "tftensor" in datadef:
+                #    tf_proto = TensorProto()
+                #    json_format.ParseDict(datadef["tftensor"], tf_proto)
+                #    return tf.make_ndarray(tf_proto)
 
             raise ValueError(f"Unknown data structure {res}")
 

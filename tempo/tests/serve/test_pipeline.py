@@ -6,6 +6,7 @@ import numpy as np
 
 from tempo.serve.pipeline import Pipeline
 from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.utils import pipeline
 
 
 def test_deploy_pipeline_docker(
@@ -120,12 +121,22 @@ def test_undeploy_pipeline_docker(
             docker_runtime._get_container(model.details)
 
 
-async def test_pipeline_save(inference_pipeline: Pipeline, tmp_path: str):
-    pipeline_path = os.path.join(tmp_path, "pipeline.pickle")
-    inference_pipeline.save(pipeline_path)
+async def test_pipeline_save_run(inference_pipeline: Pipeline, tmp_path: str):
 
-    loaded_pipeline = Pipeline.load(pipeline_path)
+    loaded_pipeline = inference_pipeline.load()
 
     y_pred = loaded_pipeline(np.array([[4.9, 3.1, 1.5, 0.2]]))
 
     np.testing.assert_allclose(y_pred, [[0.8, 0.19, 0.01]], atol=1e-2)
+
+
+def test_pipeline_save(docker_runtime_v2: SeldonDockerRuntime):
+    @pipeline(
+        name="classifier",
+        runtime=docker_runtime_v2,
+        local_folder="/tmp/tempo-pipeline"
+    )
+    def mypipeline(payload: np.ndarray) -> np.ndarray:
+        return payload
+
+    mypipeline.save()

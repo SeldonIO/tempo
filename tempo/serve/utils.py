@@ -15,6 +15,7 @@ def pipeline(
     models: List[Model] = None,
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
+    conda_env: str = None,
 ):
     def _pipeline(f):
         if inspect.isclass(f):
@@ -38,6 +39,7 @@ def pipeline(
                 inputs=inputs,
                 outputs=outputs,
                 pipeline_func=func,
+                conda_env=conda_env,
             )
             setattr(K, "deploy", K.pipeline.deploy)
             setattr(K, "deploy_models", K.pipeline.deploy_models)
@@ -47,6 +49,7 @@ def pipeline(
             setattr(K, "request", K.pipeline.request)
             setattr(K, "set_runtime", K.pipeline.set_runtime)
             setattr(K, "to_k8s_yaml", K.pipeline.to_k8s_yaml)
+            setattr(K, "save", K.pipeline.save)
 
             orig_init = K.__init__
             # Make copy of original __init__, so we can call it without recursion
@@ -67,6 +70,7 @@ def pipeline(
                 inputs=inputs,
                 outputs=outputs,
                 pipeline_func=f,
+                conda_env=conda_env,
             )
 
     return _pipeline

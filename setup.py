@@ -40,6 +40,8 @@ setup(
     python_requires=">=3.6",
     setup_requires=["pytest-runner"],
     install_requires=[
+        "grpcio>=1.32.0",
+        "protobuf>=3.14.0",
         "attrs",
         "numpy",
         "kubernetes",
@@ -52,7 +54,7 @@ setup(
         "seldon-deploy-sdk",
         "conda-pack",
         # TODO: Remove `tensorflow` package coming from protos
-        "tensorflow",
+        #"tensorflow",
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,

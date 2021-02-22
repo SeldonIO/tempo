@@ -170,7 +170,8 @@ def inference_pipeline(
         name="classifier",
         runtime=docker_runtime_v2,
         models=[sklearn_model, xgboost_model],
-    )
+        local_folder="/tmp/tempo-pipeline"
+        )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
         if res1[0][0] > 0.7:

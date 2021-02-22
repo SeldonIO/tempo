@@ -11,6 +11,7 @@ from tempo.serve.loader import (
     save_custom,
     save_environment,
 )
+from tempo.serve.runtime import Runtime
 from tempo.serve.protocol import Protocol
 from tempo.serve.constants import (
     ModelDataType,
@@ -30,16 +31,17 @@ class BaseModel:
         self,
         name: str,
         user_func: Callable[[Any], Any] = None,
-        protocol: Protocol = None,
         local_folder: str = None,
         uri: str = None,
         platform: ModelFramework = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
+        conda_env: str = None,
+        runtime: Runtime = None,
     ):
         self._name = name
         self._user_func = user_func
-        self.protocol = protocol
+        self.conda_env = conda_env
         if uri is None:
             uri = ""
 
@@ -56,6 +58,8 @@ class BaseModel:
         )
 
         self.cls = None
+        self.runtime = runtime
+
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
@@ -107,24 +111,21 @@ class BaseModel:
     def set_cls(self, cls):
         self.cls = cls
 
-    @classmethod
-    def load(cls, file_path: str) -> "BaseModel":
-        return load_custom(file_path)
+    def load(self) -> "BaseModel":
+        file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+        return load_custom(file_path_pkl)
 
-    def save(self, file_path: str = None):
+    def save(self, save_env=True):
         if not self._user_func:
             # Nothing to save
             return
 
-        if file_path is None:
-            file_path = os.path.join(self.details.local_folder, DefaultModelFilename)
+        file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+        save_custom(self, file_path_pkl)
 
-        save_custom(self, file_path)
-
-        # Save environment as well in `local_folder`
-        # TODO: Should this be handled in `file_path`?
-        #  file_path = os.path.join(self.details.local_folder, DefaultEnvFilename)
-        #  save_environment(file_path=file_path)
+        if save_env:
+            file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
+            save_environment(file_path=file_path_env, env_name=self.conda_env)
 
     def upload(self):
         """
@@ -140,7 +141,10 @@ class BaseModel:
         download(self.details.uri, self.details.local_folder)
 
     def request(self, req: Dict) -> Dict:
-        req_converted = self.protocol.from_protocol_request(req, self.details.inputs)
+        if self.runtime is None:
+            raise ValueError("Runtime most not be none to handle a request")
+        protocol = self.runtime.get_protocol()
+        req_converted = protocol.from_protocol_request(req, self.details.inputs)
         if type(req_converted) == dict:
             if self.cls is not None:
                 response = self._user_func(self.cls, **req_converted)
@@ -158,15 +162,39 @@ class BaseModel:
                 response = self._user_func(req_converted)
 
         if type(response) == dict:
-            response_converted = self.protocol.to_protocol_response(
+            response_converted = protocol.to_protocol_response(
                 self.details, **response
             )
         elif type(response) == list or type(response) == tuple:
-            response_converted = self.protocol.to_protocol_response(
+            response_converted = protocol.to_protocol_response(
                 self.details, *response
             )
         else:
-            response_converted = self.protocol.to_protocol_response(
+            response_converted = protocol.to_protocol_response(
                 self.details, response
             )
         return response_converted
+
+    def set_runtime(self, runtime: Runtime):
+        self.runtime = runtime
+
+    def remote(self, *args, **kwargs):
+        return self.runtime.remote(self.details, *args, **kwargs)
+
+    def wait_ready(self, timeout_secs=None):
+        return self.runtime.wait_ready(self.details, timeout_secs=timeout_secs)
+
+    def get_endpoint(self):
+        return self.runtime.get_endpoint(self.details)
+
+    def to_k8s_yaml(self) -> str:
+        """
+        Get k8s yaml
+        """
+        return self.runtime.to_k8s_yaml(self.details)
+
+    def deploy(self):
+        self.runtime.deploy(self.details)
+
+    def undeploy(self):
+        self.runtime.undeploy(self.details)
