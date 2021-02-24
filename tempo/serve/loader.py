@@ -71,7 +71,7 @@ def _get_pip_deps(dependencies: dict) -> Optional[dict]:
 
 
 def _pack_environment(env: dict, file_path: str) -> str:
-    with NamedTemporaryFile(mode="w", suffix='.yml') as file:
+    with NamedTemporaryFile(mode="w", suffix=".yml") as file:
         # TODO: Save copy of environment.yaml alongside tarball
         yaml.safe_dump(env, file)
 
@@ -86,7 +86,7 @@ def _pack_environment(env: dict, file_path: str) -> str:
             conda_pack.pack(name=tmp_env_name, output=file_path, force=True)
         finally:
             # Remove environment
-            cmd = f"conda remove --name {tmp_env_name}"
+            cmd = f"conda remove --name {tmp_env_name} --all --yes"
             run(cmd, shell=True, check=True)
 
     return file_path
