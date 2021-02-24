@@ -23,7 +23,6 @@ _nptymap[np.dtype("float32")] = "FP32"  # Ensure correct mapping for ambiguous t
 
 
 class KFServingV2Protocol(Protocol):
-
     @staticmethod
     def create_v2_from_np(arr: np.ndarray, name: str) -> Dict:
         if arr.dtype in _nptymap:
@@ -62,6 +61,8 @@ class KFServingV2Protocol(Protocol):
             else:
                 raise ValueError(f"Unknown input type {raw_type}")
 
+        return {"inputs": inputs}
+
     @staticmethod
     def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Type:
         ty = tys[name]
@@ -71,7 +72,9 @@ class KFServingV2Protocol(Protocol):
             return np.ndarray
         return ty
 
-    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
+    def to_protocol_response(
+        self, model_details: ModelDetails, *args, **kwargs
+    ) -> Dict:
         outputs = []
         for idx, raw in enumerate(args):
             raw_type = type(raw)
@@ -93,7 +96,7 @@ class KFServingV2Protocol(Protocol):
                 )
             else:
                 raise ValueError(f"Unknown input type {raw_type}")
-        return {"model_name":model_details.name, "outputs": outputs}
+        return {"model_name": model_details.name, "outputs": outputs}
 
     def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
         inp = {}
@@ -133,9 +136,8 @@ class KFServingV2Protocol(Protocol):
 
 
 class KFServingV1Protocol(Protocol):
-
     @staticmethod
-    def create_v1_from_np(arr: np.ndarray, name: str= None) -> list:
+    def create_v1_from_np(arr: np.ndarray, name: str = None) -> list:
         return arr.tolist()
 
     @staticmethod
@@ -148,7 +150,9 @@ class KFServingV1Protocol(Protocol):
 
     def to_protocol_request(self, *args, **kwargs) -> Dict:
         if len(args) > 0 and len(kwargs.values()) > 0:
-            raise ValueError("KFserving V1 protocol only supports either named or unamed arguments but not both")
+            raise ValueError(
+                "KFserving V1 protocol only supports either named or unamed arguments but not both"
+            )
 
         inputs = []
         if len(args) > 0:
@@ -182,16 +186,16 @@ class KFServingV1Protocol(Protocol):
             return np.ndarray
         return ty
 
-    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
+    def to_protocol_response(
+        self, model_details: ModelDetails, *args, **kwargs
+    ) -> Dict:
         outputs = []
         if len(args) > 0:
             for idx, raw in enumerate(args):
                 raw_type = type(raw)
 
                 if raw_type == np.ndarray:
-                    outputs.append(
-                       KFServingV1Protocol.create_v1_from_np(raw)
-                    )
+                    outputs.append(KFServingV1Protocol.create_v1_from_np(raw))
                 else:
                     raise ValueError(f"Unknown input type {raw_type}")
         else:
@@ -200,9 +204,7 @@ class KFServingV1Protocol(Protocol):
 
                 if raw_type == np.ndarray:
                     data = raw.tolist()
-                    outputs.append(
-                        {name: data}
-                    )
+                    outputs.append({name: data})
                 else:
                     raise ValueError(f"Unknown input type {raw_type}")
         return {"predictions": outputs}

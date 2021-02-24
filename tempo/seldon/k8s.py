@@ -1,32 +1,23 @@
 import os
 import yaml
+import time
+import requests
+
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-import time
 from typing import Any
-import requests
 
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.protocol import SeldonProtocol
+from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.runtime import Runtime
 from tempo.utils import logger
-from tempo.serve.metadata import ModelDetails, ModelFramework, KubernetesOptions
+from tempo.serve.metadata import ModelDetails, KubernetesOptions
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
-Implementations = {
-    ModelFramework.SKLearn: "SKLEARN_SERVER",
-    ModelFramework.XGBoost: "XGBOOST_SERVER",
-    ModelFramework.MLFlow: "MLFLOW_SERVER",
-    ModelFramework.Tensorflow: "TENSORFLOW_SERVER",
-    ModelFramework.PyTorch: "TRITON_SERVER",
-    ModelFramework.ONNX: "TRITON_SERVER",
-    ModelFramework.TensorRT: "TRITON_SERVER",
-}
-
 
 class SeldonKubernetesRuntime(Runtime):
-
     def __init__(self, k8s_options: KubernetesOptions = None, protocol=None):
         if k8s_options is None:
             k8s_options = KubernetesOptions()
@@ -60,7 +51,9 @@ class SeldonKubernetesRuntime(Runtime):
         req = protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint(model_details)
         response_raw = requests.post(endpoint, json=req)
-        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
+        return protocol.from_protocol_response(
+            response_raw.json(), model_details.outputs
+        )
 
     def undeploy(self, model_details: ModelDetails):
         api_instance = client.CustomObjectsApi()
@@ -74,7 +67,8 @@ class SeldonKubernetesRuntime(Runtime):
         )
 
     def deploy(self, model_details: ModelDetails):
-        model_spec = self._get_spec(model_details)
+        k8s_spec = KubernetesSpec(model_details, self.protocol, self.k8s_options)
+        model_spec = k8s_spec.spec
         logger.debug(model_spec)
 
         api_instance = client.CustomObjectsApi()
@@ -130,30 +124,6 @@ class SeldonKubernetesRuntime(Runtime):
                     return ready
         return ready
 
-    def _get_spec(self, model_details: ModelDetails) -> dict:
-        model_implementation = Implementations[model_details.platform]
-        return {
-            "apiVersion": "machinelearning.seldon.io/v1",
-            "kind": "SeldonDeployment",
-            "metadata": {
-                "name": model_details.name,
-                "namespace": self.k8s_options.namespace,
-            },
-            "spec": {
-                "predictors": [
-                    {
-                        "graph": {
-                            "implementation": model_implementation,
-                            "modelUri": model_details.uri,
-                            "name": "classifier",
-                        },
-                        "name": "default",
-                        "replicas": self.k8s_options.replicas,
-                    }
-                ]
-            },
-        }
-
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
-        d = self._get_spec(model_details)
-        return yaml.safe_dump(d)
+        k8s_spec = KubernetesSpec(model_details, self.protocol, self.k8s_options)
+        return yaml.safe_dump(k8s_spec.spec)

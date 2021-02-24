@@ -19,24 +19,24 @@ class Pipeline(BaseModel):
         uri: str = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
+        conda_env: str = None,
     ):
         super().__init__(
             name=name,
             # TODO: Should we unify names?
             user_func=pipeline_func,
-            # TODO: What if `runtime` is None?
-            protocol=runtime.get_protocol(),
             local_folder=local_folder,
             uri=uri,
             platform=ModelFramework.TempoPipeline,
             inputs=inputs,
             outputs=outputs,
+            conda_env=conda_env,
+            runtime=runtime,
         )
 
         if models is None:
             models = []
 
-        self._runtime = runtime
         self._models = models
 
     def deploy_models(self):
@@ -53,9 +53,10 @@ class Pipeline(BaseModel):
         Deploy all models and the pipeline.
         """
         self.deploy_models()
-        # TODO add deploy pipeline itself
+        super().deploy()
 
-    def wait_ready(self, timeout_secs: int=None) -> bool:
+    def wait_ready(self, timeout_secs: int = None) -> bool:
+        super().wait_ready(timeout_secs=timeout_secs)
         for model in self._models:
             if not model.wait_ready(timeout_secs=timeout_secs):
                 return False
@@ -70,18 +71,17 @@ class Pipeline(BaseModel):
         """
         Undeploy all models and pipeline.
         """
+        super().undeploy()
         self.undeploy_models()
-        # TODO undeploy pipeline
 
     def set_runtime(self, runtime: Runtime):
+        super().set_runtime(runtime)
         for model in self._models:
             model.set_runtime(runtime)
 
-    def remote(self, *args, **kwargs):
-        return self._runtime.remote(self.details, *args, **kwargs)
-
     def to_k8s_yaml(self) -> str:
-        yamls = ""
+        yamls = super().to_k8s_yaml()
+        yamls += "\n---\n"
         for model in self._models:
             y = model.to_k8s_yaml()
             yamls += y

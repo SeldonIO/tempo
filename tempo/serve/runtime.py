@@ -2,7 +2,7 @@ from __future__ import annotations
 import abc
 import attr
 from tempo.serve.metadata import ModelDetails
-from typing import Dict, Any
+from typing import Any
 
 
 @attr.s(auto_attribs=True)
@@ -28,7 +28,6 @@ class Runtime(abc.ABC):
     @abc.abstractmethod
     def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
         pass
-
 
     @abc.abstractmethod
     def get_protocol(self):

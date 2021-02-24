@@ -4,6 +4,7 @@ import numpy as np
 from kubernetes import client
 
 from tempo.serve.model import Model
+from tempo.serve.pipeline import Pipeline
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 
 
@@ -32,11 +33,12 @@ def test_sklearn_k8s(k8s_sklearn_model: Model, x_input):
     np.testing.assert_allclose(y_pred, [[0, 0, 0.99]], atol=1e-2)
 
 
-#  def test_undeploy_k8s(k8s_sklearn_model: Model, docker_runtime: SeldonDockerRuntime):
-#  sklearn_model.deploy()
-#  time.sleep(2)
+@pytest.mark.skip(reason="needs k8s cluster")
+@pytest.mark.skip(reason="still not working")
+@pytest.mark.parametrize(
+    "x_input", [[[1, 2, 3, 4]]],
+)
+def test_pipeline_k8s(k8s_inference_pipeline: Pipeline, x_input):
+    y_pred = k8s_inference_pipeline.remote(payload=x_input)
 
-#  sklearn_model.undeploy()
-
-#  with pytest.raises(docker.errors.NotFound):
-#  docker_runtime._get_container(sklearn_model._details)
+    np.testing.assert_allclose(y_pred, [[0, 0, 0.99]], atol=1e-2)
