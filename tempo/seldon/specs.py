@@ -43,7 +43,7 @@ class _V1ContainerFactory:
 
 
 class _V2ContainerFactory:
-    MLServerImage = "seldonio/mlserver:0.3.1.dev3"
+    MLServerImage = "seldonio/mlserver:0.3.1.dev4"
 
     MLServerRuntimes = {
         ModelFramework.SKLearn: "mlserver_sklearn.SKLearnModel",
