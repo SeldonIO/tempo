@@ -53,8 +53,6 @@ setup(
         "python-rclone",
         "seldon-deploy-sdk",
         "conda-pack",
-        # TODO: Remove `tensorflow` package coming from protos
-        #"tensorflow",
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,
