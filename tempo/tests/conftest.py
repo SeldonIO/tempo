@@ -172,7 +172,6 @@ def inference_pipeline(
         name="classifier",
         runtime=docker_runtime_v2,
         models=[sklearn_model, xgboost_model],
-        local_folder="/tmp/tempo-pipeline",
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
@@ -181,7 +180,7 @@ def inference_pipeline(
         else:
             return xgboost_model(payload)
 
-    _pipeline.save()
+    _pipeline.save(save_env=False)
     _pipeline.deploy()
     time.sleep(3)
 

@@ -121,22 +121,11 @@ def test_undeploy_pipeline_docker(
             docker_runtime._get_container(model.details)
 
 
-async def test_pipeline_save_run(inference_pipeline: Pipeline, tmp_path: str):
+async def test_pipeline_save_load(inference_pipeline: Pipeline, tmp_path: str):
+    inference_pipeline.details.local_folder = tmp_path
+    inference_pipeline.save()
 
-    loaded_pipeline = inference_pipeline.load()
-
+    loaded_pipeline = Pipeline.load(tmp_path)
     y_pred = loaded_pipeline(np.array([[4.9, 3.1, 1.5, 0.2]]))
 
     np.testing.assert_allclose(y_pred, [[0.8, 0.19, 0.01]], atol=1e-2)
-
-
-def test_pipeline_save(docker_runtime_v2: SeldonDockerRuntime):
-    @pipeline(
-        name="classifier",
-        runtime=docker_runtime_v2,
-        local_folder="/tmp/tempo-pipeline"
-    )
-    def mypipeline(payload: np.ndarray) -> np.ndarray:
-        return payload
-
-    mypipeline.save()
