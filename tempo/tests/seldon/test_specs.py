@@ -84,6 +84,7 @@ def test_kubernetes_spec_pipeline():
                         "name": "classifier",
                         "type": "MODEL",
                         "implementation": "TRITON_SERVER",
+                        "serviceAccountName": "tempo-pipeline",
                     },
                     "name": "default",
                     "replicas": options.replicas,

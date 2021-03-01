@@ -1,0 +1,29 @@
+---
+apiversion: v1
+kind: ServiceAccount
+metadata:
+  name: tempo-pipeline
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tempo-pipeline
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - seldondeployments
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tempo-pipeline-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tempo-pipeline
+subjects:
+  - kind: ServiceAccount
+    name: tempo-pipeline

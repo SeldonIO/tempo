@@ -8,6 +8,7 @@ import numpy as np
 from typing import Generator
 
 from kubernetes import client, config
+from kubernetes.utils.create_from_yaml import create_from_yaml
 
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from tempo.serve.model import Model
@@ -19,6 +20,7 @@ from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.utils import predictmethod
 
 TESTS_PATH = os.path.dirname(__file__)
+TESTDATA_PATH = os.path.join(__file__, "testdata")
 EXAMPLES_PATH = os.path.join(TESTS_PATH, "examples")
 
 K8S_NAMESPACE_PREFIX = "test-tempo-"
@@ -56,6 +58,10 @@ def k8s_namespace() -> Generator[str, None, None]:
 
     namespace = client.V1Namespace(metadata=client.V1ObjectMeta(name=ns_name))
     core_api.create_namespace(namespace)
+
+    # Create ServiceAccount and RBAC
+    rbac_path = os.path.join(TESTDATA_PATH, "tempo-pipeline-rbac.yaml")
+    create_from_yaml(client, rbac_path, namespace=ns_name)
 
     yield ns_name
 
