@@ -10,9 +10,9 @@ metadata:
   name: tempo-pipeline
 rules:
   - apiGroups:
-      - ''
+      - machinelearning.seldon.io
     resources:
-      - seldondeployments
+      - seldondeployments/status
     verbs:
       - get
 ---

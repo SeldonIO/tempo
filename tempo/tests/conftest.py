@@ -61,7 +61,8 @@ def k8s_namespace() -> Generator[str, None, None]:
 
     # Create ServiceAccount and RBAC
     rbac_path = os.path.join(TESTDATA_PATH, "tempo-pipeline-rbac.yaml")
-    create_from_yaml(client, rbac_path, namespace=ns_name)
+    api_client = client.ApiClient()
+    create_from_yaml(api_client, rbac_path, namespace=ns_name)
 
     yield ns_name
 
