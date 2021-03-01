@@ -34,11 +34,8 @@ def test_sklearn_k8s(k8s_sklearn_model: Model, x_input):
 
 
 @pytest.mark.skip(reason="needs k8s cluster")
-@pytest.mark.skip(reason="still not working")
-@pytest.mark.parametrize(
-    "x_input", [[[1, 2, 3, 4]]],
-)
+@pytest.mark.parametrize("x_input", [np.array([[1, 2, 3, 4]])])
 def test_pipeline_k8s(k8s_inference_pipeline: Pipeline, x_input):
     y_pred = k8s_inference_pipeline.remote(payload=x_input)
 
-    np.testing.assert_allclose(y_pred, [[0, 0, 0.99]], atol=1e-2)
+    np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)
