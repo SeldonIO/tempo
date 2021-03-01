@@ -20,7 +20,7 @@ from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.utils import predictmethod
 
 TESTS_PATH = os.path.dirname(__file__)
-TESTDATA_PATH = os.path.join(__file__, "testdata")
+TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
 EXAMPLES_PATH = os.path.join(TESTS_PATH, "examples")
 
 K8S_NAMESPACE_PREFIX = "test-tempo-"

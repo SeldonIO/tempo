@@ -1,10 +1,12 @@
+import os
+import pytest
+import numpy as np
+
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from tempo.serve.model import Model
 from tempo.seldon.deploy import SeldonDeployRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-import os
-import pytest
-import numpy as np
+
 
 @pytest.mark.skip("needs deploy cluster")
 def test_deploy():
@@ -26,6 +28,7 @@ def test_deploy():
     sklearn_model.deploy()
     sklearn_model.wait_ready()
     sklearn_model(np.array([[4.9, 3.1, 1.5, 0.2]]))
+
 
 @pytest.mark.skip("needs deploy cluster")
 def test_deploy_yaml():
