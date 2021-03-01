@@ -8,6 +8,7 @@ import numpy as np
 from typing import Generator
 
 from kubernetes import client, config
+from kubernetes.utils.create_from_yaml import create_from_yaml
 
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from tempo.serve.model import Model
@@ -19,6 +20,7 @@ from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.utils import predictmethod
 
 TESTS_PATH = os.path.dirname(__file__)
+TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
 EXAMPLES_PATH = os.path.join(TESTS_PATH, "examples")
 
 K8S_NAMESPACE_PREFIX = "test-tempo-"
@@ -55,7 +57,12 @@ def k8s_namespace() -> Generator[str, None, None]:
     core_api = client.CoreV1Api()
 
     namespace = client.V1Namespace(metadata=client.V1ObjectMeta(name=ns_name))
-    created_namespace = core_api.create_namespace(namespace)
+    core_api.create_namespace(namespace)
+
+    # Create ServiceAccount and RBAC
+    rbac_path = os.path.join(TESTDATA_PATH, "tempo-pipeline-rbac.yaml")
+    api_client = client.ApiClient()
+    create_from_yaml(api_client, rbac_path, namespace=ns_name)
 
     yield ns_name
 
@@ -81,7 +88,7 @@ def k8s_runtime_v2(k8s_namespace: str) -> SeldonKubernetesRuntime:
 def k8s_sklearn_model(
     sklearn_model: Model, k8s_runtime: SeldonKubernetesRuntime
 ) -> Generator[Model, None, None]:
-    sklearn_model._runtime = k8s_runtime
+    sklearn_model.runtime = k8s_runtime
 
     sklearn_model.deploy()
     sklearn_model.wait_ready(timeout_secs=60)
@@ -93,11 +100,13 @@ def k8s_sklearn_model(
 
 @pytest.fixture
 def k8s_inference_pipeline(
-    sklearn_model: Model, xgboost_model: Model, k8s_runtime_v2: SeldonKubernetesRuntime,
+    sklearn_model: Model,
+    xgboost_model: Model,
+    k8s_runtime: SeldonKubernetesRuntime,
+    k8s_runtime_v2: SeldonKubernetesRuntime,
 ):
-    # TODO: Change once SKLEARN_SERVER image is fixed
-    sklearn_model._runtime = k8s_runtime_v2
-    xgboost_model._runtime = k8s_runtime_v2
+    sklearn_model.runtime = k8s_runtime
+    xgboost_model.runtime = k8s_runtime
 
     @pipeline(
         name="classifier",
@@ -170,8 +179,7 @@ def inference_pipeline(
         name="classifier",
         runtime=docker_runtime_v2,
         models=[sklearn_model, xgboost_model],
-        local_folder="/tmp/tempo-pipeline"
-        )
+    )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
         if res1[0][0] > 0.7:
@@ -179,7 +187,7 @@ def inference_pipeline(
         else:
             return xgboost_model(payload)
 
-    _pipeline.save()
+    _pipeline.save(save_env=False)
     _pipeline.deploy()
     time.sleep(3)
 

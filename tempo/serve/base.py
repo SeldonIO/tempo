@@ -60,7 +60,6 @@ class BaseModel:
         self.cls = None
         self.runtime = runtime
 
-
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
     ) -> Tuple[ModelDataArgs, ModelDataArgs]:
@@ -111,8 +110,9 @@ class BaseModel:
     def set_cls(self, cls):
         self.cls = cls
 
-    def load(self) -> "BaseModel":
-        file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+    @classmethod
+    def load(cls, folder: str) -> "BaseModel":
+        file_path_pkl = os.path.join(folder, DefaultModelFilename)
         return load_custom(file_path_pkl)
 
     def save(self, save_env=True):
@@ -162,17 +162,11 @@ class BaseModel:
                 response = self._user_func(req_converted)
 
         if type(response) == dict:
-            response_converted = protocol.to_protocol_response(
-                self.details, **response
-            )
+            response_converted = protocol.to_protocol_response(self.details, **response)
         elif type(response) == list or type(response) == tuple:
-            response_converted = protocol.to_protocol_response(
-                self.details, *response
-            )
+            response_converted = protocol.to_protocol_response(self.details, *response)
         else:
-            response_converted = protocol.to_protocol_response(
-                self.details, response
-            )
+            response_converted = protocol.to_protocol_response(self.details, response)
         return response_converted
 
     def set_runtime(self, runtime: Runtime):

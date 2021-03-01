@@ -9,7 +9,7 @@ from seldon_deploy_sdk.models.predictive_unit import PredictiveUnit
 from seldon_deploy_sdk.models.object_meta import ObjectMeta
 from seldon_deploy_sdk import SeldonDeploymentsApi, PredictApi
 
-from tempo.seldon.k8s import Implementations
+from tempo.seldon.specs import KubernetesSpec
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.endpoint import Endpoint
 from seldon_deploy_sdk import EnvironmentApi, Configuration, ApiClient
@@ -26,7 +26,6 @@ class SeldonDeployAuthType(Enum):
 
 
 class SeldonDeployRuntime(Runtime):
-
     def __init__(
         self,
         host: str,
@@ -65,6 +64,7 @@ class SeldonDeployRuntime(Runtime):
             raise ValueError(f"Unknown auth type {self._auth_type}")
 
     def deploy(self, model_details: ModelDetails):
+        # TODO: Use KubernetesSpec().spec
         sd = SeldonDeployment(
             kind="SeldonDeployment",
             api_version="machinelearning.seldon.io/v1",
@@ -75,7 +75,9 @@ class SeldonDeployRuntime(Runtime):
                 predictors=[
                     PredictorSpec(
                         graph=PredictiveUnit(
-                            implementation=Implementations[model_details.platform],
+                            implementation=KubernetesSpec.Implementations[
+                                model_details.platform
+                            ],
                             model_uri=model_details.uri,
                             name="model",
                         ),
@@ -127,7 +129,9 @@ class SeldonDeployRuntime(Runtime):
         protocol = self.get_protocol()
         req = protocol.to_protocol_request(*args, **kwargs)
         predict_instance = PredictApi(api_client)
-        prediction = predict_instance.predict_seldon_deployment(model_details.name, self._k8s_options.namespace, prediction=req)
+        prediction = predict_instance.predict_seldon_deployment(
+            model_details.name, self._k8s_options.namespace, prediction=req
+        )
         return protocol.from_protocol_response(prediction, model_details.outputs)
 
     def get_protocol(self):

@@ -9,6 +9,7 @@ DefaultHTTPPort = "9000"
 DefaultGRPCPort = "9500"
 
 DefaultModelsPath = "/mnt/models"
+DefaultServiceAccountName = "tempo-pipeline"
 
 
 def get_container_spec(model_details: ModelDetails, protocol: Protocol) -> dict:
@@ -43,7 +44,7 @@ class _V1ContainerFactory:
 
 
 class _V2ContainerFactory:
-    MLServerImage = "seldonio/mlserver:0.3.1.dev2"
+    MLServerImage = "seldonio/mlserver:0.3.1.dev5"
 
     MLServerRuntimes = {
         ModelFramework.SKLearn: "mlserver_sklearn.SKLearnModel",
@@ -116,6 +117,9 @@ class KubernetesSpec:
         if self._details.platform in self.Implementations:
             model_implementation = self.Implementations[self._details.platform]
             graph["implementation"] = model_implementation
+
+        if self._details.platform == ModelFramework.TempoPipeline:
+            graph["serviceAccountName"] = DefaultServiceAccountName
 
         predictor = {
             "graph": graph,
