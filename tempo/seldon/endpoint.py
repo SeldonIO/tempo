@@ -41,6 +41,8 @@ class Endpoint(object):
                     "istio-system", field_selector="metadata.name=istio-ingressgateway"
                 )
                 ingress_ip = res.items[0].status.load_balancer.ingress[0].ip
+                if not ingress_ip:
+                    ingress_ip = res.items[0].status.load_balancer.ingress[0].hostname
                 return (
                     f"http://{ingress_ip}/seldon/{self.namespace}/{self.model_name}"
                     + self.protocol.get_predict_path(model_details)
