@@ -83,7 +83,13 @@ def _pack_environment(env: dict, file_path: str) -> str:
 
         try:
             # Pack environment
-            conda_pack.pack(name=tmp_env_name, output=file_path, force=True)
+            conda_pack.pack(
+                name=tmp_env_name,
+                output=file_path,
+                force=True,
+                ignore_editable_packages=True,
+                ignore_missing_files=True,
+            )
         finally:
             # Remove environment
             cmd = f"conda remove --name {tmp_env_name} --all --yes"
