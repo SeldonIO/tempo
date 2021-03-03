@@ -2,7 +2,7 @@ import typing
 import tempfile
 import os
 
-from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
+from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple, List
 
 from tempo.serve.loader import (
     download,
@@ -12,7 +12,7 @@ from tempo.serve.loader import (
     save_environment,
 )
 from tempo.serve.runtime import Runtime
-from tempo.serve.protocol import Protocol
+from tempo.serve.explainer import Explainer
 from tempo.serve.constants import (
     ModelDataType,
     DefaultModelFilename,
@@ -55,10 +55,14 @@ class BaseModel:
             platform=platform,
             inputs=inputs,
             outputs=outputs,
+            explainers=[]
         )
 
         self.cls = None
         self.runtime = runtime
+
+    def register_explainer(self, explainer: Explainer):
+        self.details.explainers.append(explainer)
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
