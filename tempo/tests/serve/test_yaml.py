@@ -18,8 +18,10 @@ spec:
       implementation: SKLEARN_SERVER
       modelUri: gs://seldon-models/sklearn/iris
       name: classifier
+      type: MODEL
     name: default
     replicas: 1
+  protocol: seldon
 """
     ],
 )
@@ -48,8 +50,10 @@ spec:
       implementation: XGBOOST_SERVER
       modelUri: gs://seldon-models/xgboost/iris
       name: classifier
+      type: MODEL
     name: default
     replicas: 1
+  protocol: seldon
 """
     ],
 )

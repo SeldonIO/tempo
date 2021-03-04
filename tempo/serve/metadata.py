@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
-from typing import Optional, List, Type, Dict, Union
-from tempo.serve.explainer import Explainer
+from typing import Optional, List, Type, Dict, Union, Any
 
 
 class ModelFramework(Enum):
@@ -52,7 +51,7 @@ class ModelDetails(BaseModel):
     platform: ModelFramework
     inputs: ModelDataArgs
     outputs: ModelDataArgs
-    explainers: List[Explainer]
+
 
 
 class KubernetesOptions(BaseModel):

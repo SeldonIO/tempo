@@ -66,7 +66,7 @@ def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
                 ]
             },
             {
-                "model_name": "inference-pipeline",
+                "model_name": "classifier",
                 "outputs": [
                     {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
                 ],
@@ -121,11 +121,19 @@ def test_undeploy_pipeline_docker(
             docker_runtime._get_container(model.details)
 
 
-async def test_pipeline_save_load(inference_pipeline: Pipeline, tmp_path: str):
-    inference_pipeline.details.local_folder = tmp_path
-    inference_pipeline.save()
+def test_save_pipeline(docker_runtime_v2, sklearn_model,xgboost_model):
+    @pipeline(
+        name="classifier",
+        runtime=docker_runtime_v2,
+        models=[sklearn_model, xgboost_model],
+        local_folder=os.path.join(os.path.dirname(__file__), 'data')
+    )
+    def _pipeline(payload: np.ndarray) -> np.ndarray:
+        res1 = sklearn_model(payload)
+        if res1[0][0] > 0.7:
+            return res1
+        else:
+            return xgboost_model(payload)
 
-    loaded_pipeline = Pipeline.load(tmp_path)
-    y_pred = loaded_pipeline(np.array([[4.9, 3.1, 1.5, 0.2]]))
+    _pipeline.save(save_env=True)
 
-    np.testing.assert_allclose(y_pred, [[0.8, 0.19, 0.01]], atol=1e-2)
