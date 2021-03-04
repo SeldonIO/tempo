@@ -15,8 +15,7 @@ def pipeline(
     models: List[Model] = None,
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
-    conda_env: str = None,
-):
+    conda_env: str = None):
     def _pipeline(f):
         if inspect.isclass(f):
             K = f

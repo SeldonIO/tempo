@@ -1,8 +1,9 @@
 import typing
 import tempfile
 import os
+from os import path
 
-from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
+from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple, List
 
 from tempo.serve.loader import (
     download,
@@ -12,7 +13,7 @@ from tempo.serve.loader import (
     save_environment,
 )
 from tempo.serve.runtime import Runtime
-from tempo.serve.protocol import Protocol
+#from tempo.serve.explainer import Explainer
 from tempo.serve.constants import (
     ModelDataType,
     DefaultModelFilename,
@@ -25,6 +26,7 @@ from tempo.serve.metadata import (
     ModelFramework,
 )
 
+DEFAULT_CONDA_FILE = "conda.yaml"
 
 class BaseModel:
     def __init__(
@@ -41,7 +43,7 @@ class BaseModel:
     ):
         self._name = name
         self._user_func = user_func
-        self.conda_env = conda_env
+        self.conda_env_name = conda_env
         if uri is None:
             uri = ""
 
@@ -59,6 +61,9 @@ class BaseModel:
 
         self.cls = None
         self.runtime = runtime
+
+ #   def register_explainer(self, explainer: Explainer):
+ #       self.details.explainers.append(explainer)
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
@@ -125,7 +130,11 @@ class BaseModel:
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            save_environment(file_path=file_path_env, env_name=self.conda_env)
+            conda_env_file_path = path.join(self.details.local_folder,DEFAULT_CONDA_FILE)
+            if not path.exists(conda_env_file_path):
+                conda_env_file_path = None
+
+            save_environment(conda_pack_file_path=file_path_env, conda_env_file_path=conda_env_file_path, env_name=self.conda_env_name)
 
     def upload(self):
         """

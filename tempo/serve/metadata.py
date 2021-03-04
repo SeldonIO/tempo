@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
-from typing import Optional, List, Type, Dict, Union
-from tempo.serve.constants import ModelDataType
+from typing import Optional, List, Type, Dict, Union, Any
 
 
 class ModelFramework(Enum):
@@ -52,6 +51,7 @@ class ModelDetails(BaseModel):
     platform: ModelFramework
     inputs: ModelDataArgs
     outputs: ModelDataArgs
+
 
 
 class KubernetesOptions(BaseModel):
