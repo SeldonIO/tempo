@@ -74,10 +74,11 @@ class Pipeline(BaseModel):
         super().undeploy()
         self.undeploy_models()
 
-    def set_runtime(self, runtime: Runtime):
+    def set_runtime(self, runtime: Runtime, models=False):
         super().set_runtime(runtime)
-        for model in self._models:
-            model.set_runtime(runtime)
+        if models:
+            for model in self._models:
+                model.set_runtime(runtime)
 
     def to_k8s_yaml(self) -> str:
         yamls = super().to_k8s_yaml()

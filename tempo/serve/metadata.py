@@ -11,6 +11,7 @@ class ModelFramework(Enum):
     PyTorch = "pytorch"
     ONNX = "ONNX"
     TensorRT = "tensorrt"
+    Alibi = "alibi"
     Custom = "custom"
     TempoPipeline = "tempo"
 

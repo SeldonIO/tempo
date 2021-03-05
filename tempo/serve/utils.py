@@ -49,6 +49,7 @@ def pipeline(
             setattr(K, "set_runtime", K.pipeline.set_runtime)
             setattr(K, "to_k8s_yaml", K.pipeline.to_k8s_yaml)
             setattr(K, "save", K.pipeline.save)
+            setattr(K, "remote", K.pipeline.remote)
 
             orig_init = K.__init__
             # Make copy of original __init__, so we can call it without recursion
