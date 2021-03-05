@@ -36,6 +36,16 @@ class KFServingV2Protocol(Protocol):
             raise ValueError(f"Unknown numpy type {arr.dtype}")
 
     @staticmethod
+    def create_v2_from_any(data: Any, name: str) -> Dict:
+        b = list(bytes(data, 'utf-8'))
+        return {
+                "name": name,
+                "datatype": "BYTES",
+                "data": b,
+                "shape": [len(b)],
+        }
+
+    @staticmethod
     def create_np_from_v2(data: list, ty: str, shape: list) -> np.array:
         if ty in _v2tymap:
             npty = _v2tymap[ty]
@@ -84,7 +94,7 @@ class KFServingV2Protocol(Protocol):
                     KFServingV2Protocol.create_v2_from_np(raw, "output" + str(idx))
                 )
             else:
-                raise ValueError(f"Unknown input type {raw_type}")
+                KFServingV2Protocol.create_v2_from_any(raw, "output" + str(idx))
         for name, raw in kwargs.items():
             raw_type = type(raw)
 
@@ -95,7 +105,7 @@ class KFServingV2Protocol(Protocol):
                     {"name": name, "datatype": "FP32", "shape": shape, "data": data}
                 )
             else:
-                raise ValueError(f"Unknown input type {raw_type}")
+                raise ValueError(f"Unknown input type {raw_type} for name {name}")
         return {"model_name": model_details.name, "outputs": outputs}
 
     def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:

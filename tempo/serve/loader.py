@@ -120,7 +120,7 @@ def _pack_environment(env: dict, file_path: str) -> str:
                 name=tmp_env_name,
                 output=file_path,
                 force=True,
-                ignore_editable_packages=True,
+                ignore_editable_packages=False,
                 ignore_missing_files=True,
             )
         finally:

@@ -13,7 +13,7 @@ from tempo.serve.loader import (
     save_environment,
 )
 from tempo.serve.runtime import Runtime
-#from tempo.serve.explainer import Explainer
+
 from tempo.serve.constants import (
     ModelDataType,
     DefaultModelFilename,
@@ -61,9 +61,6 @@ class BaseModel:
 
         self.cls = None
         self.runtime = runtime
-
- #   def register_explainer(self, explainer: Explainer):
- #       self.details.explainers.append(explainer)
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
