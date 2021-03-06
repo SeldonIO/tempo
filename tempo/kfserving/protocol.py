@@ -72,6 +72,9 @@ class KFServingV2Protocol(Protocol):
     def get_predict_path(self, model_details: ModelDetails):
         return f"/v2/models/{model_details.name}/infer"
 
+    def get_status_path(self, model_details: ModelDetails) -> str:
+        return f"/v2/models/{model_details.name}/ready"
+
     def to_protocol_request(self, *args, **kwargs) -> Dict:
         if len(args) > 0:
             raise ValueError("KFserving V2 protocol only supports named arguments")
@@ -179,6 +182,9 @@ class KFServingV1Protocol(Protocol):
 
     def get_predict_path(self, model_details: ModelDetails):
         return f"/v1/models/{model_details.name}:predict"
+
+    def get_status_path(self, model_details: ModelDetails) -> str:
+        return f"/v1/models/{model_details.name}"
 
     def to_protocol_request(self, *args, **kwargs) -> Dict:
         if len(args) > 0 and len(kwargs.values()) > 0:

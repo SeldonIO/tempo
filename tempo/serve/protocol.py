@@ -28,3 +28,7 @@ class Protocol(abc.ABC):
     @abc.abstractmethod
     def get_predict_path(self, model_details: ModelDetails) -> str:
         pass
+
+    @abc.abstractmethod
+    def get_status_path(self, model_details: ModelDetails) -> str:
+        pass
