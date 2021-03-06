@@ -11,6 +11,9 @@ class SeldonProtocol(Protocol):
         #  return f"/seldon/{model_details.namespace}/{model_details.name}/api/v1.0/predictions"
         return "/api/v1.0/predictions"
 
+    def get_status_path(self, model_details: ModelDetails) -> str:
+        return f"/api/v1.0/health/status"
+
     def to_protocol_request(self, *args, **kwargs) -> Dict:
         if not len(args) + len(kwargs) == 1:
             raise ValueError("Seldon protocol can only take a single input")

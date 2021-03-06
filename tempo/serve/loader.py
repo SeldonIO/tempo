@@ -37,11 +37,13 @@ def _get_env(conda_env_file_path:str = None, env_name:str = None) -> dict:
         env = _add_required_deps(env)
     return env
 
-def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None) -> str:
+def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None):
     # TODO: Check if Conda is installed
-
-    env = _get_env(conda_env_file_path,env_name)
-    return _pack_environment(env=env, file_path=conda_pack_file_path)
+    if env_name:
+        _pack_environment(env_name, conda_pack_file_path)
+    else:
+        env = _get_env(conda_env_file_path,env_name)
+        _create_and_pack_environment(env=env, file_path=conda_pack_file_path)
 
 
 def _get_environment(env_name: str = None) -> dict:
@@ -52,6 +54,7 @@ def _get_environment(env_name: str = None) -> dict:
 
     proc = run(cmd, shell=True, check=True, capture_output=True)
     return yaml.safe_load(proc.stdout)
+
 
 def _has_required_deps(env: dict) -> bool:
     if "dependencies" not in env:
@@ -103,7 +106,19 @@ def _get_pip_deps(dependencies: dict) -> Optional[dict]:
     return None
 
 
-def _pack_environment(env: dict, file_path: str) -> str:
+def _pack_environment(env_name: str, file_path: str):
+    # Pack environment
+    conda_pack.pack(
+        name=env_name,
+        output=file_path,
+        force=True,
+        verbose=True,
+        ignore_editable_packages=False,
+        ignore_missing_files=True,
+    )
+
+
+def _create_and_pack_environment(env: dict, file_path: str):
     with NamedTemporaryFile(mode="w", suffix=".yml") as file:
         # TODO: Save copy of environment.yaml alongside tarball
         yaml.safe_dump(env, file)
@@ -115,20 +130,11 @@ def _pack_environment(env: dict, file_path: str) -> str:
         run(cmd, shell=True, check=True)
 
         try:
-            # Pack environment
-            conda_pack.pack(
-                name=tmp_env_name,
-                output=file_path,
-                force=True,
-                ignore_editable_packages=False,
-                ignore_missing_files=True,
-            )
+            _pack_environment(tmp_env_name, file_path)
         finally:
             # Remove environment
             cmd = f"conda remove --name {tmp_env_name} --all --yes"
             run(cmd, shell=True, check=True)
-
-    return file_path
 
 
 def _to_rclone(path: str) -> str:
@@ -146,10 +152,10 @@ def _load_rclone_cfg() -> str:
 def upload(local_path: str, remote_uri: str):
     "Upload local to remote using rclone"
     remote_uri = _to_rclone(remote_uri)
-    rclone.with_config(_load_rclone_cfg()).copy(local_path, remote_uri)
+    rclone.with_config(_load_rclone_cfg()).copy(local_path, remote_uri, flags=["-P"])
 
 
 def download(remote_uri: str, local_path: str):
     "Download remote to local using rclone"
     remote_uri = _to_rclone(remote_uri)
-    rclone.with_config(_load_rclone_cfg()).copy(remote_uri, local_path)
+    rclone.with_config(_load_rclone_cfg()).copy(remote_uri, local_path, flags=["-P"])
