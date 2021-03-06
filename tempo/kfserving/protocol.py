@@ -2,6 +2,8 @@ import numpy as np
 from typing import Type, Dict, Any, List, Tuple
 from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
+import json
+from ast import literal_eval
 
 _v2tymap = {
     "BOOL": np.dtype("bool"),
@@ -37,13 +39,25 @@ class KFServingV2Protocol(Protocol):
 
     @staticmethod
     def create_v2_from_any(data: Any, name: str) -> Dict:
-        b = list(bytes(data, 'utf-8'))
+        print("Create v2 from any")
+        if isinstance(data, str):
+            b = list(bytes(data, 'utf-8'))
+        else:
+            b = list(bytes(repr(data),'utf-8'))
         return {
                 "name": name,
                 "datatype": "BYTES",
                 "data": b,
                 "shape": [len(b)],
         }
+
+    @staticmethod
+    def convert_from_bytes(output: dict, ty: Type) -> Any:
+        if ty == str:
+            return bytearray(output["data"]).decode("UTF-8")
+        else:
+            py_str = bytearray(output["data"]).decode("UTF-8")
+            return literal_eval(py_str)
 
     @staticmethod
     def create_np_from_v2(data: list, ty: str, shape: list) -> np.array:
@@ -69,7 +83,9 @@ class KFServingV2Protocol(Protocol):
             if raw_type == np.ndarray:
                 inputs.append(KFServingV2Protocol.create_v2_from_np(raw, name))
             else:
-                raise ValueError(f"Unknown input type {raw_type}")
+                inputs.append(
+                    KFServingV2Protocol.create_v2_from_any(raw, name)
+                )
 
         return {"inputs": inputs}
 
@@ -94,7 +110,9 @@ class KFServingV2Protocol(Protocol):
                     KFServingV2Protocol.create_v2_from_np(raw, "output" + str(idx))
                 )
             else:
-                KFServingV2Protocol.create_v2_from_any(raw, "output" + str(idx))
+                outputs.append(
+                    KFServingV2Protocol.create_v2_from_any(raw, "output" + str(idx))
+                )
         for name, raw in kwargs.items():
             raw_type = type(raw)
 
@@ -118,6 +136,8 @@ class KFServingV2Protocol(Protocol):
                     input["data"], input["datatype"], input["shape"]
                 )
                 inp[input["name"]] = arr
+            elif input["datatype"] == "BYTES":
+                inp[input["name"]] = KFServingV2Protocol.convert_from_bytes(input, ty)
             else:
                 raise ValueError(f"Unknown ty {ty} in conversion")
 
@@ -136,6 +156,8 @@ class KFServingV2Protocol(Protocol):
                     output["data"], output["datatype"], output["shape"]
                 )
                 out[output["name"]] = arr
+            elif output["datatype"] == "BYTES":
+                out[output["name"]] = KFServingV2Protocol.convert_from_bytes(output, ty)
             else:
                 raise ValueError(f"Unknown ty {ty} in conversion")
 
