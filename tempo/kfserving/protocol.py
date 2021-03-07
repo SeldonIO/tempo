@@ -39,7 +39,6 @@ class KFServingV2Protocol(Protocol):
 
     @staticmethod
     def create_v2_from_any(data: Any, name: str) -> Dict:
-        print("Create v2 from any")
         if isinstance(data, str):
             b = list(bytes(data, 'utf-8'))
         else:
