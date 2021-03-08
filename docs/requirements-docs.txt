@@ -1,0 +1,7 @@
+Sphinx==3.2.1
+sphinx_material==0.0.30
+breathe==4.20.0
+m2r2==0.2.5
+nbsphinx==0.8.2
+nbsphinx-link==1.1.0
+
