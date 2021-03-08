@@ -13,7 +13,7 @@ test: tempo
 	pytest tempo
 
 fmt:
-	black ./ --exclude "(mlops/metadata/|.eggs|.tox)"
+	black ./ --exclude "(.eggs|.tox)"
 
 
 .PHONY: lint
@@ -24,22 +24,8 @@ lint:
 mypy:
 	mypy .
 
-tempo/metadata/grpc_core_service.proto:
-	wget https://raw.githubusercontent.com/triton-inference-server/server/master/docs/protocol/grpc_core_service.proto -O tempo/metadata/grpc_core_service.proto
-
 install-rclone:
 	curl https://rclone.org/install.sh | sudo bash
-
-build-protos: tempo
-	cd tempo && python \
-	-m grpc.tools.protoc \
-	-I./ \
-	-I./metadata/ \
-	--python_out=./ \
-	--grpc_python_out=./ \
-	--mypy_out=./ \
-	./metadata/grpc_core_service.proto
-
 
 .PHONY: tempo/tests/examples
 tempo/tests/examples:
