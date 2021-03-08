@@ -76,7 +76,7 @@ if html_theme == 'sphinx_material':
         "repo_type": "github",
         "nav_links": [
             {
-                "href": "https://github.com/EthicalML/vulkan-kompute/",
+                "href": "https://github.com/SeldonIO/tempo",
                 "internal": False,
                 "title": "Tempo Repo",
             },
