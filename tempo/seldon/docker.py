@@ -30,8 +30,6 @@ class SeldonDockerRuntime(Runtime):
 
     def _get_host_ip_port(self, model_details: ModelDetails) -> Tuple[str, str]:
         container = self._get_container(model_details)
-        print(container.ports)
-        print(container.logs())
         port_index = self._get_port_index()
         host_ports = container.ports[port_index]
 
@@ -56,9 +54,7 @@ class SeldonDockerRuntime(Runtime):
         req = protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint(model_details)
         response_raw = requests.post(endpoint, json=req)
-        return protocol.from_protocol_response(
-            response_raw.json(), model_details.outputs
-        )
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def deploy(self, model_details: ModelDetails):
         docker_client = docker.from_env()
@@ -81,9 +77,7 @@ class SeldonDockerRuntime(Runtime):
                 **container_spec,
             )
 
-    def _create_network(
-        self, docker_client: DockerClient, network_name=DefaultNetworkName
-    ):
+    def _create_network(self, docker_client: DockerClient, network_name=DefaultNetworkName):
         try:
             docker_client.networks.get(network_id=network_name)
         except NotFound:
@@ -146,11 +140,7 @@ class SeldonDockerRuntime(Runtime):
     def _is_inside_docker(self) -> bool:
         # From https://stackoverflow.com/a/48710609/5015573
         path = "/proc/self/cgroup"
-        return (
-            os.path.exists("/.dockerenv")
-            or os.path.isfile(path)
-            and any("docker" in line for line in open(path))
-        )
+        return os.path.exists("/.dockerenv") or os.path.isfile(path) and any("docker" in line for line in open(path))
 
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
         raise NotImplementedError()
