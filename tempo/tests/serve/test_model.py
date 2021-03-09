@@ -1,11 +1,14 @@
-from tempo.serve.utils import model
-from tempo.serve.metadata import ModelFramework
-from typing import Tuple, List
-import pytest
-from tempo.seldon.docker import SeldonDockerRuntime
-from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.model import Model
+from typing import List, Tuple
+
 import numpy as np
+import pytest
+
+from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
+from tempo.serve.utils import model
+
 
 #
 # Test single input output model with type annotations
@@ -56,9 +59,7 @@ def test_custom_model(v2_input, expected):
 #
 # Test lambda function
 #
-@pytest.mark.parametrize(
-    "input, expected", [(np.array([[0, 0, 0, 1]]), np.array([[0, 0, 1]]))]
-)
+@pytest.mark.parametrize("input, expected", [(np.array([[0, 0, 0, 1]]), np.array([[0, 0, 1]]))])
 def test_lambda(input, expected):
     model = Model(
         name="test-iris-sklearn",
@@ -164,16 +165,12 @@ def test_custom_model_decorator_types(v2_input, expected):
 def test_custom_multiheaded_model_tuple(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=SeldonDockerRuntime(
-            protocol=KFServingV2Protocol()
-        ),
+        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
         uri="gs://seldon-models/custom",
         local_folder="custom_iris_path",
     )
-    def custom_multiheaded_model_tuple(
-        a: np.ndarray, b: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def custom_multiheaded_model_tuple(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         return a, b
 
     response = custom_multiheaded_model_tuple.request(v2_input)
@@ -221,9 +218,7 @@ def test_custom_multiheaded_model_tuple(v2_input, expected):
 def test_custom_multiheaded_model_list(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=SeldonDockerRuntime(
-            protocol=KFServingV2Protocol()
-        ),
+        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
         uri="gs://seldon-models/custom",
         local_folder="custom_iris_path",

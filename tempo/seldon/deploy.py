@@ -1,24 +1,22 @@
-import requests
+import time
+from enum import Enum
+from http import cookies
+from typing import Any, Dict
 
-from tempo.serve.metadata import ModelDetails, KubernetesOptions
-from tempo.serve.runtime import Runtime
+from seldon_deploy_sdk import ApiClient, Configuration, PredictApi, SeldonDeploymentsApi
+from seldon_deploy_sdk.auth import SessionAuthenticator
+from seldon_deploy_sdk.models.object_meta import ObjectMeta
+from seldon_deploy_sdk.models.predictive_unit import PredictiveUnit
+from seldon_deploy_sdk.models.predictor_spec import PredictorSpec
 from seldon_deploy_sdk.models.seldon_deployment import SeldonDeployment
 from seldon_deploy_sdk.models.seldon_deployment_spec import SeldonDeploymentSpec
-from seldon_deploy_sdk.models.predictor_spec import PredictorSpec
-from seldon_deploy_sdk.models.predictive_unit import PredictiveUnit
-from seldon_deploy_sdk.models.object_meta import ObjectMeta
-from seldon_deploy_sdk import SeldonDeploymentsApi, PredictApi
 
-from tempo.seldon.specs import KubernetesSpec
-from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.endpoint import Endpoint
-from seldon_deploy_sdk import EnvironmentApi, Configuration, ApiClient
-from seldon_deploy_sdk.auth import SessionAuthenticator
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-from http import cookies
-from enum import Enum
-from typing import Dict, Any
-import time
+from tempo.seldon.protocol import SeldonProtocol
+from tempo.seldon.specs import KubernetesSpec
+from tempo.serve.metadata import KubernetesOptions, ModelDetails
+from tempo.serve.runtime import Runtime
 
 
 class SeldonDeployAuthType(Enum):
@@ -68,16 +66,12 @@ class SeldonDeployRuntime(Runtime):
         sd = SeldonDeployment(
             kind="SeldonDeployment",
             api_version="machinelearning.seldon.io/v1",
-            metadata=ObjectMeta(
-                name=model_details.name, namespace=self._k8s_options.namespace
-            ),
+            metadata=ObjectMeta(name=model_details.name, namespace=self._k8s_options.namespace),
             spec=SeldonDeploymentSpec(
                 predictors=[
                     PredictorSpec(
                         graph=PredictiveUnit(
-                            implementation=KubernetesSpec.Implementations[
-                                model_details.platform
-                            ],
+                            implementation=KubernetesSpec.Implementations[model_details.platform],
                             model_uri=model_details.uri,
                             name="model",
                         ),
@@ -89,7 +83,7 @@ class SeldonDeployRuntime(Runtime):
         )
         api_client = self._get_api_client()
         dep_instance = SeldonDeploymentsApi(api_client)
-        created = dep_instance.create_seldon_deployment(self._k8s_options.namespace, sd)
+        dep_instance.create_seldon_deployment(self._k8s_options.namespace, sd)
 
     def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
         ready = False
@@ -111,14 +105,10 @@ class SeldonDeployRuntime(Runtime):
     def undeploy(self, model_details: ModelDetails):
         api_client = self._get_api_client()
         dep_instance = SeldonDeploymentsApi(api_client)
-        dep_instance.delete_seldon_deployment(
-            model_details.name, self._k8s_options.namespace, _preload_content=False
-        )
+        dep_instance.delete_seldon_deployment(model_details.name, self._k8s_options.namespace, _preload_content=False)
 
     def get_endpoint(self, model_details: ModelDetails):
-        endpoint = Endpoint(
-            model_details.name, self._k8s_options.namespace, self.protocol
-        )
+        endpoint = Endpoint(model_details.name, self._k8s_options.namespace, self.protocol)
         return endpoint.get_url(model_details)
 
     def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
@@ -138,7 +128,5 @@ class SeldonDeployRuntime(Runtime):
         return self.protocol
 
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
-        srt = SeldonKubernetesRuntime(
-            k8s_options=self._k8s_options, protocol=self.protocol
-        )
+        srt = SeldonKubernetesRuntime(k8s_options=self._k8s_options, protocol=self.protocol)
         return srt.to_k8s_yaml(model_details)

@@ -1,16 +1,17 @@
 import os
+import time
+from typing import Any, Dict
+
+import requests
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-import time
-from typing import Dict, Any
-import requests
 
 from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV1Protocol
+from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
 from tempo.serve.runtime import Runtime
 from tempo.utils import logger
-from tempo.serve.metadata import ModelDetails, ModelFramework, KubernetesOptions
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
@@ -48,17 +49,13 @@ class KFServingKubernetesRuntime(Runtime):
             config.load_kube_config()
 
     def get_endpoint(self, model_details: ModelDetails) -> str:
-        endpoint = Endpoint(
-            model_details, self.k8s_options.namespace, self.protocol
-        )
+        endpoint = Endpoint(model_details, self.k8s_options.namespace, self.protocol)
         return endpoint.get_url()
 
     def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
-        endpoint = Endpoint(
-            model_details, self.k8s_options.namespace, self.protocol
-        )
+        endpoint = Endpoint(model_details, self.k8s_options.namespace, self.protocol)
         service_host = endpoint.get_service_host()
-        return {"Host":service_host}
+        return {"Host": service_host}
 
     def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
         protocol = self.get_protocol()
@@ -93,9 +90,7 @@ class KFServingKubernetesRuntime(Runtime):
                 "inferenceservices",
                 model_details.name,
             )
-            model_spec["metadata"]["resourceVersion"] = existing["metadata"][
-                "resourceVersion"
-            ]
+            model_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1alpha2",
@@ -153,12 +148,9 @@ class KFServingKubernetesRuntime(Runtime):
             },
             "spec": {
                 "default": {
-                  "predictor":
-                  {
-                    model_implementation: {
-                      "storageUri": model_details.uri
-                     },
-                  },
+                    "predictor": {
+                        model_implementation: {"storageUri": model_details.uri},
+                    },
                 },
             },
         }

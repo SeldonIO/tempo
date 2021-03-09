@@ -1,8 +1,3 @@
-from tempo.serve.utils import pipeline, predictmethod
-from tempo.serve.model import Model
-from tempo.seldon.docker import SeldonDockerRuntime
-import numpy as np
-import time
 import pytest
 
 
@@ -22,9 +17,7 @@ import pytest
             },
             {
                 "model_name": "mypipeline",
-                "outputs": [
-                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
-                ],
+                "outputs": [{"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}],
             },
         )
     ],

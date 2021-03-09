@@ -1,9 +1,8 @@
-from tempo.serve.model import Model
-from tempo.seldon.protocol import SeldonProtocol
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.metadata import KubernetesOptions, ModelDataArgs
+from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec, _V2ContainerFactory
-from tempo.serve.metadata import ModelDetails, ModelFramework
+from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework
+from tempo.serve.model import Model
 
 
 def test_kubernetes_spec(sklearn_model: Model):
@@ -23,11 +22,9 @@ def test_kubernetes_spec(sklearn_model: Model):
                 {
                     "graph": {
                         "modelUri": sklearn_model.details.uri,
-                        "name": "classifier",
+                        "name": "test-iris-sklearn",
                         "type": "MODEL",
-                        "implementation": KubernetesSpec.Implementations[
-                            sklearn_model.details.platform
-                        ],
+                        "implementation": KubernetesSpec.Implementations[sklearn_model.details.platform],
                     },
                     "name": "default",
                     "replicas": options.replicas,
@@ -52,10 +49,7 @@ def test_kubernetes_spec_pipeline():
     k8s_object = KubernetesSpec(details, KFServingV2Protocol(), options)
 
     container_spec = _V2ContainerFactory.get_container_spec(details)
-    container_env = [
-        {"name": name, "value": value}
-        for name, value in container_spec["environment"].items()
-    ]
+    container_env = [{"name": name, "value": value} for name, value in container_spec["environment"].items()]
 
     expected = {
         "apiVersion": "machinelearning.seldon.io/v1",
@@ -70,7 +64,7 @@ def test_kubernetes_spec_pipeline():
                             "spec": {
                                 "containers": [
                                     {
-                                        "name": "classifier",
+                                        "name": "inference-pipeline",
                                         "image": container_spec["image"],
                                         "env": container_env,
                                         "args": [],
@@ -81,7 +75,7 @@ def test_kubernetes_spec_pipeline():
                     ],
                     "graph": {
                         "modelUri": details.uri,
-                        "name": "classifier",
+                        "name": "inference-pipeline",
                         "type": "MODEL",
                         "implementation": "TRITON_SERVER",
                         "serviceAccountName": "tempo-pipeline",

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import abc
+from typing import Any, Dict
+
 import attr
 
-from typing import Dict, Any, List
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
 

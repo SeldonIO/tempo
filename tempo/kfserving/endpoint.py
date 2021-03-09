@@ -1,21 +1,25 @@
-from kubernetes import client, config
 import os
-from tempo.utils import logger
-from tempo.serve.protocol import Protocol
-from tempo.serve.metadata import ModelDetails
 from urllib.parse import urlparse
+
+from kubernetes import client, config
+
+from tempo.serve.metadata import ModelDetails
+from tempo.serve.protocol import Protocol
+from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 ISTIO_GATEWAY = "istio"
 
 
 class Endpoint(object):
-    """A Model Endpoint
-
-    """
+    """A Model Endpoint"""
 
     def __init__(
-        self, model_details: ModelDetails, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY
+        self,
+        model_details: ModelDetails,
+        namespace,
+        protocol: Protocol,
+        gateway=ISTIO_GATEWAY,
     ):
         self.inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         try:
@@ -25,7 +29,7 @@ class Endpoint(object):
             else:
                 logger.debug("Loading external kubernetes config")
                 config.load_kube_config()
-        except:
+        except Exception:
             logger.warning("Failed to load kubeconfig. Only local mode is possible.")
         self.gateway = gateway
         self.model_details = model_details
@@ -43,7 +47,7 @@ class Endpoint(object):
             "inferenceservices",
             self.model_details.name,
         )
-        url =  api_response["status"]["url"]
+        url = api_response["status"]["url"]
         o = urlparse(url)
         return o.hostname
 
@@ -57,10 +61,7 @@ class Endpoint(object):
                 ingress_ip = res.items[0].status.load_balancer.ingress[0].ip
                 if not ingress_ip:
                     ingress_ip = res.items[0].status.load_balancer.ingress[0].hostname
-                return (
-                    f"http://{ingress_ip}"
-                    + self.protocol.get_predict_path(self.model_details)
-                )
+                return f"http://{ingress_ip}" + self.protocol.get_predict_path(self.model_details)
             else:
                 # TODO check why needed this here
                 config.load_incluster_config()
