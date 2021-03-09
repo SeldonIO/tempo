@@ -1,10 +1,11 @@
 import os
-import pytest
+
 import docker
 import numpy as np
+import pytest
 
-from tempo.serve.pipeline import Pipeline
 from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline
 
 
@@ -66,16 +67,12 @@ def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
             },
             {
                 "model_name": "classifier",
-                "outputs": [
-                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
-                ],
+                "outputs": [{"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}],
             },
         )
     ],
 )
-def test_seldon_pipeline_request_docker(
-    inference_pipeline: Pipeline, x_input, expected
-):
+def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, expected):
     y_pred = inference_pipeline.request(x_input)
 
     assert y_pred == expected
@@ -97,9 +94,7 @@ def test_seldon_pipeline_request_docker(
             },
             {
                 "model_name": "inference-pipeline",
-                "outputs": [
-                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
-                ],
+                "outputs": [{"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}],
             },
         )
     ],
@@ -110,9 +105,7 @@ def test_v2_pipeline_request_docker(inference_pipeline_v2: Pipeline, x_input, ex
     assert y_pred == expected
 
 
-def test_undeploy_pipeline_docker(
-    inference_pipeline: Pipeline, docker_runtime: SeldonDockerRuntime
-):
+def test_undeploy_pipeline_docker(inference_pipeline: Pipeline, docker_runtime: SeldonDockerRuntime):
     inference_pipeline.undeploy()
 
     for model in inference_pipeline._models:

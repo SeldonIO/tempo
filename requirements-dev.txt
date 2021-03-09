@@ -5,6 +5,7 @@ grpcio-tools==1.35.0
 black==20.8b1
 flake8==3.8.3
 flake8-black==0.2.1
+isort==5.7.0
 mypy==0.800
 mypy-protobuf==1.23
 

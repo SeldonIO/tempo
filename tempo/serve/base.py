@@ -1,31 +1,14 @@
-import typing
-import tempfile
 import os
+import tempfile
+import typing
 from os import path
+from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
 
-from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
-
-from tempo.serve.loader import (
-    download,
-    upload,
-    load_custom,
-    save_custom,
-    save_environment,
-)
+from tempo.errors import UndefinedCustomImplementation, UndefinedRuntime
+from tempo.serve.constants import DefaultEnvFilename, DefaultModelFilename, ModelDataType
+from tempo.serve.loader import download, load_custom, save_custom, save_environment, upload
+from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework
 from tempo.serve.runtime import Runtime
-
-from tempo.serve.constants import (
-    ModelDataType,
-    DefaultModelFilename,
-    DefaultEnvFilename,
-)
-from tempo.serve.metadata import (
-    ModelDetails,
-    ModelDataArgs,
-    ModelDataArg,
-    ModelFramework,
-)
-from tempo.errors import UndefinedRuntime, UndefinedCustomImplementation
 
 DEFAULT_CONDA_FILE = "conda.yaml"
 
@@ -129,9 +112,7 @@ class BaseModel:
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            conda_env_file_path = path.join(
-                self.details.local_folder, DEFAULT_CONDA_FILE
-            )
+            conda_env_file_path = path.join(self.details.local_folder, DEFAULT_CONDA_FILE)
             if not path.exists(conda_env_file_path):
                 conda_env_file_path = None
 

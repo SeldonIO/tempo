@@ -1,6 +1,7 @@
-from pydantic import BaseModel
 from enum import Enum
-from typing import Optional, List, Type, Union
+from typing import List, Optional, Type, Union
+
+from pydantic import BaseModel
 
 
 class ModelFramework(Enum):

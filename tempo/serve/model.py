@@ -1,12 +1,11 @@
 import types
-
 from typing import Any, Callable
 
-from tempo.serve.runtime import Runtime
-from tempo.serve.metadata import ModelFramework
+from tempo.errors import UndefinedRuntime
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
-from tempo.errors import UndefinedRuntime
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.runtime import Runtime
 
 
 class Model(BaseModel):

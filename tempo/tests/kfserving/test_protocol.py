@@ -1,6 +1,7 @@
-from tempo.kfserving.protocol import KFServingV2Protocol
 import pytest
-from tempo.serve.metadata import ModelDataArgs, ModelDataArg
+
+from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.serve.metadata import ModelDataArg, ModelDataArgs
 
 
 @pytest.mark.parametrize(

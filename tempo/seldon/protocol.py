@@ -1,8 +1,9 @@
+from typing import Any, Dict, Type, Union
+
 import numpy as np
 
-from typing import Union, Dict, Any, Type
-from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
+from tempo.serve.protocol import Protocol
 
 
 class SeldonProtocol(Protocol):
@@ -34,14 +35,10 @@ class SeldonProtocol(Protocol):
 
         raise ValueError(f"Unknown input type {raw_type}")
 
-    def to_protocol_response(
-        self, model_details: ModelDetails, *args, **kwargs
-    ) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         return self.to_protocol_request(*args, **kwargs)
 
-    def from_protocol_request(
-        self, res: dict, tys: ModelDataArgs
-    ) -> Union[dict, np.ndarray]:
+    def from_protocol_request(self, res: dict, tys: ModelDataArgs) -> Union[dict, np.ndarray]:
         if len(tys) > 1:
             raise ValueError("Seldon protocol can only return a single type")
 

@@ -1,10 +1,11 @@
+import inspect
 from typing import List
+
 from tempo.serve.constants import ModelDataType
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.runtime import Runtime
-from tempo.serve.model import Model
-from tempo.serve.metadata import ModelFramework
-import inspect
 
 
 def pipeline(
@@ -23,11 +24,7 @@ def pipeline(
             func = None
 
             for a in dir(K):
-                if (
-                    not a.startswith("__")
-                    and callable(getattr(K, a))
-                    and hasattr(getattr(K, a), "predict")
-                ):
+                if not a.startswith("__") and callable(getattr(K, a)) and hasattr(getattr(K, a), "predict"):
                     func = getattr(K, a)
                     break
             K.pipeline = Pipeline(

@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 import abc
-import attr
-from tempo.serve.metadata import ModelDetails
 from typing import Any
+
+import attr
+
+from tempo.serve.metadata import ModelDetails
 
 
 @attr.s(auto_attribs=True)

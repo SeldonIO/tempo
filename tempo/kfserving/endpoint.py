@@ -1,9 +1,11 @@
-from kubernetes import client, config
 import os
-from tempo.utils import logger
-from tempo.serve.protocol import Protocol
-from tempo.serve.metadata import ModelDetails
 from urllib.parse import urlparse
+
+from kubernetes import client, config
+
+from tempo.serve.metadata import ModelDetails
+from tempo.serve.protocol import Protocol
+from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 ISTIO_GATEWAY = "istio"

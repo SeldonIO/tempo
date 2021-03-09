@@ -1,10 +1,11 @@
 import time
-import pytest
+
 import docker
 import numpy as np
+import pytest
 
-from tempo.serve.model import Model
 from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.model import Model
 
 
 def test_deploy_docker(sklearn_model: Model, docker_runtime: SeldonDockerRuntime):

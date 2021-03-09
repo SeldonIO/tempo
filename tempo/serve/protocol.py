@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import abc
+from typing import Any, Dict
+
 import attr
 
-from typing import Dict, Any
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
 
@@ -14,9 +15,7 @@ class Protocol(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def to_protocol_response(
-        self, model_details: ModelDetails, *args, **kwargs
-    ) -> Dict:
+    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         pass
 
     @abc.abstractmethod

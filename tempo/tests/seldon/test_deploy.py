@@ -1,11 +1,12 @@
 import os
-import pytest
-import numpy as np
 
-from tempo.serve.metadata import ModelFramework, KubernetesOptions
-from tempo.serve.model import Model
+import numpy as np
+import pytest
+
 from tempo.seldon.deploy import SeldonDeployRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.serve.metadata import KubernetesOptions, ModelFramework
+from tempo.serve.model import Model
 
 
 @pytest.mark.skip("needs deploy cluster")

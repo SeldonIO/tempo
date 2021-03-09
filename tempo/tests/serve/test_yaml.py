@@ -1,7 +1,8 @@
 import pytest
-from tempo.serve.model import Model
+
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
 
 
 @pytest.mark.parametrize(

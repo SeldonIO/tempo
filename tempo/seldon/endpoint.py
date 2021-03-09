@@ -1,8 +1,10 @@
-from kubernetes import client, config
 import os
-from tempo.utils import logger
-from tempo.serve.protocol import Protocol
+
+from kubernetes import client, config
+
 from tempo.serve.metadata import ModelDetails
+from tempo.serve.protocol import Protocol
+from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 ISTIO_GATEWAY = "istio"
@@ -15,9 +17,7 @@ class Endpoint(object):
 
     """
 
-    def __init__(
-        self, model_name, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY
-    ):
+    def __init__(self, model_name, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY):
         self.inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         try:
             if self.inside_cluster:

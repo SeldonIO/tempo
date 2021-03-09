@@ -1,24 +1,19 @@
-import docker
-import socket
-import requests
 import os
+import socket
 import time
-
 from typing import Any, Tuple
 
-from docker.models.containers import Container
+import docker
+import requests
 from docker.client import DockerClient
 from docker.errors import NotFound
+from docker.models.containers import Container
 
+from tempo.seldon.protocol import SeldonProtocol
+from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
+from tempo.serve.metadata import ModelDetails
 from tempo.serve.protocol import Protocol
 from tempo.serve.runtime import Runtime
-from tempo.serve.metadata import ModelDetails
-from tempo.seldon.protocol import SeldonProtocol
-from tempo.seldon.specs import (
-    DefaultHTTPPort,
-    DefaultModelsPath,
-    get_container_spec,
-)
 
 DefaultNetworkName = "tempo"
 
@@ -59,9 +54,7 @@ class SeldonDockerRuntime(Runtime):
         req = protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint(model_details)
         response_raw = requests.post(endpoint, json=req)
-        return protocol.from_protocol_response(
-            response_raw.json(), model_details.outputs
-        )
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def deploy(self, model_details: ModelDetails):
         docker_client = docker.from_env()
@@ -84,9 +77,7 @@ class SeldonDockerRuntime(Runtime):
                 **container_spec,
             )
 
-    def _create_network(
-        self, docker_client: DockerClient, network_name=DefaultNetworkName
-    ):
+    def _create_network(self, docker_client: DockerClient, network_name=DefaultNetworkName):
         try:
             docker_client.networks.get(network_id=network_name)
         except NotFound:
@@ -149,11 +140,7 @@ class SeldonDockerRuntime(Runtime):
     def _is_inside_docker(self) -> bool:
         # From https://stackoverflow.com/a/48710609/5015573
         path = "/proc/self/cgroup"
-        return (
-            os.path.exists("/.dockerenv")
-            or os.path.isfile(path)
-            and any("docker" in line for line in open(path))
-        )
+        return os.path.exists("/.dockerenv") or os.path.isfile(path) and any("docker" in line for line in open(path))
 
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
         raise NotImplementedError()

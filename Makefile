@@ -15,8 +15,10 @@ test:
 
 .PHONY: fmt
 fmt:
-	black ./ --exclude "(.eggs|.tox)"
-
+	black . \
+		--exclude "(.eggs|.tox)" \
+		--line-length 120
+	isort .
 
 .PHONY: lint
 lint:
