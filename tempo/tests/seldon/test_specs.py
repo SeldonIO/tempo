@@ -23,7 +23,7 @@ def test_kubernetes_spec(sklearn_model: Model):
                 {
                     "graph": {
                         "modelUri": sklearn_model.details.uri,
-                        "name": "classifier",
+                        "name": "test-iris-sklearn",
                         "type": "MODEL",
                         "implementation": KubernetesSpec.Implementations[
                             sklearn_model.details.platform
@@ -70,7 +70,7 @@ def test_kubernetes_spec_pipeline():
                             "spec": {
                                 "containers": [
                                     {
-                                        "name": "classifier",
+                                        "name": "inference-pipeline",
                                         "image": container_spec["image"],
                                         "env": container_env,
                                         "args": [],
@@ -81,7 +81,7 @@ def test_kubernetes_spec_pipeline():
                     ],
                     "graph": {
                         "modelUri": details.uri,
-                        "name": "classifier",
+                        "name": "inference-pipeline",
                         "type": "MODEL",
                         "implementation": "TRITON_SERVER",
                         "serviceAccountName": "tempo-pipeline",
