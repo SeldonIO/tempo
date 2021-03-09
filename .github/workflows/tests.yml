@@ -19,6 +19,8 @@ jobs:
         - name: Install dependencies
           run: |
             make install-dev
+        - name: Set up Docker
+          uses: docker/setup-buildx-action
         - name: Test
           run: |
             make test
