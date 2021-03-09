@@ -37,11 +37,11 @@ install-rclone:
 tempo/tests/examples:
 	mkdir -p tempo/tests/examples
 	cd tempo/tests/examples && \
-		gsutil cp -r gs://seldon-models/sklearn . && \
-		gsutil cp -r gs://seldon-models/xgboost . && \
-		gsutil cp -r gs://seldon-models/mlflow . && \
-		gsutil cp -r gs://seldon-models/keras . && \
-		gsutil cp -r gs://seldon-models/tfserving .
+		gsutil -m cp -r gs://seldon-models/sklearn . && \
+		gsutil -m cp -r gs://seldon-models/xgboost . && \
+		gsutil -m cp -r gs://seldon-models/mlflow . && \
+		gsutil -m cp -r gs://seldon-models/keras . && \
+		gsutil -m cp -r gs://seldon-models/tfserving .
 
 
 .PHONY: clean_test_data

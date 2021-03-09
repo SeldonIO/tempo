@@ -19,6 +19,9 @@ jobs:
         - name: Install dependencies
           run: |
             make install-dev
+        - name: Downloading test data
+          run: |
+            make tempo/tests/examples
         - name: Test
           run: |
             make test
