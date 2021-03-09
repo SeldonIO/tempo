@@ -1,5 +1,4 @@
 import types
-import requests
 
 from typing import Any, Callable
 

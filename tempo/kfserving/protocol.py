@@ -1,8 +1,7 @@
 import numpy as np
-from typing import Type, Dict, Any, List, Tuple
+from typing import Type, Dict, Any
 from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
-import json
 from ast import literal_eval
 
 _v2tymap = {

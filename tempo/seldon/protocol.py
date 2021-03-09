@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Union, Type, Optional, Dict, List, Any
+from typing import Union, Dict, Any
 from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
@@ -12,7 +12,7 @@ class SeldonProtocol(Protocol):
         return "/api/v1.0/predictions"
 
     def get_status_path(self, model_details: ModelDetails) -> str:
-        return f"/api/v1.0/health/status"
+        return "/api/v1.0/health/status"
 
     def to_protocol_request(self, *args, **kwargs) -> Dict:
         if not len(args) + len(kwargs) == 1:

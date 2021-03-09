@@ -8,7 +8,6 @@ from tempo.serve.metadata import ModelDataArgs, ModelDataArg
     [("abc", [97, 98, 99]), ({"a": 1}, [123, 39, 97, 39, 58, 32, 49, 125])],
 )
 def test_v2_from_any(data, expected):
-    p = KFServingV2Protocol()
     d = KFServingV2Protocol.create_v2_from_any(data, "a")
     assert d["name"] == "a"
     assert d["data"] == expected

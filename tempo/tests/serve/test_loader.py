@@ -109,6 +109,6 @@ def test_get_env_ok(env_file_path):
         os.path.join(os.path.dirname(__file__), "data", "conda_missing_mlserver.yaml"),
     ],
 )
-def test_get_env_ok(env_file_path):
+def test_get_env_not_ok(env_file_path):
     with pytest.raises(ValueError):
         _get_env(conda_env_file_path=env_file_path)

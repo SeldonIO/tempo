@@ -3,7 +3,7 @@ import tempfile
 import os
 from os import path
 
-from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple, List
+from typing import Optional, Callable, Any, Dict, get_type_hints, Tuple
 
 from tempo.serve.loader import (
     download,

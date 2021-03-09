@@ -7,6 +7,7 @@ from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.model import Model
 import numpy as np
 
+
 #
 # Test single input output model with type annotations
 #

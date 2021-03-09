@@ -4,7 +4,6 @@ import docker
 import numpy as np
 
 from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline
 from tempo.seldon.docker import SeldonDockerRuntime
 
 

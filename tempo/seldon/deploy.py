@@ -1,5 +1,3 @@
-import requests
-
 from tempo.serve.metadata import ModelDetails, KubernetesOptions
 from tempo.serve.runtime import Runtime
 from seldon_deploy_sdk.models.seldon_deployment import SeldonDeployment
@@ -12,7 +10,7 @@ from seldon_deploy_sdk import SeldonDeploymentsApi, PredictApi
 from tempo.seldon.specs import KubernetesSpec
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.endpoint import Endpoint
-from seldon_deploy_sdk import EnvironmentApi, Configuration, ApiClient
+from seldon_deploy_sdk import Configuration, ApiClient
 from seldon_deploy_sdk.auth import SessionAuthenticator
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from http import cookies
@@ -89,7 +87,7 @@ class SeldonDeployRuntime(Runtime):
         )
         api_client = self._get_api_client()
         dep_instance = SeldonDeploymentsApi(api_client)
-        created = dep_instance.create_seldon_deployment(self._k8s_options.namespace, sd)
+        dep_instance.create_seldon_deployment(self._k8s_options.namespace, sd)
 
     def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
         ready = False

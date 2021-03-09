@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Type, Union
+from typing import List
 from tempo.serve.constants import ModelDataType
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.runtime import Runtime
@@ -55,6 +55,7 @@ def pipeline(
             setattr(K, "download", K.pipeline.download)
 
             orig_init = K.__init__
+
             # Make copy of original __init__, so we can call it without recursion
             def __init__(self, *args, **kws):
                 K.pipeline.set_cls(self)

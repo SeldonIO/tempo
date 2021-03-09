@@ -26,7 +26,7 @@ class Endpoint(object):
             else:
                 logger.debug("Loading external kubernetes config")
                 config.load_kube_config()
-        except:
+        except Exception:
             logger.warning("Failed to load kubeconfig. Only local mode is possible.")
         self.gateway = gateway
         self.model_name = model_name

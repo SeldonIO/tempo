@@ -72,7 +72,7 @@ def _has_required_deps(env: dict) -> bool:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
         r = re.compile(
-            f"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
+            fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
         )
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:
@@ -95,7 +95,7 @@ def _add_required_deps(env: dict) -> dict:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
         r = re.compile(
-            f"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
+            fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
         )
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:

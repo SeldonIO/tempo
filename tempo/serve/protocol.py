@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import attr
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
 

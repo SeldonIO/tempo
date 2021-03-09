@@ -3,7 +3,6 @@ import socket
 import requests
 import os
 import time
-import requests
 
 from typing import Any
 
@@ -68,7 +67,7 @@ class SeldonDockerRuntime(Runtime):
         docker_client = docker.from_env()
 
         try:
-            container = self._get_container(model_details)
+            self._get_container(model_details)
         except docker.errors.NotFound:
             protocol = self.get_protocol()
             container_index = self._get_port_index()
@@ -103,7 +102,8 @@ class SeldonDockerRuntime(Runtime):
         while not ready:
             container = self._get_container(model_details)
             if container.status == "running":
-                status_path = self.protocol.get_status_path(model_details)
+                # TODO: Use status_path to wait until container is ready
+                #  status_path = self.protocol.get_status_path(model_details)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
                     s.connect((host_ip, int(host_port)))

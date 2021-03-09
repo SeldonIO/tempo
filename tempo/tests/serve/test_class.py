@@ -1,8 +1,3 @@
-from tempo.serve.utils import pipeline, predictmethod
-from tempo.serve.model import Model
-from tempo.seldon.docker import SeldonDockerRuntime
-import numpy as np
-import time
 import pytest
 
 
