@@ -61,9 +61,7 @@ class Endpoint(object):
                 ingress_ip = res.items[0].status.load_balancer.ingress[0].ip
                 if not ingress_ip:
                     ingress_ip = res.items[0].status.load_balancer.ingress[0].hostname
-                return f"http://{ingress_ip}" + self.protocol.get_predict_path(
-                    self.model_details
-                )
+                return f"http://{ingress_ip}" + self.protocol.get_predict_path(self.model_details)
             else:
                 # TODO check why needed this here
                 config.load_incluster_config()
