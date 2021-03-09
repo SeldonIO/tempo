@@ -54,7 +54,7 @@ setup(
         "seldon-deploy-sdk",
         "conda-pack",
         "mlserver==0.3.1.dev5",
-        "mlserver-tempo==0.3.1.dev5"
+        "mlserver-tempo==0.3.1.dev5",
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,
