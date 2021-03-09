@@ -254,14 +254,14 @@ def inference_pipeline_v3(
             return self.counter
 
     myc = MyClass()
-    myc.pipeline.deploy()
+    myc.pipeline.deploy()  # type: ignore
 
     time.sleep(2)
 
     yield myc
 
     try:
-        myc.undeploy()
+        myc.undeploy()  # type: ignore
     except docker.errors.NotFound:
         # Ignore if the pipeline was already undeployed
         pass

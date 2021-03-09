@@ -17,9 +17,8 @@ class ModelFramework(Enum):
 
 
 class ModelDataArg(BaseModel):
-
     ty: Type
-    name: str = None
+    name: Optional[str] = None
 
 
 class ModelDataArgs(BaseModel):
@@ -33,13 +32,14 @@ class ModelDataArgs(BaseModel):
         return None
 
     def __getitem__(self, idx: Union[str, int]) -> Optional[Type]:
-        if type(idx) == str:
+        if isinstance(idx, str):
             return self._get_type_by_name(idx)
-        else:
-            if idx < len(self.args):
-                return self.args[idx].ty
-            else:
-                return None
+
+        if idx < len(self.args):
+            # NOTE: `idx` here must be an int
+            return self.args[idx].ty
+
+        return None
 
     def __len__(self):
         return len(self.args)
@@ -57,5 +57,5 @@ class ModelDetails(BaseModel):
 class KubernetesOptions(BaseModel):
     replicas: int = 1
     namespace = "default"
-    minReplicas: int = None
-    maxReplicas: int = None
+    minReplicas: Optional[int] = None
+    maxReplicas: Optional[int] = None

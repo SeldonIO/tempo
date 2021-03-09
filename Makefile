@@ -21,7 +21,7 @@ fmt:
 .PHONY: lint
 lint:
 	flake8 .
-	mypy .
+	mypy ./tempo
 
 .PHONY: install-rclone
 install-rclone:

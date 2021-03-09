@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Union, Dict, Any
+from typing import Union, Dict, Any, Type
 from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 
@@ -48,9 +48,9 @@ class SeldonProtocol(Protocol):
         if tys[0] == Dict:
             # Return as-is
             return res
-        elif len(tys) == 0:
-            ty = np.ndarray
-        else:
+
+        ty: Type = np.ndarray
+        if tys and tys[0] is not None:
             ty = tys[0]
 
         if ty == np.ndarray:

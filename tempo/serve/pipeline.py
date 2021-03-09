@@ -6,6 +6,7 @@ from tempo.serve.model import Model
 from tempo.utils import logger
 from tempo.serve.runtime import Runtime
 from tempo.serve.base import BaseModel
+from tempo.errors import UndefinedCustomImplementation
 
 
 class Pipeline(BaseModel):
@@ -90,4 +91,8 @@ class Pipeline(BaseModel):
         return yamls
 
     def __call__(self, raw: Any) -> Any:
+        if not self._user_func:
+            # TODO: Group generic errors
+            raise UndefinedCustomImplementation(self.details.name)
+
         return self._user_func(raw)

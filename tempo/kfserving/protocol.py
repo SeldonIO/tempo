@@ -1,10 +1,11 @@
 import numpy as np
-from typing import Type, Dict, Any
+
+from typing import Type, Dict, Any, Optional, List, Union
 from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 from ast import literal_eval
 
-_v2tymap = {
+_v2tymap: Dict[str, np.dtype] = {
     "BOOL": np.dtype("bool"),
     "UINT8": np.dtype("uint8"),
     "UINT16": np.dtype("uint16"),
@@ -19,7 +20,7 @@ _v2tymap = {
     "FP64": np.dtype("float64"),
 }
 
-_nptymap = dict([reversed(i) for i in _v2tymap.items()])
+_nptymap = dict([(value, key) for key, value in _v2tymap.items()])
 _nptymap[np.dtype("float32")] = "FP32"  # Ensure correct mapping for ambiguous type
 
 
@@ -58,7 +59,7 @@ class KFServingV2Protocol(Protocol):
             return literal_eval(py_str)
 
     @staticmethod
-    def create_np_from_v2(data: list, ty: str, shape: list) -> np.array:
+    def create_np_from_v2(data: list, ty: str, shape: list) -> np.ndarray:
         if ty in _v2tymap:
             npty = _v2tymap[ty]
             arr = np.array(data, dtype=npty)
@@ -172,7 +173,7 @@ class KFServingV1Protocol(Protocol):
         return arr.tolist()
 
     @staticmethod
-    def create_np_from_v1(data: list) -> np.array:
+    def create_np_from_v1(data: list) -> np.ndarray:
         arr = np.array(data)
         return arr
 
@@ -210,7 +211,7 @@ class KFServingV1Protocol(Protocol):
             return {"instances": inputs}
 
     @staticmethod
-    def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Type:
+    def get_ty(name: Optional[str], idx: int, tys: ModelDataArgs) -> Type:
         ty = None
         if name is not None:
             ty = tys[name]
@@ -223,7 +224,7 @@ class KFServingV1Protocol(Protocol):
     def to_protocol_response(
         self, model_details: ModelDetails, *args, **kwargs
     ) -> Dict:
-        outputs = []
+        outputs: List[Union[Dict, List]] = []
         if len(args) > 0:
             for idx, raw in enumerate(args):
                 raw_type = type(raw)

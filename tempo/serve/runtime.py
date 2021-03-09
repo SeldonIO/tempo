@@ -18,7 +18,7 @@ class Runtime(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def remote(self, *args, **kwargs) -> Any:
+    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
         pass
 
     @abc.abstractmethod

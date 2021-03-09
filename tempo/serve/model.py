@@ -6,6 +6,7 @@ from tempo.serve.runtime import Runtime
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
+from tempo.errors import UndefinedRuntime
 
 
 class Model(BaseModel):
@@ -18,7 +19,7 @@ class Model(BaseModel):
         platform: ModelFramework = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
-        model_func: Callable[[Any], Any] = None,
+        model_func: Callable[..., Any] = None,
     ):
         super().__init__(
             name,
@@ -41,5 +42,8 @@ class Model(BaseModel):
     def __call__(self, *args, **kwargs) -> Any:
         if self._user_func is not None:
             return self._user_func(*args, **kwargs)
-        else:
-            return self.runtime.remote(self.details, *args, **kwargs)
+
+        if self.runtime is None:
+            raise UndefinedRuntime(self.details.name)
+
+        return self.runtime.remote(self.details, *args, **kwargs)

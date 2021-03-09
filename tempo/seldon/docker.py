@@ -4,7 +4,7 @@ import requests
 import os
 import time
 
-from typing import Any
+from typing import Any, Tuple
 
 from docker.models.containers import Container
 from docker.client import DockerClient
@@ -33,7 +33,7 @@ class SeldonDockerRuntime(Runtime):
     def get_protocol(self) -> Protocol:
         return self.protocol
 
-    def _get_host_ip_port(self, model_details: ModelDetails) -> (str, str):
+    def _get_host_ip_port(self, model_details: ModelDetails) -> Tuple[str, str]:
         container = self._get_container(model_details)
         port_index = self._get_port_index()
         host_ports = container.ports[port_index]
@@ -121,6 +121,8 @@ class SeldonDockerRuntime(Runtime):
                 t1 = time.time()
                 if t1 - t0 > timeout_secs:
                     return ready
+
+        return False
 
     def _get_available_port(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

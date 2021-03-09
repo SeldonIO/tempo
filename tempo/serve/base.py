@@ -25,6 +25,7 @@ from tempo.serve.metadata import (
     ModelDataArg,
     ModelFramework,
 )
+from tempo.errors import UndefinedRuntime, UndefinedCustomImplementation
 
 DEFAULT_CONDA_FILE = "conda.yaml"
 
@@ -33,7 +34,7 @@ class BaseModel:
     def __init__(
         self,
         name: str,
-        user_func: Callable[[Any], Any] = None,
+        user_func: Callable[..., Any] = None,
         local_folder: str = None,
         uri: str = None,
         platform: ModelFramework = None,
@@ -49,15 +50,15 @@ class BaseModel:
             uri = ""
 
         local_folder = self._get_local_folder(local_folder)
-        inputs, outputs = self._get_args(inputs, outputs)
+        input_args, output_args = self._get_args(inputs, outputs)
 
         self.details = ModelDetails(
             name=name,
             local_folder=local_folder,
             uri=uri,
             platform=platform,
-            inputs=inputs,
-            outputs=outputs,
+            inputs=input_args,
+            outputs=output_args,
         )
 
         self.cls = None
@@ -74,7 +75,7 @@ class BaseModel:
                 hints = get_type_hints(self._user_func)
                 for k, v in hints.items():
                     if k == "return":
-                        if isinstance(v, typing._GenericAlias):
+                        if getattr(v, "__origin__") is typing.Generic:
                             targs = v.__args__
                             for targ in targs:
                                 output_args.append(ModelDataArg(ty=targ))
@@ -83,19 +84,19 @@ class BaseModel:
                     else:
                         input_args.append(ModelDataArg(name=k, ty=v))
         else:
-            if type(outputs) == Dict:
+            if isinstance(outputs, dict):
                 for k, v in outputs.items():
                     output_args.append(ModelDataArg(name=k, ty=v))
-            elif type(outputs) == Tuple:
+            elif isinstance(outputs, tuple):
                 for ty in list(outputs):
                     output_args.append(ModelDataArg(ty=ty))
             else:
                 output_args.append(ModelDataArg(ty=outputs))
 
-            if type(inputs) == Dict:
+            if isinstance(inputs, dict):
                 for k, v in inputs.items():
                     input_args.append(ModelDataArg(name=k, ty=v))
-            elif type(inputs) == Tuple:
+            elif isinstance(inputs, tuple):
                 for ty in list(inputs):
                     input_args.append(ModelDataArg(ty=ty))
             else:
@@ -155,7 +156,11 @@ class BaseModel:
 
     def request(self, req: Dict) -> Dict:
         if self.runtime is None:
-            raise ValueError("Runtime most not be none to handle a request")
+            raise UndefinedRuntime(self.details.name)
+
+        if self._user_func is None:
+            raise UndefinedCustomImplementation(self.details.name)
+
         protocol = self.runtime.get_protocol()
         req_converted = protocol.from_protocol_request(req, self.details.inputs)
         if type(req_converted) == dict:
@@ -180,6 +185,7 @@ class BaseModel:
             response_converted = protocol.to_protocol_response(self.details, *response)
         else:
             response_converted = protocol.to_protocol_response(self.details, response)
+
         return response_converted
 
     def set_runtime(self, runtime: Runtime):
@@ -198,6 +204,9 @@ class BaseModel:
         """
         Get k8s yaml
         """
+        if self.runtime is None:
+            raise UndefinedRuntime(self.details.name)
+
         return self.runtime.to_k8s_yaml(self.details)
 
     def deploy(self):
