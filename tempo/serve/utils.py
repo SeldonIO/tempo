@@ -1,10 +1,11 @@
-from typing import List, Optional, Dict, Type, Union
+import inspect
+from typing import List
+
 from tempo.serve.constants import ModelDataType
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.runtime import Runtime
-from tempo.serve.model import Model
-from tempo.serve.metadata import ModelFramework
-import inspect
 
 
 def pipeline(
@@ -15,18 +16,15 @@ def pipeline(
     models: List[Model] = None,
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
-    conda_env: str = None):
+    conda_env: str = None,
+):
     def _pipeline(f):
         if inspect.isclass(f):
             K = f
             func = None
 
             for a in dir(K):
-                if (
-                    not a.startswith("__")
-                    and callable(getattr(K, a))
-                    and hasattr(getattr(K, a), "predict")
-                ):
+                if not a.startswith("__") and callable(getattr(K, a)) and hasattr(getattr(K, a), "predict"):
                     func = getattr(K, a)
                     break
             K.pipeline = Pipeline(
@@ -54,6 +52,7 @@ def pipeline(
             setattr(K, "download", K.pipeline.download)
 
             orig_init = K.__init__
+
             # Make copy of original __init__, so we can call it without recursion
             def __init__(self, *args, **kws):
                 K.pipeline.set_cls(self)

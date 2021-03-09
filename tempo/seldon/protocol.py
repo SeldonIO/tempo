@@ -1,8 +1,9 @@
+from typing import Any, Dict, Type, Union
+
 import numpy as np
 
-from typing import Union, Type, Optional, Dict, List, Any
-from tempo.serve.protocol import Protocol
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
+from tempo.serve.protocol import Protocol
 
 
 class SeldonProtocol(Protocol):
@@ -12,7 +13,7 @@ class SeldonProtocol(Protocol):
         return "/api/v1.0/predictions"
 
     def get_status_path(self, model_details: ModelDetails) -> str:
-        return f"/api/v1.0/health/status"
+        return "/api/v1.0/health/status"
 
     def to_protocol_request(self, *args, **kwargs) -> Dict:
         if not len(args) + len(kwargs) == 1:
@@ -37,18 +38,16 @@ class SeldonProtocol(Protocol):
     def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
         return self.to_protocol_request(*args, **kwargs)
 
-    def from_protocol_request(
-        self, res: dict, tys: ModelDataArgs
-    ) -> Union[dict, np.ndarray]:
+    def from_protocol_request(self, res: dict, tys: ModelDataArgs) -> Union[dict, np.ndarray]:
         if len(tys) > 1:
             raise ValueError("Seldon protocol can only return a single type")
 
         if tys[0] == Dict:
             # Return as-is
             return res
-        elif len(tys) == 0:
-            ty = np.ndarray
-        else:
+
+        ty: Type = np.ndarray
+        if tys and tys[0] is not None:
             ty = tys[0]
 
         if ty == np.ndarray:
@@ -59,7 +58,7 @@ class SeldonProtocol(Protocol):
                     return np.array(tensor["values"]).reshape(tensor["shape"])
                 elif "ndarray" in datadef:
                     return np.array(datadef["ndarray"])
-                #elif "tftensor" in datadef:
+                # elif "tftensor" in datadef:
                 #    tf_proto = TensorProto()
                 #    json_format.ParseDict(datadef["tftensor"], tf_proto)
                 #    return tf.make_ndarray(tf_proto)

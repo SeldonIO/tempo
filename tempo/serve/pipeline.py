@@ -1,11 +1,12 @@
-from typing import Callable, List, Any
+from typing import Any, Callable, List
 
-from tempo.serve.metadata import ModelFramework
-from tempo.serve.constants import ModelDataType
-from tempo.serve.model import Model
-from tempo.utils import logger
-from tempo.serve.runtime import Runtime
+from tempo.errors import UndefinedCustomImplementation
 from tempo.serve.base import BaseModel
+from tempo.serve.constants import ModelDataType
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
+from tempo.serve.runtime import Runtime
+from tempo.utils import logger
 
 
 class Pipeline(BaseModel):
@@ -90,4 +91,8 @@ class Pipeline(BaseModel):
         return yamls
 
     def __call__(self, raw: Any) -> Any:
+        if not self._user_func:
+            # TODO: Group generic errors
+            raise UndefinedCustomImplementation(self.details.name)
+
         return self._user_func(raw)

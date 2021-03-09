@@ -1,18 +1,18 @@
 import os
-import yaml
 import time
-import requests
+from typing import Any
 
+import requests
+import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
-from typing import Any
 
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec
+from tempo.serve.metadata import KubernetesOptions, ModelDetails
 from tempo.serve.runtime import Runtime
 from tempo.utils import logger
-from tempo.serve.metadata import ModelDetails, KubernetesOptions
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
@@ -41,9 +41,7 @@ class SeldonKubernetesRuntime(Runtime):
             config.load_kube_config()
 
     def get_endpoint(self, model_details: ModelDetails) -> str:
-        endpoint = Endpoint(
-            model_details.name, self.k8s_options.namespace, self.protocol
-        )
+        endpoint = Endpoint(model_details.name, self.k8s_options.namespace, self.protocol)
         return endpoint.get_url(model_details)
 
     def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
@@ -51,9 +49,7 @@ class SeldonKubernetesRuntime(Runtime):
         req = protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint(model_details)
         response_raw = requests.post(endpoint, json=req)
-        return protocol.from_protocol_response(
-            response_raw.json(), model_details.outputs
-        )
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def undeploy(self, model_details: ModelDetails):
         api_instance = client.CustomObjectsApi()
@@ -81,9 +77,7 @@ class SeldonKubernetesRuntime(Runtime):
                 "seldondeployments",
                 model_details.name,
             )
-            model_spec["metadata"]["resourceVersion"] = existing["metadata"][
-                "resourceVersion"
-            ]
+            model_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",

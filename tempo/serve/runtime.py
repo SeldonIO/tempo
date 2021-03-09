@@ -1,8 +1,11 @@
 from __future__ import annotations
+
 import abc
-import attr
-from tempo.serve.metadata import ModelDetails
 from typing import Any
+
+import attr
+
+from tempo.serve.metadata import ModelDetails
 
 
 @attr.s(auto_attribs=True)
@@ -18,7 +21,7 @@ class Runtime(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def remote(self, *args, **kwargs) -> Any:
+    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
         pass
 
     @abc.abstractmethod

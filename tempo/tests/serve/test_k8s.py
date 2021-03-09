@@ -1,11 +1,10 @@
-import pytest
 import numpy as np
-
+import pytest
 from kubernetes import client
 
+from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
-from tempo.seldon.k8s import SeldonKubernetesRuntime
 
 
 @pytest.mark.skip(reason="needs k8s cluster")

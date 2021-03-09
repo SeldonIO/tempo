@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 SKLEARN_MODEL = "sklearn"
 XGBOOST_MODEL = "xgboost"

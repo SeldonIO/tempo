@@ -1,7 +1,8 @@
 import pytest
-from tempo.serve.model import Model
+
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
 
 
 @pytest.mark.parametrize(
@@ -17,7 +18,7 @@ spec:
   - graph:
       implementation: SKLEARN_SERVER
       modelUri: gs://seldon-models/sklearn/iris
-      name: classifier
+      name: test-iris-sklearn
       type: MODEL
     name: default
     replicas: 1
@@ -49,7 +50,7 @@ spec:
   - graph:
       implementation: XGBOOST_SERVER
       modelUri: gs://seldon-models/xgboost/iris
-      name: classifier
+      name: test-iris-xgboost
       type: MODEL
     name: default
     replicas: 1

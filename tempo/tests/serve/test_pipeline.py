@@ -1,11 +1,11 @@
-import time
 import os
-import pytest
+
 import docker
 import numpy as np
+import pytest
 
-from tempo.serve.pipeline import Pipeline
 from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline
 
 
@@ -67,16 +67,12 @@ def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
             },
             {
                 "model_name": "classifier",
-                "outputs": [
-                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
-                ],
+                "outputs": [{"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}],
             },
         )
     ],
 )
-def test_seldon_pipeline_request_docker(
-    inference_pipeline: Pipeline, x_input, expected
-):
+def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, expected):
     y_pred = inference_pipeline.request(x_input)
 
     assert y_pred == expected
@@ -98,9 +94,7 @@ def test_seldon_pipeline_request_docker(
             },
             {
                 "model_name": "inference-pipeline",
-                "outputs": [
-                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
-                ],
+                "outputs": [{"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}],
             },
         )
     ],
@@ -111,9 +105,7 @@ def test_v2_pipeline_request_docker(inference_pipeline_v2: Pipeline, x_input, ex
     assert y_pred == expected
 
 
-def test_undeploy_pipeline_docker(
-    inference_pipeline: Pipeline, docker_runtime: SeldonDockerRuntime
-):
+def test_undeploy_pipeline_docker(inference_pipeline: Pipeline, docker_runtime: SeldonDockerRuntime):
     inference_pipeline.undeploy()
 
     for model in inference_pipeline._models:
@@ -121,12 +113,12 @@ def test_undeploy_pipeline_docker(
             docker_runtime._get_container(model.details)
 
 
-def test_save_pipeline(docker_runtime_v2, sklearn_model,xgboost_model):
+def test_save_pipeline(docker_runtime_v2, sklearn_model, xgboost_model):
     @pipeline(
         name="classifier",
         runtime=docker_runtime_v2,
         models=[sklearn_model, xgboost_model],
-        local_folder=os.path.join(os.path.dirname(__file__), 'data')
+        local_folder=os.path.join(os.path.dirname(__file__), "data"),
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
@@ -136,4 +128,3 @@ def test_save_pipeline(docker_runtime_v2, sklearn_model,xgboost_model):
             return xgboost_model(payload)
 
     _pipeline.save(save_env=True)
-

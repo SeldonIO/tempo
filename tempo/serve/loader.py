@@ -1,13 +1,14 @@
-import cloudpickle
-import rclone
 import re
-import conda_pack
-import yaml
 import uuid
-
-from typing import Optional
-from tempfile import NamedTemporaryFile
 from subprocess import run
+from tempfile import NamedTemporaryFile
+from typing import Optional
+
+import cloudpickle
+import conda_pack
+import rclone
+import yaml
+
 from tempo.conf import settings
 from tempo.serve.constants import MLServerEnvDeps
 
@@ -26,7 +27,7 @@ def load_custom(file_path: str):
         return cloudpickle.load(file)
 
 
-def _get_env(conda_env_file_path:str = None, env_name:str = None) -> dict:
+def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
     if conda_env_file_path:
         with open(conda_env_file_path) as file:
             env = yaml.safe_load(file)
@@ -37,12 +38,13 @@ def _get_env(conda_env_file_path:str = None, env_name:str = None) -> dict:
         env = _add_required_deps(env)
     return env
 
+
 def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None):
     # TODO: Check if Conda is installed
     if env_name:
         _pack_environment(env_name, conda_pack_file_path)
     else:
-        env = _get_env(conda_env_file_path,env_name)
+        env = _get_env(conda_env_file_path, env_name)
         _create_and_pack_environment(env=env, file_path=conda_pack_file_path)
 
 
@@ -63,12 +65,12 @@ def _has_required_deps(env: dict) -> bool:
     dependencies = env["dependencies"]
     pip_deps = _get_pip_deps(dependencies)
     if not pip_deps:
-       return False
+        return False
 
     for dep in MLServerEnvDeps:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
-        r = re.compile(f"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
+        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:
             return False
@@ -89,7 +91,7 @@ def _add_required_deps(env: dict) -> dict:
     for dep in MLServerEnvDeps:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
-        r = re.compile(f"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
+        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:
             pip_deps["pip"].extend(MLServerEnvDeps)

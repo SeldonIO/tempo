@@ -1,9 +1,8 @@
 import json
 
-from tempo.serve.metadata import ModelDetails, ModelFramework
-from tempo.serve.protocol import Protocol
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.metadata import KubernetesOptions
+from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
+from tempo.serve.protocol import Protocol
 
 DefaultHTTPPort = "9000"
 DefaultGRPCPort = "9500"
@@ -32,9 +31,7 @@ class _V1ContainerFactory:
     def get_container_spec(cls, model_details: ModelDetails) -> dict:
         model_image = cls.Images[model_details.platform]
 
-        parameters = [
-            {"name": "model_uri", "value": DefaultModelsPath, "type": "STRING"}
-        ]
+        parameters = [{"name": "model_uri", "value": DefaultModelsPath, "type": "STRING"}]
         env = {"PREDICTIVE_UNIT_PARAMETERS": json.dumps(parameters)}
 
         return {
@@ -112,7 +109,11 @@ class KubernetesSpec:
     def _get_predictor(self) -> dict:
         # TODO: We need to insert `type: MODEL`, otherwise the validation
         # webhook complains
-        graph = {"modelUri": self._details.uri, "name": self._details.name, "type": "MODEL"}
+        graph = {
+            "modelUri": self._details.uri,
+            "name": self._details.name,
+            "type": "MODEL",
+        }
 
         if self._details.platform in self.Implementations:
             model_implementation = self.Implementations[self._details.platform]
@@ -134,10 +135,7 @@ class KubernetesSpec:
 
     def _get_component_specs(self) -> list:
         container_spec = get_container_spec(self._details, self._protocol)
-        container_env = [
-            {"name": name, "value": value}
-            for name, value in container_spec["environment"].items()
-        ]
+        container_env = [{"name": name, "value": value} for name, value in container_spec["environment"].items()]
 
         return [
             {
