@@ -6,7 +6,7 @@ install:
 	pip install -e .
 
 .PHONY: install-dev
-install-dev:
+install-dev: install
 	pip install -r requirements-dev.txt
 
 .PHONY: test
@@ -15,15 +15,19 @@ test:
 
 .PHONY: fmt
 fmt:
+	isort .
 	black . \
 		--exclude "(.eggs|.tox)" \
 		--line-length 120
-	isort .
 
 .PHONY: lint
 lint:
 	flake8 .
 	mypy ./tempo
+	black . \
+		--check \
+		--exclude "(.eggs|.tox)" \
+		--line-length 120
 
 .PHONY: install-rclone
 install-rclone:
