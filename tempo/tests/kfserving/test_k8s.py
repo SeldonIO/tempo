@@ -4,6 +4,7 @@ from tempo.serve.metadata import ModelFramework
 import numpy as np
 import pytest
 
+
 @pytest.mark.skip(reason="needs k8s cluster")
 def test_kfserving():
     model = Model(
@@ -11,8 +12,8 @@ def test_kfserving():
         runtime=KFServingKubernetesRuntime(),
         platform=ModelFramework.SKLearn,
         uri="gs://kfserving-samples/models/sklearn/iris",
-        local_folder="sklearn/model"
+        local_folder="sklearn/model",
     )
-    #model.deploy()
+    # model.deploy()
     res = model(np.array([[1, 2, 3, 4]]))
     print(res)

@@ -40,14 +40,14 @@ class KFServingV2Protocol(Protocol):
     @staticmethod
     def create_v2_from_any(data: Any, name: str) -> Dict:
         if isinstance(data, str):
-            b = list(bytes(data, 'utf-8'))
+            b = list(bytes(data, "utf-8"))
         else:
-            b = list(bytes(repr(data),'utf-8'))
+            b = list(bytes(repr(data), "utf-8"))
         return {
-                "name": name,
-                "datatype": "BYTES",
-                "data": b,
-                "shape": [len(b)],
+            "name": name,
+            "datatype": "BYTES",
+            "data": b,
+            "shape": [len(b)],
         }
 
     @staticmethod
@@ -85,9 +85,7 @@ class KFServingV2Protocol(Protocol):
             if raw_type == np.ndarray:
                 inputs.append(KFServingV2Protocol.create_v2_from_np(raw, name))
             else:
-                inputs.append(
-                    KFServingV2Protocol.create_v2_from_any(raw, name)
-                )
+                inputs.append(KFServingV2Protocol.create_v2_from_any(raw, name))
 
         return {"inputs": inputs}
 

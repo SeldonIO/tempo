@@ -10,12 +10,14 @@ ISTIO_GATEWAY = "istio"
 
 
 class Endpoint(object):
-    """A Model Endpoint
-
-    """
+    """A Model Endpoint"""
 
     def __init__(
-        self, model_details: ModelDetails, namespace, protocol: Protocol, gateway=ISTIO_GATEWAY
+        self,
+        model_details: ModelDetails,
+        namespace,
+        protocol: Protocol,
+        gateway=ISTIO_GATEWAY,
     ):
         self.inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         try:
@@ -43,7 +45,7 @@ class Endpoint(object):
             "inferenceservices",
             self.model_details.name,
         )
-        url =  api_response["status"]["url"]
+        url = api_response["status"]["url"]
         o = urlparse(url)
         return o.hostname
 
@@ -57,9 +59,8 @@ class Endpoint(object):
                 ingress_ip = res.items[0].status.load_balancer.ingress[0].ip
                 if not ingress_ip:
                     ingress_ip = res.items[0].status.load_balancer.ingress[0].hostname
-                return (
-                    f"http://{ingress_ip}"
-                    + self.protocol.get_predict_path(self.model_details)
+                return f"http://{ingress_ip}" + self.protocol.get_predict_path(
+                    self.model_details
                 )
             else:
                 # TODO check why needed this here

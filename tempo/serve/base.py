@@ -28,6 +28,7 @@ from tempo.serve.metadata import (
 
 DEFAULT_CONDA_FILE = "conda.yaml"
 
+
 class BaseModel:
     def __init__(
         self,
@@ -127,11 +128,17 @@ class BaseModel:
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            conda_env_file_path = path.join(self.details.local_folder,DEFAULT_CONDA_FILE)
+            conda_env_file_path = path.join(
+                self.details.local_folder, DEFAULT_CONDA_FILE
+            )
             if not path.exists(conda_env_file_path):
                 conda_env_file_path = None
 
-            save_environment(conda_pack_file_path=file_path_env, conda_env_file_path=conda_env_file_path, env_name=self.conda_env_name)
+            save_environment(
+                conda_pack_file_path=file_path_env,
+                conda_env_file_path=conda_env_file_path,
+                env_name=self.conda_env_name,
+            )
 
     def upload(self):
         """

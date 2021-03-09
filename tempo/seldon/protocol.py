@@ -34,7 +34,9 @@ class SeldonProtocol(Protocol):
 
         raise ValueError(f"Unknown input type {raw_type}")
 
-    def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
+    def to_protocol_response(
+        self, model_details: ModelDetails, *args, **kwargs
+    ) -> Dict:
         return self.to_protocol_request(*args, **kwargs)
 
     def from_protocol_request(
@@ -59,7 +61,7 @@ class SeldonProtocol(Protocol):
                     return np.array(tensor["values"]).reshape(tensor["shape"])
                 elif "ndarray" in datadef:
                     return np.array(datadef["ndarray"])
-                #elif "tftensor" in datadef:
+                # elif "tftensor" in datadef:
                 #    tf_proto = TensorProto()
                 #    json_format.ParseDict(datadef["tftensor"], tf_proto)
                 #    return tf.make_ndarray(tf_proto)

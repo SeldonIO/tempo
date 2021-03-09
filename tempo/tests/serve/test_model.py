@@ -164,9 +164,7 @@ def test_custom_model_decorator_types(v2_input, expected):
 def test_custom_multiheaded_model_tuple(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=SeldonDockerRuntime(
-            protocol=KFServingV2Protocol()
-        ),
+        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
         uri="gs://seldon-models/custom",
         local_folder="custom_iris_path",
@@ -221,9 +219,7 @@ def test_custom_multiheaded_model_tuple(v2_input, expected):
 def test_custom_multiheaded_model_list(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=SeldonDockerRuntime(
-            protocol=KFServingV2Protocol()
-        ),
+        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
         uri="gs://seldon-models/custom",
         local_folder="custom_iris_path",

@@ -54,7 +54,6 @@ class ModelDetails(BaseModel):
     outputs: ModelDataArgs
 
 
-
 class KubernetesOptions(BaseModel):
     replicas: int = 1
     namespace = "default"

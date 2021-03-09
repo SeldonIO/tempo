@@ -121,12 +121,12 @@ def test_undeploy_pipeline_docker(
             docker_runtime._get_container(model.details)
 
 
-def test_save_pipeline(docker_runtime_v2, sklearn_model,xgboost_model):
+def test_save_pipeline(docker_runtime_v2, sklearn_model, xgboost_model):
     @pipeline(
         name="classifier",
         runtime=docker_runtime_v2,
         models=[sklearn_model, xgboost_model],
-        local_folder=os.path.join(os.path.dirname(__file__), 'data')
+        local_folder=os.path.join(os.path.dirname(__file__), "data"),
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
@@ -136,4 +136,3 @@ def test_save_pipeline(docker_runtime_v2, sklearn_model,xgboost_model):
             return xgboost_model(payload)
 
     _pipeline.save(save_env=True)
-

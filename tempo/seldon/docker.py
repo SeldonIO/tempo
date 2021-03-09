@@ -34,7 +34,7 @@ class SeldonDockerRuntime(Runtime):
     def get_protocol(self) -> Protocol:
         return self.protocol
 
-    def _get_host_ip_port(self, model_details: ModelDetails) -> (str,str):
+    def _get_host_ip_port(self, model_details: ModelDetails) -> (str, str):
         container = self._get_container(model_details)
         port_index = self._get_port_index()
         host_ports = container.ports[port_index]
@@ -77,12 +77,12 @@ class SeldonDockerRuntime(Runtime):
             self._create_network(docker_client)
 
             docker_client.containers.run(
-               name=self._get_container_name(model_details),
-               ports={container_index: self._get_available_port()},
-               volumes={model_folder: {"bind": DefaultModelsPath, "mode": "ro"}},
-               detach=True,
-               network=DefaultNetworkName,
-               **container_spec,
+                name=self._get_container_name(model_details),
+                ports={container_index: self._get_available_port()},
+                volumes={model_folder: {"bind": DefaultModelsPath, "mode": "ro"}},
+                detach=True,
+                network=DefaultNetworkName,
+                **container_spec,
             )
 
     def _create_network(
@@ -112,10 +112,10 @@ class SeldonDockerRuntime(Runtime):
                     pass
                 finally:
                     s.close()
-                #url = f"http://{host_ip}:{host_port}{status_path}"
-                #print(url)
-                #r = requests.get(url)
-                #if r.status_code == 200:
+                # url = f"http://{host_ip}:{host_port}{status_path}"
+                # print(url)
+                # r = requests.get(url)
+                # if r.status_code == 200:
                 #    return True
             if timeout_secs is not None:
                 t1 = time.time()

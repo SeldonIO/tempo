@@ -48,17 +48,13 @@ class KFServingKubernetesRuntime(Runtime):
             config.load_kube_config()
 
     def get_endpoint(self, model_details: ModelDetails) -> str:
-        endpoint = Endpoint(
-            model_details, self.k8s_options.namespace, self.protocol
-        )
+        endpoint = Endpoint(model_details, self.k8s_options.namespace, self.protocol)
         return endpoint.get_url()
 
     def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
-        endpoint = Endpoint(
-            model_details, self.k8s_options.namespace, self.protocol
-        )
+        endpoint = Endpoint(model_details, self.k8s_options.namespace, self.protocol)
         service_host = endpoint.get_service_host()
-        return {"Host":service_host}
+        return {"Host": service_host}
 
     def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
         protocol = self.get_protocol()
@@ -66,7 +62,9 @@ class KFServingKubernetesRuntime(Runtime):
         endpoint = self.get_endpoint(model_details)
         headers = self.get_headers(model_details)
         response_raw = requests.post(endpoint, json=req, headers=headers)
-        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
+        return protocol.from_protocol_response(
+            response_raw.json(), model_details.outputs
+        )
 
     def undeploy(self, model_details: ModelDetails):
         api_instance = client.CustomObjectsApi()
@@ -153,12 +151,9 @@ class KFServingKubernetesRuntime(Runtime):
             },
             "spec": {
                 "default": {
-                  "predictor":
-                  {
-                    model_implementation: {
-                      "storageUri": model_details.uri
-                     },
-                  },
+                    "predictor": {
+                        model_implementation: {"storageUri": model_details.uri},
+                    },
                 },
             },
         }

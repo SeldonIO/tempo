@@ -112,7 +112,11 @@ class KubernetesSpec:
     def _get_predictor(self) -> dict:
         # TODO: We need to insert `type: MODEL`, otherwise the validation
         # webhook complains
-        graph = {"modelUri": self._details.uri, "name": self._details.name, "type": "MODEL"}
+        graph = {
+            "modelUri": self._details.uri,
+            "name": self._details.name,
+            "type": "MODEL",
+        }
 
         if self._details.platform in self.Implementations:
             model_implementation = self.Implementations[self._details.platform]
