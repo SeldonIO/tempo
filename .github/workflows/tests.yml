@@ -20,7 +20,7 @@ jobs:
           run: |
             make install-dev
         - name: Set up Docker
-          uses: docker/setup-buildx-action
+          uses: docker/setup-buildx-action@v1
         - name: Test
           run: |
             make test
