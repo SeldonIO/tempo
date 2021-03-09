@@ -42,7 +42,7 @@ class MyPipeline(object):
 my_pipeline = MyPipeline()
 
 # Deploy only the models into kubernetes
-my_pipeline.deploy()
+my_pipeline.deploy_models()
 my_pipeline.wait_ready()
 
 # Run the request using the local pipeline function but reaching to remote models
