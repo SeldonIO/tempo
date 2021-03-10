@@ -6,6 +6,8 @@ import os
 import pprint
 import numpy as np
 
+# You can not specify host, user, and password to use values from the Seldon Deploy config file located at
+# ~/.config/seldon/seldon-deploy/sdconfig.txt
 rt = SeldonDeployRuntime(host="http://34.105.136.157/seldon-deploy/api/v1alpha1",
                         user="admin@kubeflow.org",
                         password= "12341234",
