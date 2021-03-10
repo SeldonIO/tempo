@@ -19,6 +19,7 @@ def test_deploy_pipeline_docker(
         assert container.status == "running"
 
     pipeline_container = docker_runtime_v2._get_container(inference_pipeline.details)
+    print(inference_pipeline.details.local_folder)
     print(pipeline_container.logs())
     assert pipeline_container.status == "running"
 

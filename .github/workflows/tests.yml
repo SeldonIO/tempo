@@ -24,4 +24,4 @@ jobs:
             make tempo/tests/examples
         - name: Test
           run: |
-            make test
+            pytest tempo/tests/serve/test_pipeline.py::test_deploy_pipeline_docker -s
