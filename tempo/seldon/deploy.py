@@ -47,7 +47,9 @@ class SeldonDeployRuntime(Runtime):
                     key, value = line.strip().split('=', 1)
                     sd_config_values[key] = value
         if host is None:
-            self._host = sd_config_values['EXTERNAL_PROTOCOL'] + "://" + sd_config_values['EXTERNAL_HOST'] + "/seldon-deploy/api/v1alpha1"
+            self._host = sd_config_values['EXTERNAL_PROTOCOL'] + "://" \
+                         + sd_config_values['EXTERNAL_HOST'] \
+                         + "/seldon-deploy/api/v1alpha1"
         else:
             self._host = host
         if user is None:
