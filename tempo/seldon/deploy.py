@@ -1,8 +1,8 @@
 import time
 from enum import Enum
 from http import cookies
-from typing import Any, Dict
 from pathlib import Path
+from typing import Any, Dict
 
 from seldon_deploy_sdk import ApiClient, Configuration, PredictApi, SeldonDeploymentsApi
 from seldon_deploy_sdk.auth import SessionAuthenticator
@@ -42,22 +42,25 @@ class SeldonDeployRuntime(Runtime):
         if host is None or user is None or password is None:
             with open(str(Path.home()) + "/.config/seldon/seldon-deploy/sdconfig.txt") as f:
                 for line in f:
-                    if line.startswith('#') or not line.strip():
+                    if line.startswith("#") or not line.strip():
                         continue
-                    key, value = line.strip().split('=', 1)
+                    key, value = line.strip().split("=", 1)
                     sd_config_values[key] = value
         if host is None:
-            self._host = sd_config_values['EXTERNAL_PROTOCOL'] + "://" \
-                         + sd_config_values['EXTERNAL_HOST'] \
-                         + "/seldon-deploy/api/v1alpha1"
+            self._host = (
+                sd_config_values["EXTERNAL_PROTOCOL"]
+                + "://"
+                + sd_config_values["EXTERNAL_HOST"]
+                + "/seldon-deploy/api/v1alpha1"
+            )
         else:
             self._host = host
         if user is None:
-            self._user = sd_config_values['SD_USER_EMAIL']
+            self._user = sd_config_values["SD_USER_EMAIL"]
         else:
             self._user = user
         if password is None:
-            self._password = sd_config_values['SD_PASSWORD']
+            self._password = sd_config_values["SD_PASSWORD"]
         else:
             self._password = password
         self._auth_type = auth_type
