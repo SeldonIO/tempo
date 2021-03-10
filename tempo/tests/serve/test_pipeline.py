@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 import docker
 import numpy as np
@@ -20,6 +21,9 @@ def test_deploy_pipeline_docker(
 
     pipeline_container = docker_runtime_v2._get_container(inference_pipeline.details)
     print(inference_pipeline.details.local_folder)
+    subprocess.run(
+        f"ls -lh {inference_pipeline.details.local_folder}", shell=True, check=True
+    )
     print(pipeline_container.logs())
     assert pipeline_container.status == "running"
 
