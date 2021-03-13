@@ -19,6 +19,7 @@ class Model(BaseModel):
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
         model_func: Callable[..., Any] = None,
+        conda_env: str = None
     ):
         super().__init__(
             name,
@@ -30,6 +31,7 @@ class Model(BaseModel):
             inputs=inputs,
             outputs=outputs,
             runtime=runtime,
+            conda_env=conda_env
         )
 
     def __get__(self, instance, owner):

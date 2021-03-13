@@ -9,13 +9,14 @@ import pytest
 from kubernetes import client, config
 from kubernetes.utils.create_from_yaml import create_from_yaml
 
-from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import KubernetesOptions, ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline, predictmethod
+
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -42,6 +43,13 @@ def docker_runtime() -> Generator[SeldonDockerRuntime, None, None]:
 @pytest.fixture
 def docker_runtime_v2() -> Generator[SeldonDockerRuntime, None, None]:
     runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol())
+
+    yield runtime
+
+
+@pytest.fixture
+def docker_runtime_kfv1() -> Generator[SeldonDockerRuntime, None, None]:
+    runtime = SeldonDockerRuntime(protocol=KFServingV1Protocol())
 
     yield runtime
 
@@ -141,6 +149,22 @@ def sklearn_iris_path() -> str:
 @pytest.fixture
 def xgboost_iris_path() -> str:
     return os.path.join(EXAMPLES_PATH, "xgboost", "iris")
+
+
+@pytest.fixture
+def tfserving_cifar10_resnet32_path() -> str:
+    return os.path.join(EXAMPLES_PATH, "tfserving", "cifar10", "resnet32")
+
+
+@pytest.fixture
+def tfserving_cifar10_resenet32_model(tfserving_cifar10_resnet32_path: str, docker_runtime_kfv1: SeldonDockerRuntime) -> Model:
+    return Model(
+        name="resnet32",
+        runtime=docker_runtime_kfv1,
+        platform=ModelFramework.Tensorflow,
+        uri="gs://seldon-models/tfserving/cifar10/resnet32",
+        local_folder=tfserving_cifar10_resnet32_path,
+    )
 
 
 @pytest.fixture

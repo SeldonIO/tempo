@@ -90,6 +90,7 @@ def model(
     platform: ModelFramework = None,
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
+    conda_env: str = None
 ):
     def _model(f):
         return Model(
@@ -101,6 +102,7 @@ def model(
             inputs=inputs,
             outputs=outputs,
             model_func=f,
+            conda_env=conda_env
         )
 
     return _model

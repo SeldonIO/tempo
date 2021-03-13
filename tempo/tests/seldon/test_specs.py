@@ -1,8 +1,10 @@
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec, _V2ContainerFactory
+
 from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework
 from tempo.serve.model import Model
+from tempo.seldon.specs import get_container_spec
 
 
 def test_kubernetes_spec(sklearn_model: Model):
@@ -88,3 +90,16 @@ def test_kubernetes_spec_pipeline():
     }
 
     assert k8s_object.spec == expected
+
+
+def test_tensorflow_spec():
+    md = ModelDetails(name="test",
+                      local_folder="",
+                      uri="",
+                      platform=ModelFramework.Tensorflow,
+                      inputs=ModelDataArgs(args=[]),
+                      outputs=ModelDataArgs(args=[])
+                      )
+    spec = get_container_spec(md,SeldonProtocol())
+    assert "image" in spec
+    assert "command" in spec
