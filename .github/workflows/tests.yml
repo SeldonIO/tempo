@@ -18,10 +18,13 @@ jobs:
             python-version: 3.7.10
         - name: Install dependencies
           run: |
-            make install-dev
+            echo 'hello'
+            # make install-dev
         - name: Downloading test data
           run: |
-            make tempo/tests/examples
+            echo 'hello 2'
+            # make tempo/tests/examples
         - name: Test
           run: |
-            pytest tempo/tests/serve/test_pipeline.py::test_deploy_pipeline_docker -s
+            id -u runner
+            # pytest tempo/tests/serve/test_pipeline.py::test_deploy_pipeline_docker -s

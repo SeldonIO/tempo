@@ -25,7 +25,7 @@ def test_deploy_pipeline_docker(
         f"ls -lh {inference_pipeline.details.local_folder}", shell=True, check=True
     )
     print(pipeline_container.logs())
-    print(os.environ.get("UID"))
+    subprocess.run("id -u runner", shell=True, check=True)
     assert pipeline_container.status == "running"
 
 
