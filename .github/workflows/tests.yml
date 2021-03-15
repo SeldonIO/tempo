@@ -9,8 +9,6 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    container:
-      options: --user 1000
 
     steps:
         - uses: actions/checkout@v2
@@ -20,13 +18,10 @@ jobs:
             python-version: 3.7.10
         - name: Install dependencies
           run: |
-            echo 'hello'
-            # make install-dev
+            make install-dev
         - name: Downloading test data
           run: |
-            echo 'hello 2'
-            # make tempo/tests/examples
+            make tempo/tests/examples
         - name: Test
           run: |
-            id -u runner
-            # pytest tempo/tests/serve/test_pipeline.py::test_deploy_pipeline_docker -s
+            pytest tempo/tests/serve/test_pipeline.py::test_deploy_pipeline_docker -s
