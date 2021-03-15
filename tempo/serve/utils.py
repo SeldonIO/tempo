@@ -1,5 +1,5 @@
 import inspect
-from typing import List
+from typing import List, Any
 
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
@@ -17,6 +17,7 @@ def pipeline(
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
+    deployed: bool = False,
 ):
     def _pipeline(f):
         if inspect.isclass(f):
@@ -37,6 +38,7 @@ def pipeline(
                 outputs=outputs,
                 pipeline_func=func,
                 conda_env=conda_env,
+                deployed=deployed,
             )
             setattr(K, "deploy", K.pipeline.deploy)
             setattr(K, "deploy_models", K.pipeline.deploy_models)
@@ -50,8 +52,10 @@ def pipeline(
             setattr(K, "remote", K.pipeline.remote)
             setattr(K, "upload", K.pipeline.upload)
             setattr(K, "download", K.pipeline.download)
+            setattr(K, "set_deployed", K.pipeline.set_deployed)
 
             orig_init = K.__init__
+
 
             # Make copy of original __init__, so we can call it without recursion
             def __init__(self, *args, **kws):
@@ -59,6 +63,11 @@ def pipeline(
                 orig_init(self, *args, **kws)  # Call the original __init__
 
             K.__init__ = __init__  # Set the class' __init__ to the new one
+
+            def __call__(self, *args, **kwargs) -> Any:
+                return self.pipeline(*args, **kwargs)
+
+            K.__call__ = __call__
 
             return K
         else:
@@ -72,6 +81,7 @@ def pipeline(
                 outputs=outputs,
                 pipeline_func=f,
                 conda_env=conda_env,
+                deployed=deployed,
             )
 
     return _pipeline

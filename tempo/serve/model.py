@@ -34,15 +34,12 @@ class Model(BaseModel):
             conda_env=conda_env
         )
 
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self  # Accessed from class, return unchanged
-
-        return types.MethodType(self, instance)
-
     def __call__(self, *args, **kwargs) -> Any:
         if self._user_func is not None:
-            return self._user_func(*args, **kwargs)
+            if not self.cls is None:
+                return self._user_func(self.cls, *args, **kwargs)
+            else:
+                return self._user_func(*args, **kwargs)
 
         if self.runtime is None:
             raise UndefinedRuntime(self.details.name)
