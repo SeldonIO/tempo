@@ -48,6 +48,7 @@ class SeldonKubernetesRuntime(Runtime):
         protocol = self.get_protocol()
         req = protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint(model_details)
+        logger.debug("Endpoint is ", endpoint)
         response_raw = requests.post(endpoint, json=req)
         return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
