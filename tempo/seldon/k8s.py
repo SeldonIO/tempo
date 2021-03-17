@@ -41,9 +41,7 @@ class SeldonKubernetesRuntime(Runtime):
 
     def get_endpoint(self, model_details: ModelDetails) -> str:
         self.create_k8s_client()
-        endpoint = Endpoint(
-            model_details.name, self.k8s_options.namespace, self.protocol
-        )
+        endpoint = Endpoint(model_details.name, self.k8s_options.namespace, self.protocol)
         return endpoint.get_url(model_details)
 
     def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
@@ -51,9 +49,7 @@ class SeldonKubernetesRuntime(Runtime):
         req = protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint(model_details)
         response_raw = requests.post(endpoint, json=req)
-        return protocol.from_protocol_response(
-            response_raw.json(), model_details.outputs
-        )
+        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def undeploy(self, model_details: ModelDetails):
         self.create_k8s_client()
@@ -83,9 +79,7 @@ class SeldonKubernetesRuntime(Runtime):
                 "seldondeployments",
                 model_details.name,
             )
-            model_spec["metadata"]["resourceVersion"] = existing["metadata"][
-                "resourceVersion"
-            ]
+            model_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
