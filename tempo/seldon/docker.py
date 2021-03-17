@@ -58,6 +58,7 @@ class SeldonDockerRuntime(Runtime):
 
     def deploy(self, model_details: ModelDetails):
         docker_client = docker.from_env()
+        uid = os.getuid()
 
         try:
             self._get_container(model_details)
@@ -74,6 +75,7 @@ class SeldonDockerRuntime(Runtime):
                 volumes={model_folder: {"bind": DefaultModelsPath, "mode": "ro"}},
                 detach=True,
                 network=DefaultNetworkName,
+                user=uid,
                 **container_spec,
             )
 
