@@ -9,10 +9,13 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    container: seldonio/python-builder:0.5.2
 
     steps:
         - uses: actions/checkout@v2
+        - name: Set up Python 3.7
+          uses: actions/setup-python@v2
+          with:
+            python-version: 3.7.10
         - name: Install dependencies
           run: |
             make install-dev
