@@ -1,3 +1,4 @@
+import types
 from typing import Any, Callable, List
 
 from tempo.errors import UndefinedCustomImplementation
@@ -15,12 +16,13 @@ class Pipeline(BaseModel):
         name: str,
         pipeline_func: Callable[[Any], Any] = None,
         runtime: Runtime = None,
-        models: List[Model] = None,
+        models: List[BaseModel] = None,
         local_folder: str = None,
         uri: str = None,
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
         conda_env: str = None,
+        deployed: bool = False,
     ):
         super().__init__(
             name=name,
@@ -33,6 +35,7 @@ class Pipeline(BaseModel):
             outputs=outputs,
             conda_env=conda_env,
             runtime=runtime,
+            deployed=deployed,
         )
 
         if models is None:
@@ -40,13 +43,20 @@ class Pipeline(BaseModel):
 
         self._models = models
 
+
+    def save(self, save_env=True):
+        for model in self._models:
+            model.set_deployed(True)
+        super().save(save_env=save_env)
+        for model in self._models:
+            model.set_deployed(False)
+
     def deploy_models(self):
         """
         Deploy all the models
         """
         logger.info("deploying models for %s", self.details.name)
         for model in self._models:
-            logger.info(f"Found model {model.details.name}")
             model.deploy()
 
     def deploy(self):
@@ -90,9 +100,15 @@ class Pipeline(BaseModel):
             yamls += "\n---\n"
         return yamls
 
-    def __call__(self, raw: Any) -> Any:
+    def __call__(self, *args, **kwargs) -> Any:
         if not self._user_func:
             # TODO: Group generic errors
             raise UndefinedCustomImplementation(self.details.name)
 
-        return self._user_func(raw)
+        if self.deployed:
+            return self.remote(*args, **kwargs)
+        else:
+            if not self.cls is None:
+                return self._user_func(self.cls, *args, **kwargs)
+            else:
+                return self._user_func(*args, **kwargs)

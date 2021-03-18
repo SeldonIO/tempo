@@ -7,7 +7,7 @@ from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
-from tempo.serve.utils import model
+from tempo.serve.utils import model, predictmethod
 
 
 #
@@ -228,3 +228,22 @@ def test_custom_multiheaded_model_list(v2_input, expected):
 
     response = custom_multiheaded_model_list.request(v2_input)
     assert response == expected
+
+
+def test_class_func_class():
+    @model(
+        name="classifier",
+        platform=ModelFramework.TempoPipeline,
+    )
+    class MyCustomModel:
+
+        @predictmethod
+        def predict(self, X: str) -> str:
+            return X
+
+    x = MyCustomModel()
+
+    r = x.predict("hello")
+    assert r == "hello"
+    r = x("hello")
+    assert r == "hello"

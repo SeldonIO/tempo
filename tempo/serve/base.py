@@ -1,3 +1,4 @@
+import types
 import os
 import tempfile
 from os import path
@@ -24,10 +25,13 @@ class BaseModel:
         outputs: ModelDataType = None,
         conda_env: str = None,
         runtime: Runtime = None,
+        deployed: bool = False,
     ):
         self._name = name
         self._user_func = user_func
         self.conda_env_name = conda_env
+        self.deployed = deployed
+
         if uri is None:
             uri = ""
 
@@ -45,6 +49,10 @@ class BaseModel:
 
         self.cls = None
         self.runtime = runtime
+
+
+    def set_deployed(self, val: bool):
+        self.deployed = val
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
@@ -109,7 +117,12 @@ class BaseModel:
             return
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
-        save_custom(self, file_path_pkl)
+        if not self.deployed:
+            self.deployed = True
+            save_custom(self, file_path_pkl)
+            self.deployed = False
+        else:
+            save_custom(self, file_path_pkl)
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)

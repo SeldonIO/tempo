@@ -19,6 +19,8 @@ class Model(BaseModel):
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
         model_func: Callable[..., Any] = None,
+        conda_env: str = None,
+        deployed: bool = False,
     ):
         super().__init__(
             name,
@@ -30,19 +32,18 @@ class Model(BaseModel):
             inputs=inputs,
             outputs=outputs,
             runtime=runtime,
+            conda_env=conda_env,
+            deployed=deployed,
         )
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return self  # Accessed from class, return unchanged
-
-        return types.MethodType(self, instance)
 
     def __call__(self, *args, **kwargs) -> Any:
         if self._user_func is not None:
-            return self._user_func(*args, **kwargs)
+            if self.deployed:
+                return self.remote(*args, **kwargs)
+            else:
+                if not self.cls is None:
+                    return self._user_func(self.cls, *args, **kwargs)
+                else:
+                    return self._user_func(*args, **kwargs)
 
-        if self.runtime is None:
-            raise UndefinedRuntime(self.details.name)
-
-        return self.runtime.remote(self.details, *args, **kwargs)
+        return self.remote(self.details, *args, **kwargs)

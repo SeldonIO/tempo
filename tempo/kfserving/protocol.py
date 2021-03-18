@@ -95,8 +95,8 @@ class KFServingV2Protocol(Protocol):
         ty = tys[name]
         if ty is None:
             ty = tys[idx]
-        if ty is None:
-            return np.ndarray
+        #if ty is None:
+        #    return np.ndarray
         return ty
 
     def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
@@ -116,7 +116,7 @@ class KFServingV2Protocol(Protocol):
                 data = raw.flatten().tolist()
                 outputs.append({"name": name, "datatype": "FP32", "shape": shape, "data": data})
             else:
-                raise ValueError(f"Unknown input type {raw_type} for name {name}")
+                outputs.append(KFServingV2Protocol.create_v2_from_any(raw, name))
         return {"model_name": model_details.name, "outputs": outputs}
 
     def from_protocol_request(self, res: Dict, tys: ModelDataArgs) -> Any:
