@@ -113,7 +113,7 @@ examples/*.h5
 *~
 
 # Test datasets
-tempo/tests/examples
+tests/examples
 
 
 #mlflow
