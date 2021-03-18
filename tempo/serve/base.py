@@ -1,6 +1,5 @@
 import os
 import tempfile
-import types
 from os import path
 from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
 

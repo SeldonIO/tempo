@@ -1,11 +1,9 @@
-import types
 from typing import Any, Callable, List
 
 from tempo.errors import UndefinedCustomImplementation
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
-from tempo.serve.model import Model
 from tempo.serve.runtime import Runtime
 from tempo.utils import logger
 
@@ -107,7 +105,7 @@ class Pipeline(BaseModel):
         if self.deployed:
             return self.remote(*args, **kwargs)
         else:
-            if not self.cls is None:
+            if self.cls is not None:
                 return self._user_func(self.cls, *args, **kwargs)
             else:
                 return self._user_func(*args, **kwargs)
