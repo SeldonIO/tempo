@@ -52,7 +52,7 @@ class KFServingV2Protocol(Protocol):
         }
 
     @staticmethod
-    def convert_from_bytes(output: dict, ty: Type) -> Any:
+    def convert_from_bytes(output: dict, ty: Optional[Type]) -> Any:
         if ty == str:
             return bytearray(output["data"]).decode("UTF-8")
         else:
@@ -91,7 +91,7 @@ class KFServingV2Protocol(Protocol):
         return {"inputs": inputs}
 
     @staticmethod
-    def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Type:
+    def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Optional[Type]:
         ty = tys[name]
         if ty is None:
             ty = tys[idx]

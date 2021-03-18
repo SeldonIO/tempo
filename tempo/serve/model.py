@@ -1,7 +1,5 @@
-import types
 from typing import Any, Callable
 
-from tempo.errors import UndefinedRuntime
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
@@ -41,7 +39,7 @@ class Model(BaseModel):
             if self.deployed:
                 return self.remote(*args, **kwargs)
             else:
-                if not self.cls is None:
+                if self.cls is not None:
                     return self._user_func(self.cls, *args, **kwargs)
                 else:
                     return self._user_func(*args, **kwargs)
