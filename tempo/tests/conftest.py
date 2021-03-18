@@ -9,14 +9,13 @@ import pytest
 from kubernetes import client, config
 from kubernetes.utils.create_from_yaml import create_from_yaml
 
-from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
+from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import KubernetesOptions, ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline, predictmethod
-
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -157,7 +156,9 @@ def tfserving_cifar10_resnet32_path() -> str:
 
 
 @pytest.fixture
-def tfserving_cifar10_resenet32_model(tfserving_cifar10_resnet32_path: str, docker_runtime_kfv1: SeldonDockerRuntime) -> Model:
+def tfserving_cifar10_resenet32_model(
+    tfserving_cifar10_resnet32_path: str, docker_runtime_kfv1: SeldonDockerRuntime
+) -> Model:
     return Model(
         name="resnet32",
         runtime=docker_runtime_kfv1,

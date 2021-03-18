@@ -95,7 +95,7 @@ class KFServingV2Protocol(Protocol):
         ty = tys[name]
         if ty is None:
             ty = tys[idx]
-        #if ty is None:
+        # if ty is None:
         #    return np.ndarray
         return ty
 

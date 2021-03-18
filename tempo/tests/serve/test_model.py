@@ -236,7 +236,6 @@ def test_class_func_class():
         platform=ModelFramework.TempoPipeline,
     )
     class MyCustomModel:
-
         @predictmethod
         def predict(self, X: str) -> str:
             return X

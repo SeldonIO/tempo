@@ -1,7 +1,9 @@
+# Explanations Demo with Income Classifier and Alibi
+
 ## Conda env create
 
 We create a conda environment for the runtime of our explainer from the `./artifacts/income_explainer/conda.yaml`
-This only needs to be done once.
+**This only needs to be done once**.
 
 
 ```python

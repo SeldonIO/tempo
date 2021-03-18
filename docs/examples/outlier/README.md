@@ -1,4 +1,20 @@
+# Outlier Detection with CIFAR10 using Alibi-Detect
+
+
+
+## Conda env create
+
+We create a conda environment for the runtime of our explainer from the `./artifacts/income_explainer/conda.yaml`
+**This only needs to be done once**.
+
+
 ```python
+!conda env create --name tempo-outlier-example --file ./artifacts/cifar10_outlier/conda.yaml
+```
+
+
+```python
+import cloudpickle
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
@@ -15,11 +31,11 @@ from typing import Any
 import numpy as np
 import os 
 import pprint
-import dill
 import json
 
 OUTLIER_FOLDER = os.getcwd()+"/artifacts/cifar10_outlier"
 MODEL_FOLDER = os.getcwd()+"/artifacts/cifar10_model"
+SVC_FOLDER = os.getcwd()+"/artifacts/svc"
 ```
 
 
@@ -36,7 +52,7 @@ from alibi_detect.models.losses import elbo
 from alibi_detect.od import OutlierVAE
 from alibi_detect.utils.fetching import fetch_detector
 from alibi_detect.utils.perturbation import apply_mask
-from alibi_detect.utils.saving import save_detector, load_detector
+from alibi_detect.utils.saving import load_detector
 from alibi_detect.utils.visualize import plot_instance_score, plot_feature_outlier_image
 ```
 
@@ -102,31 +118,35 @@ cifar10_model = Model(
         local_folder=MODEL_FOLDER,
     )
 
-cifar10_outlier = Model(
-        name="resnet32_outlier",
-        runtime=SeldonDockerRuntime(protocol=KFServingV1Protocol()),
-        platform=ModelFramework.Alibi-Detect,
-        uri="gs://seldon-models/test/cifar10/outlier",
-        local_folder=MODEL_FOLDER,
-    )
-
-
-@pipeline(
+@model(
         name="outlier",
-        runtime=SeldonDockerRuntime(protocol=KFServingV1Protocol()),
-        uri="gs://seldon-models/test/cifar10/outlier",
+        platform=ModelFramework.TempoPipeline,
+        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
+        uri="gs://seldon-models/tempo/cifar10/outlier",
         conda_env="tempo-outlier-example",
         local_folder=OUTLIER_FOLDER,
     )
-
-
 class OutlierModel(object):
     
     def __init__(self):
-        self.od = load_detector(OUTLIER_FOLDER+"/cifar10")
+        self.loaded = False
+        
+    def load(self):
+        if "MLSERVER_MODELS_DIR" in os.environ:
+            models_folder = "/mnt/models"
+        else:
+            models_folder = OUTLIER_FOLDER
+        self.od = load_detector(models_folder+"/cifar10")
+        self.loaded = True
+        
+    def unload(self):
+        self.od = None
+        self.loaded = False
         
     @predictmethod
-    def outlier(self, payload: np.ndarray) -> str:
+    def outlier(self, payload: np.ndarray) -> dict:
+        if not self.loaded:
+            self.load()
         print("Outlier called")
         od_preds = self.od.predict(payload,
                       outlier_type='instance',    # use 'feature' or 'instance' level
@@ -139,29 +159,24 @@ outlier = OutlierModel()
 
 @pipeline(
         name="cifar10-service",
-        runtime=SeldonDockerRuntime(protocol=KFServingV1Protocol()),
-        uri="gs://seldon-models/test/cifar10/svc",
-        conda_env="tempo-minimal",
-        local_folder=OUTLIER_FOLDER,
-        models=[outlier,cifar10_model]
+        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
+        uri="gs://seldon-models/tempo/cifar10/svc",
+        conda_env="tempo-outlier-example",
+        local_folder=SVC_FOLDER,
+        models=[outlier, cifar10_model]
     )
 class Cifar10(object):
-    
-    def __init__(self):
-        self.od = load_detector(OUTLIER_FOLDER+"/cifar10")
         
     @predictmethod
-    def svc(self, payload: np.ndarray) -> str:
-        r = outlier(payload)
-        if r["outlier"]:
-            return "outlier"
+    def predict(self, payload: np.ndarray) -> np.ndarray:
+        r = outlier(payload=payload)
+        if r["data"]["is_outlier"][0]:
+            return np.array([])
         else:
             return cifar10_model(payload)
-```
 
-
-```python
-o = OutlierModel()
+        
+svc = Cifar10()
 ```
 
 
@@ -178,13 +193,7 @@ X_mask, mask = apply_mask(X.reshape(1, 32, 32, 3),
                                   clip_rng=(0,1))
 ```
 
-
-```python
-show_image(X_mask)
-o.outlier(X_mask)
-```
-
-## Test on docker
+## Test on docker with local pipelines
 
 
 ```python
@@ -210,7 +219,71 @@ print("prediction:",class_names[cifar10_model(X_test[idx:idx+1])[0].argmax()])
 
 
 ```python
-cifar10_model.undeploy()
+show_image(X_mask)
+r = outlier(payload=X_mask)
+print("Is outlier:",r["data"]["is_outlier"][0] == 1)
+```
+
+
+```python
+svc.predict(X_test[idx:idx+1])
+```
+
+
+```python
+svc.predict(X_mask)
+```
+
+## Test on Outlier on docker 
+
+
+```python
+outlier.unload()
+outlier.save(save_env=True)
+```
+
+
+```python
+outlier.deploy()
+```
+
+
+```python
+show_image(X_mask)
+r = outlier.remote(payload=X_mask)
+print("Is outlier:",r["data"]["is_outlier"][0] == 1)
+```
+
+
+```python
+show_image(X_test[0:1])
+r = outlier.remote(payload=X_test[0:1])
+print("Is outlier:",r["data"]["is_outlier"][0] == 1)
+```
+
+## Test Svc on docker
+
+
+```python
+outlier.unload()
+svc.save(save_env=True)
+```
+
+
+```python
+svc.deploy()
+```
+
+
+```python
+show_image(X_test[0:1])
+svc.remote(payload=X_test[0:1])
+```
+
+
+```python
+show_image(X_mask)
+svc.remote(payload=X_mask)
 ```
 
 ## Deploy to Kubernetes
@@ -218,31 +291,47 @@ cifar10_model.undeploy()
 
 ```python
 k8s_options = KubernetesOptions(namespace="production")
-k8s_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV1Protocol())
+k8s_v1_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV1Protocol())
+k8s_v2_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
 
-cifar10_model.set_runtime(k8s_runtime)
+cifar10_model.set_runtime(k8s_v1_runtime)
+outlier.set_runtime(k8s_v2_runtime)
+svc.set_runtime(k8s_v2_runtime)
 ```
 
 
 ```python
-cifar10_model.deploy()
-cifar10_model.wait_ready()
+outlier.save(save_env=True)
+outlier.upload()
 ```
 
 
 ```python
-idx = 1
-X = X_test[idx].reshape(1, 32, 32, 3)
-plt.imshow(X.reshape(32, 32, 3))
-plt.axis('off')
-plt.show()
-print("class:",class_names[y_test[idx][0]])
-print("prediction:",class_names[cifar10_model(X_test[idx:idx+1])[0].argmax()])
+#svc.save(save_env=False)
+svc.upload()
 ```
 
 
 ```python
-cifar10_model.undeploy()
+svc.deploy()
+svc.wait_ready()
+```
+
+
+```python
+show_image(X_test[0:1])
+svc.remote(payload=X_test[0:1])
+```
+
+
+```python
+show_image(X_mask)
+svc.remote(payload=X_mask)
+```
+
+
+```python
+svc.undeploy()
 ```
 
 
