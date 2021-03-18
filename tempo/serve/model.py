@@ -44,4 +44,4 @@ class Model(BaseModel):
                 else:
                     return self._user_func(*args, **kwargs)
 
-        return self.remote(self.details, *args, **kwargs)
+        return self.remote(*args, **kwargs)
