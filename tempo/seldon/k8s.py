@@ -22,7 +22,6 @@ class SeldonKubernetesRuntime(Runtime):
         if k8s_options is None:
             k8s_options = KubernetesOptions()
         self.k8s_options = k8s_options
-        self.create_k8s_client()
         if protocol is None:
             self.protocol = SeldonProtocol()
         else:
@@ -41,6 +40,7 @@ class SeldonKubernetesRuntime(Runtime):
             config.load_kube_config()
 
     def get_endpoint(self, model_details: ModelDetails) -> str:
+        self.create_k8s_client()
         endpoint = Endpoint(model_details.name, self.k8s_options.namespace, self.protocol)
         return endpoint.get_url(model_details)
 
@@ -52,6 +52,7 @@ class SeldonKubernetesRuntime(Runtime):
         return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def undeploy(self, model_details: ModelDetails):
+        self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
         api_instance.delete_namespaced_custom_object(
             "machinelearning.seldon.io",
@@ -63,6 +64,7 @@ class SeldonKubernetesRuntime(Runtime):
         )
 
     def deploy(self, model_details: ModelDetails):
+        self.create_k8s_client()
         k8s_spec = KubernetesSpec(model_details, self.protocol, self.k8s_options)
         model_spec = k8s_spec.spec
         logger.debug(model_spec)
@@ -99,6 +101,7 @@ class SeldonKubernetesRuntime(Runtime):
                 raise e
 
     def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
+        self.create_k8s_client()
         ready = False
         t0 = time.time()
         while not ready:
