@@ -1,10 +1,8 @@
 import json
 
-from tempo.serve.metadata import ModelDetails, ModelFramework
+from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
+from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
 from tempo.serve.protocol import Protocol
-from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
-from tempo.serve.metadata import KubernetesOptions
-
 
 DefaultHTTPPort = "9000"
 DefaultGRPCPort = "9500"
@@ -27,7 +25,7 @@ class _V1ContainerFactory:
     Images = {
         ModelFramework.SKLearn: "seldonio/sklearnserver:1.6.0-dev",
         ModelFramework.XGBoost: "seldonio/xgboostserver:1.6.0-dev",
-        ModelFramework.Tensorflow: "tensorflow/serving:2.1.0"
+        ModelFramework.Tensorflow: "tensorflow/serving:2.1.0",
     }
 
     @classmethod
@@ -37,17 +35,19 @@ class _V1ContainerFactory:
         if model_details.platform == ModelFramework.Tensorflow:
             return {
                 "image": model_image,
-                "command": ["--rest_api_port="+DefaultHTTPPort,
-                            "--model_name="+model_details.name,
-                            "--model_base_path="+DefaultModelsPath]
+                "command": [
+                    "--rest_api_port=" + DefaultHTTPPort,
+                    "--model_name=" + model_details.name,
+                    "--model_base_path=" + DefaultModelsPath,
+                ],
             }
         else:
             parameters = [{"name": "model_uri", "value": DefaultModelsPath, "type": "STRING"}]
             env = {"PREDICTIVE_UNIT_PARAMETERS": json.dumps(parameters)}
 
             return {
-              "image": model_image,
-              "environment": env,
+                "image": model_image,
+                "environment": env,
             }
 
 

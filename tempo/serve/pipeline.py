@@ -43,7 +43,6 @@ class Pipeline(BaseModel):
 
         self._models = models
 
-
     def save(self, save_env=True):
         for model in self._models:
             model.set_deployed(True)

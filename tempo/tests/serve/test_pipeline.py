@@ -4,10 +4,10 @@ import docker
 import numpy as np
 import pytest
 
+from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline, predictmethod
-from tempo.kfserving.protocol import KFServingV2Protocol
 
 
 def test_deploy_pipeline_docker(
@@ -137,7 +137,6 @@ def test_class_func_class():
         models=[],
     )
     class MyPipeline:
-
         @predictmethod
         def predict(self, X: str) -> str:
             return X
@@ -162,7 +161,6 @@ def test_class_func():
     assert r == "hello"
 
 
-
 def test_clear_state_func():
     @pipeline(
         name="classifier",
@@ -170,7 +168,6 @@ def test_clear_state_func():
         models=[],
     )
     class MyPipeline:
-
         def __init__(self):
             self.cleared = False
 
@@ -181,18 +178,18 @@ def test_clear_state_func():
     x = MyPipeline()
 
     @pipeline(
-            name="classifier",
+        name="classifier",
         runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
-            models=[x],
+        models=[x],
     )
     class MyPipeline2:
-
         def __init__(self):
             self.cleared = False
 
         @predictmethod
         def predict(self, X: str) -> str:
             return x(X=X)
+
     y = MyPipeline2()
 
     y(X="hello")

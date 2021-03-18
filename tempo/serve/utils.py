@@ -1,5 +1,5 @@
 import inspect
-from typing import List, Any
+from typing import Any, List
 
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
@@ -55,7 +55,6 @@ def pipeline(
             setattr(K, "set_deployed", K.pipeline.set_deployed)
 
             orig_init = K.__init__
-
 
             # Make copy of original __init__, so we can call it without recursion
             def __init__(self, *args, **kws):
@@ -155,15 +154,15 @@ def model(
             return K
         else:
             return Model(
-               name,
-               runtime=runtime,
-               local_folder=local_folder,
-               uri=uri,
-               platform=platform,
-               inputs=inputs,
-               outputs=outputs,
-               model_func=f,
-               conda_env=conda_env
+                name,
+                runtime=runtime,
+                local_folder=local_folder,
+                uri=uri,
+                platform=platform,
+                inputs=inputs,
+                outputs=outputs,
+                model_func=f,
+                conda_env=conda_env,
             )
 
     return _model
