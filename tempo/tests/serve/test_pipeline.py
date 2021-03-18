@@ -4,6 +4,7 @@ import docker
 import numpy as np
 import pytest
 
+from subprocess import run
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.utils import pipeline
@@ -17,6 +18,7 @@ def test_deploy_pipeline_docker(
     for model in inference_pipeline._models:
         container = docker_runtime._get_container(model.details)
         print(container.logs())
+        run(f"ls -lh {model.details.local_folder}", shell=True, check=True)
         assert container.status == "running"
 
     pipeline_container = docker_runtime_v2._get_container(inference_pipeline.details)
