@@ -4,7 +4,8 @@ from urllib.parse import urlparse
 from kubernetes import client, config
 
 from tempo.serve.metadata import ModelDetails
-from tempo.serve.protocol import Protocol
+from tempo.serve.protocol import Protocol#
+from tempo.seldon.specs import DefaultServiceAccountName
 from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
@@ -42,7 +43,7 @@ class Endpoint(object):
         api_instance = client.CustomObjectsApi()
         api_response = api_instance.get_namespaced_custom_object_status(
             "serving.kubeflow.org",
-            "v1alpha2",
+            "v1beta1",
             self.namespace,
             "inferenceservices",
             self.model_details.name,
@@ -68,11 +69,16 @@ class Endpoint(object):
                 api_instance = client.CustomObjectsApi()
                 api_response = api_instance.get_namespaced_custom_object_status(
                     "serving.kubeflow.org",
-                    "v1alpha2",
+                    "v1beta1",
                     self.namespace,
                     "inferenceservices",
                     self.model_details.name,
                 )
-                return api_response["status"]["address"]["url"]
+                url = api_response["status"]["address"]["url"]
+                # Hack until https://github.com/kubeflow/kfserving/issues/1483 fixed
+                if "serviceAccountName" in api_response["spec"]["predictor"] and \
+                    api_response["spec"]["predictor"]["serviceAccountName"] == DefaultServiceAccountName:
+                    url = url.replace("v1/models", "v2/models").replace(":predict","/infer")
+                return url
         else:
             raise ValueError(f"gateway {self.gateway} unknown")
