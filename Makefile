@@ -33,10 +33,10 @@ lint:
 install-rclone:
 	curl https://rclone.org/install.sh | sudo bash
 
-.PHONY: tempo/tests/examples
-tempo/tests/examples:
-	mkdir -p tempo/tests/examples
-	cd tempo/tests/examples && \
+.PHONY: tests/examples
+tests/examples:
+	mkdir -p tests/examples
+	cd tests/examples && \
 		gsutil -m cp -r gs://seldon-models/sklearn . && \
 		gsutil -m cp -r gs://seldon-models/xgboost . && \
 		gsutil -m cp -r gs://seldon-models/mlflow . && \
@@ -46,7 +46,7 @@ tempo/tests/examples:
 
 .PHONY: clean_test_data
 clean_test_data:
-	rm -rf tempo/tests/examples
+	rm -rf tests/examples
 
 
 .PHONY: build
