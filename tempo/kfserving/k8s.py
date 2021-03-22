@@ -9,9 +9,9 @@ from kubernetes.client.rest import ApiException
 
 from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV1Protocol
+from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
 from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
 from tempo.serve.runtime import Runtime
-from tempo.seldon.specs import DefaultServiceAccountName, DefaultModelsPath
 from tempo.utils import logger
 
 DefaultHTTPPort = "8080"
@@ -27,6 +27,7 @@ Implementations = {
     ModelFramework.ONNX: "triton",
     ModelFramework.TensorRT: "triton",
 }
+
 
 class KFServingKubernetesRuntime(Runtime):
     def __init__(self, k8s_options: KubernetesOptions = None, protocol=None):
@@ -53,7 +54,6 @@ class KFServingKubernetesRuntime(Runtime):
             config.load_kube_config()
             return False
 
-
     def get_endpoint(self, model_details: ModelDetails) -> str:
         endpoint = Endpoint(model_details, self.k8s_options.namespace, self.protocol)
         return endpoint.get_url()
@@ -71,7 +71,7 @@ class KFServingKubernetesRuntime(Runtime):
         protocol = self.get_protocol()
         req = protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint(model_details)
-        print("Endpoint is ",endpoint)
+        print("Endpoint is ", endpoint)
         headers = self.get_headers(model_details)
         print("Headers are", headers)
         response_raw = requests.post(endpoint, json=req, headers=headers)
@@ -163,67 +163,67 @@ class KFServingKubernetesRuntime(Runtime):
     def _get_spec(self, model_details: ModelDetails) -> dict:
         if model_details.platform == ModelFramework.TempoPipeline:
             return {
-            "apiVersion": "serving.kubeflow.org/v1beta1",
-            "kind": "InferenceService",
-            "metadata": {
-              "name": model_details.name,
-              "namespace": self.k8s_options.namespace,
-            },
-            "spec": {
-              "predictor": {
-                 "serviceAccountName": DefaultServiceAccountName,
-                 "containers": [
-                    {
-                      "image": "seldonio/mlserver:0.3.1.dev6",
-                       "name": "mlserver",
-                       "env": [
-                          {
-                            "name": "STORAGE_URI",
-                            "value": model_details.uri,
-                          },
-                           {
-                               "name": "MLSERVER_HTTP_PORT",
-                               "value": DefaultHTTPPort,
-                           },
-                           {
-                             "name": "MLSERVER_GRPC_PORT",
-                             "value": DefaultGRPCPort,
-                           },
-                           {
-                             "name": "MLSERVER_MODEL_IMPLEMENTATION",
-                             "value": "mlserver_tempo.TempoModel",
-                           },
-                           {
-                             "name": "MLSERVER_MODEL_NAME",
-                             "value": model_details.name,
-                           },
-                           {
-                             "name": "MLSERVER_MODEL_URI",
-                             "value": DefaultModelsPath,
-                           },
-                        ]
+                "apiVersion": "serving.kubeflow.org/v1beta1",
+                "kind": "InferenceService",
+                "metadata": {
+                    "name": model_details.name,
+                    "namespace": self.k8s_options.namespace,
+                },
+                "spec": {
+                    "predictor": {
+                        "serviceAccountName": DefaultServiceAccountName,
+                        "containers": [
+                            {
+                                "image": "seldonio/mlserver:0.3.1.dev6",
+                                "name": "mlserver",
+                                "env": [
+                                    {
+                                        "name": "STORAGE_URI",
+                                        "value": model_details.uri,
+                                    },
+                                    {
+                                        "name": "MLSERVER_HTTP_PORT",
+                                        "value": DefaultHTTPPort,
+                                    },
+                                    {
+                                        "name": "MLSERVER_GRPC_PORT",
+                                        "value": DefaultGRPCPort,
+                                    },
+                                    {
+                                        "name": "MLSERVER_MODEL_IMPLEMENTATION",
+                                        "value": "mlserver_tempo.TempoModel",
+                                    },
+                                    {
+                                        "name": "MLSERVER_MODEL_NAME",
+                                        "value": model_details.name,
+                                    },
+                                    {
+                                        "name": "MLSERVER_MODEL_URI",
+                                        "value": DefaultModelsPath,
+                                    },
+                                ],
+                            },
+                        ],
                     },
-                  ]
-               },
-              },
+                },
             }
         elif model_details.platform in Implementations:
             model_implementation = Implementations[model_details.platform]
             return {
-               "apiVersion": "serving.kubeflow.org/v1beta1",
-               "kind": "InferenceService",
-               "metadata": {
-                "name": model_details.name,
-                "namespace": self.k8s_options.namespace,
-               },
-               "spec": {
-                "predictor": {
+                "apiVersion": "serving.kubeflow.org/v1beta1",
+                "kind": "InferenceService",
+                "metadata": {
+                    "name": model_details.name,
+                    "namespace": self.k8s_options.namespace,
+                },
+                "spec": {
+                    "predictor": {
                         model_implementation: {"storageUri": model_details.uri},
                     },
                 },
-               }
+            }
         else:
-            raise ValueError("Can't create spec for implementation ",model_details.platform)
+            raise ValueError("Can't create spec for implementation ", model_details.platform)
 
     def to_k8s_yaml(self, model_details: ModelDetails) -> str:
         d = self._get_spec(model_details)
