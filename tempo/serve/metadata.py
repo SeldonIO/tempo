@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Type, Union
+from typing import List, Optional, Type, Union, Dict
 
 from pydantic import BaseModel
 
@@ -80,3 +80,13 @@ class RuntimeOptions(BaseModel):
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
     ingress_options: IngressOptions = IngressOptions()
+
+class StateType(Enum):
+    local = "LOCAL"
+    redis = "REDIS"
+
+class StateDetails(BaseModel):
+    state_type: StateType
+    key_override: str
+    config: Dict[str,str]
+

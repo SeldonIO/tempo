@@ -7,7 +7,7 @@ from tempo.serve.model import Model
 from tempo.serve.protocol import Protocol
 from tempo.serve.runtime import Runtime
 from tempo.serve.types import ModelDataType
-
+from tempo.serve.state import StateDetails
 
 class PipelineModels(SimpleNamespace):
     def keys(self):
@@ -48,6 +48,7 @@ class Pipeline(BaseModel):
         outputs: ModelDataType = None,
         conda_env: str = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
+        state_details: StateDetails = None,
     ):
         super().__init__(
             name=name,
@@ -61,6 +62,7 @@ class Pipeline(BaseModel):
             conda_env=conda_env,
             protocol=protocol,
             runtime_options=runtime_options,
+            state_details=state_details,
         )
 
         if models is None:

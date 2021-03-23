@@ -20,6 +20,7 @@ from .protocol import Protocol
 from .remote import Remote
 from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
+from tempo.serve.state import StateDetails, StateType, LocalState, DistributedState
 
 
 class BaseModel:
@@ -36,6 +37,7 @@ class BaseModel:
         conda_env: str = None,
         protocol: Protocol = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
+        state_details: StateDetails = None,
     ):
         if protocol is None:
             protocol = KFServingV2Protocol()
@@ -59,6 +61,18 @@ class BaseModel:
             outputs=output_args,
         )
 
+        # TODO: Expose via StateManager
+        if state_details:
+            if state_details.state_type == StateType.local:
+                self._state = LocalState()
+            elif state_details.state_type == StateType.redis:
+                self._state = DistributedState(state_details, self.details)
+            else:
+                raise Exception("Error no valid StateType")
+        else:
+            self.state = LocalState()
+
+        self.cls = None
         self.protocol = protocol
         self.model_spec = ModelSpec(
             model_details=self.details,

@@ -5,6 +5,8 @@ from tempo.serve.base import BaseModel
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.protocol import Protocol
 from tempo.serve.types import ModelDataType
+from tempo.serve.constants import ModelDataType
+from tempo.serve.state import StateDetails
 
 
 class Model(BaseModel):
@@ -20,6 +22,7 @@ class Model(BaseModel):
         model_func: Callable[..., Any] = None,
         conda_env: str = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
+        state_details: StateDetails = None,
     ):
         """
 
@@ -58,4 +61,5 @@ class Model(BaseModel):
             conda_env=conda_env,
             protocol=protocol,
             runtime_options=runtime_options,
+            state_details=state_details,
         )
