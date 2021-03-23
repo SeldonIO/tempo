@@ -21,7 +21,7 @@ jobs:
             make install-dev
         - name: Downloading test data
           run: |
-            make tempo/tests/examples
+            make tests/testdata
         - name: Test
           run: |
             make test
