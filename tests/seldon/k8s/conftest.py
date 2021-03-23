@@ -1,15 +1,15 @@
-import pytest
+import os
 import time
 import uuid
-import os
-
-from kubernetes import client, config
-from kubernetes.utils.create_from_yaml import create_from_yaml
 from typing import Generator
 
+import pytest
+from kubernetes import client, config
+from kubernetes.utils.create_from_yaml import create_from_yaml
+
 from tempo import Model, Pipeline
-from tempo.seldon import SeldonKubernetesRuntime
 from tempo.kfserving import KFServingV2Protocol
+from tempo.seldon import SeldonKubernetesRuntime
 from tempo.serve.metadata import KubernetesOptions
 
 from ...conftest import TESTDATA_PATH
@@ -52,9 +52,7 @@ def runtime_v2(namespace: str) -> SeldonKubernetesRuntime:
 
 
 @pytest.fixture
-def sklearn_model(
-    sklearn_model: Model, runtime: SeldonKubernetesRuntime
-) -> Generator[Model, None, None]:
+def sklearn_model(sklearn_model: Model, runtime: SeldonKubernetesRuntime) -> Generator[Model, None, None]:
     sklearn_model.set_runtime(runtime)
 
     sklearn_model.deploy()
@@ -66,9 +64,7 @@ def sklearn_model(
 
 
 @pytest.fixture
-def xgboost_model(
-    xgboost_model: Model, runtime: SeldonKubernetesRuntime
-) -> Generator[Model, None, None]:
+def xgboost_model(xgboost_model: Model, runtime: SeldonKubernetesRuntime) -> Generator[Model, None, None]:
     xgboost_model.set_runtime(runtime)
     xgboost_model.deploy()
     xgboost_model.wait_ready(timeout_secs=60)

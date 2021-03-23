@@ -1,8 +1,8 @@
-from .version import __version__
+from .serve.metadata import ModelFramework
 from .serve.model import Model
 from .serve.pipeline import Pipeline
-from .serve.utils import pipeline, predictmethod, model
-from .serve.metadata import ModelFramework
+from .serve.utils import model, pipeline, predictmethod
+from .version import __version__
 
 __all__ = [
     "__version__",

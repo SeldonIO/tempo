@@ -1,12 +1,12 @@
-import pytest
-import docker
 import time
-
 from typing import Generator
 
+import docker
+import pytest
+
+from tempo import Model, Pipeline
 from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon import SeldonDockerRuntime
-from tempo import Model, Pipeline
 
 
 @pytest.fixture
@@ -25,9 +25,7 @@ def runtime_kfserving() -> SeldonDockerRuntime:
 
 
 @pytest.fixture
-def sklearn_model(
-    sklearn_model: Model, runtime: SeldonDockerRuntime
-) -> Generator[Model, None, None]:
+def sklearn_model(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
     sklearn_model.set_runtime(runtime)
     sklearn_model.deploy()
     sklearn_model.wait_ready(timeout_secs=60)
@@ -43,9 +41,7 @@ def sklearn_model(
 
 
 @pytest.fixture
-def xgboost_model(
-    xgboost_model: Model, runtime: SeldonDockerRuntime
-) -> Generator[Model, None, None]:
+def xgboost_model(xgboost_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
     xgboost_model.set_runtime(runtime)
     xgboost_model.deploy()
     xgboost_model.wait_ready(timeout_secs=60)
@@ -61,9 +57,7 @@ def xgboost_model(
 
 
 @pytest.fixture
-def cifar10_model(
-    cifar10_model: Model, runtime_kfserving: SeldonDockerRuntime
-) -> Generator[Model, None, None]:
+def cifar10_model(cifar10_model: Model, runtime_kfserving: SeldonDockerRuntime) -> Generator[Model, None, None]:
     cifar10_model.set_runtime(runtime_kfserving)
     cifar10_model.deploy()
     cifar10_model.wait_ready(timeout_secs=60)

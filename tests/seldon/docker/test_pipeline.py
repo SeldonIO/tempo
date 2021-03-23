@@ -64,24 +64,18 @@ def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
             },
             {
                 "model_name": "inference-pipeline",
-                "outputs": [
-                    {"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}
-                ],
+                "outputs": [{"name": "output0", "datatype": "FP64", "shape": [1], "data": [2.0]}],
             },
         )
     ],
 )
-def test_seldon_pipeline_request_docker(
-    inference_pipeline: Pipeline, x_input, expected
-):
+def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, expected):
     y_pred = inference_pipeline.request(x_input)
 
     assert y_pred == expected
 
 
-def test_undeploy_pipeline_docker(
-    inference_pipeline: Pipeline, runtime: SeldonDockerRuntime
-):
+def test_undeploy_pipeline_docker(inference_pipeline: Pipeline, runtime: SeldonDockerRuntime):
     inference_pipeline.undeploy()
 
     for model in inference_pipeline._models:
