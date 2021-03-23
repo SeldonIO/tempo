@@ -24,6 +24,7 @@ fmt:
 lint:
 	flake8 .
 	mypy ./tempo
+	isort . --check
 	black . \
 		--check \
 		--exclude "(.eggs|.tox)" \
