@@ -8,14 +8,14 @@ from tempo.serve.pipeline import Pipeline
 
 
 @pytest.mark.skip(reason="needs k8s cluster")
-def test_deploy_k8s(k8s_sklearn_model: Model, k8s_runtime: SeldonKubernetesRuntime):
+def test_deploy_k8s(sklearn_model: Model, runtime: SeldonKubernetesRuntime):
     crd_api = client.CustomObjectsApi()
     sdep = crd_api.get_namespaced_custom_object(
         "machinelearning.seldon.io",
         "v1",
-        k8s_runtime.k8s_options.namespace,
+        runtime.k8s_options.namespace,
         "seldondeployments",
-        k8s_sklearn_model.details.name,
+        sklearn_model.details.name,
     )
 
     assert sdep["status"]["state"] == "Available"
@@ -26,15 +26,15 @@ def test_deploy_k8s(k8s_sklearn_model: Model, k8s_runtime: SeldonKubernetesRunti
     "x_input",
     [[[1, 2, 3, 4]], np.array([[1, 2, 3, 4]]), {"data": {"ndarray": [[1, 2, 3, 4]]}}],
 )
-def test_sklearn_k8s(k8s_sklearn_model: Model, x_input):
-    y_pred = k8s_sklearn_model(x_input)
+def test_sklearn_k8s(sklearn_model: Model, x_input):
+    y_pred = sklearn_model(x_input)
 
     np.testing.assert_allclose(y_pred, [[0, 0, 0.99]], atol=1e-2)
 
 
 @pytest.mark.skip(reason="needs k8s cluster")
 @pytest.mark.parametrize("x_input", [np.array([[1, 2, 3, 4]])])
-def test_pipeline_k8s(k8s_inference_pipeline: Pipeline, x_input):
-    y_pred = k8s_inference_pipeline.remote(payload=x_input)
+def test_pipeline_k8s(inference_pipeline: Pipeline, x_input):
+    y_pred = inference_pipeline.remote(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)

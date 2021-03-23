@@ -8,11 +8,11 @@ from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.serve.model import Model
 
 
-def test_deploy_docker(sklearn_model: Model, docker_runtime: SeldonDockerRuntime):
+def test_deploy_docker(sklearn_model: Model, runtime: SeldonDockerRuntime):
     sklearn_model.deploy()
     time.sleep(2)
 
-    container = docker_runtime._get_container(sklearn_model.details)
+    container = runtime._get_container(sklearn_model.details)
     assert container.status == "running"
 
     sklearn_model.undeploy()
@@ -33,11 +33,11 @@ def test_sklearn_docker(sklearn_model: Model, x_input):
     sklearn_model.undeploy()
 
 
-def test_undeploy_docker(sklearn_model: Model, docker_runtime: SeldonDockerRuntime):
+def test_undeploy_docker(sklearn_model: Model, runtime: SeldonDockerRuntime):
     sklearn_model.deploy()
     time.sleep(2)
 
     sklearn_model.undeploy()
 
     with pytest.raises(docker.errors.NotFound):
-        docker_runtime._get_container(sklearn_model.details)
+        runtime._get_container(sklearn_model.details)

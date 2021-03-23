@@ -33,10 +33,9 @@ lint:
 install-rclone:
 	curl https://rclone.org/install.sh | sudo bash
 
-.PHONY: tests/examples
-tests/examples:
-	mkdir -p tests/examples
-	cd tests/examples && \
+.PHONY: tests/testdata
+tests/testdata:
+	cd tests/testdata && \
 		gsutil -m cp -r gs://seldon-models/sklearn . && \
 		gsutil -m cp -r gs://seldon-models/xgboost . && \
 		gsutil -m cp -r gs://seldon-models/mlflow . && \
