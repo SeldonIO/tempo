@@ -4,10 +4,9 @@ import time
 
 from typing import Generator
 
-from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
-from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline
-from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
+from tempo.seldon import SeldonDockerRuntime
+from tempo import Model, Pipeline
 
 
 @pytest.fixture

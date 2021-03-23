@@ -1,4 +1,5 @@
 import pytest
+import time
 import uuid
 import os
 
@@ -6,11 +7,10 @@ from kubernetes import client, config
 from kubernetes.utils.create_from_yaml import create_from_yaml
 from typing import Generator
 
-from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline
-from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo import Model, Pipeline
+from tempo.seldon import SeldonKubernetesRuntime
+from tempo.kfserving import KFServingV2Protocol
 from tempo.serve.metadata import KubernetesOptions
-from tempo.kfserving.protocol import KFServingV2Protocol
 
 from ...conftest import TESTDATA_PATH
 
@@ -92,6 +92,8 @@ def inference_pipeline(
     inference_pipeline.save(save_env=False)
     inference_pipeline.upload()
     inference_pipeline.deploy()
+    # TODO: Fix wait_ready for pipelines
+    time.sleep(60)
     inference_pipeline.wait_ready(timeout_secs=60)
 
     yield inference_pipeline

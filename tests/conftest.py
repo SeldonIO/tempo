@@ -3,10 +3,7 @@ import os
 import numpy as np
 import pytest
 
-from tempo.serve.metadata import ModelFramework
-from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline
-from tempo.serve.utils import pipeline, predictmethod
+from tempo import ModelFramework, Model, Pipeline, pipeline, predictmethod
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -50,6 +47,7 @@ def inference_pipeline(sklearn_model: Model, xgboost_model: Model) -> Pipeline:
         name="inference-pipeline",
         runtime=None,
         models=[sklearn_model, xgboost_model],
+        uri="gs://seldon-models/tempo/test",
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
