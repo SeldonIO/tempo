@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
+from tempo.serve.runtime import LocalRuntime
 from tempo.serve.utils import model, predictmethod
 
 
@@ -44,10 +44,8 @@ from tempo.serve.utils import model, predictmethod
 def test_custom_model(v2_input, expected):
     @model(
         name="custom",
-        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
+        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
-        uri="gs://seldon-models/custom",
-        local_folder="custom_iris_path",
     )
     def custom_model(a: np.ndarray) -> np.ndarray:
         return a
@@ -63,10 +61,8 @@ def test_custom_model(v2_input, expected):
 def test_lambda(input, expected):
     model = Model(
         name="test-iris-sklearn",
-        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
-        platform=ModelFramework.SKLearn,
-        uri="gs://seldon-models/sklearn",
-        local_folder="sklearn/model",
+        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
+        platform=ModelFramework.Custom,
         model_func=lambda x: np.array([[0, 0, 1]]),
     )
 
@@ -110,10 +106,8 @@ def test_lambda(input, expected):
 def test_custom_model_decorator_types(v2_input, expected):
     @model(
         name="custom",
-        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
+        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
-        uri="gs://seldon-models/custom",
-        local_folder="custom_iris_path",
         inputs=np.ndarray,
         outputs=np.ndarray,
     )
@@ -165,10 +159,8 @@ def test_custom_model_decorator_types(v2_input, expected):
 def test_custom_multiheaded_model_tuple(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
+        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
-        uri="gs://seldon-models/custom",
-        local_folder="custom_iris_path",
     )
     def custom_multiheaded_model_tuple(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         return a, b
@@ -218,10 +210,8 @@ def test_custom_multiheaded_model_tuple(v2_input, expected):
 def test_custom_multiheaded_model_list(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
+        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
-        uri="gs://seldon-models/custom",
-        local_folder="custom_iris_path",
     )
     def custom_multiheaded_model_list(a: np.ndarray, b: np.ndarray) -> List[np.ndarray]:
         return [a, b]

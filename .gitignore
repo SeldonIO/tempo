@@ -112,8 +112,12 @@ examples/*.h5
 # emacs
 *~
 
-# Test datasets
-tempo/tests/examples
+# Test models
+tests/testdata/keras
+tests/testdata/mlflow
+tests/testdata/sklearn
+tests/testdata/tfserving
+tests/testdata/xgboost
 
 
 #mlflow

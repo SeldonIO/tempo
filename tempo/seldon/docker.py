@@ -57,27 +57,38 @@ class SeldonDockerRuntime(Runtime):
         return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
 
     def deploy(self, model_details: ModelDetails):
+        try:
+            container = self._get_container(model_details)
+            if container.status == "running":
+                # If container already exists and is running, nothing to do
+                # here
+                return
+
+            # Remove before re-deploying
+            container.remove(force=True)
+            self._run_container(model_details)
+        except docker.errors.NotFound:
+            self._run_container(model_details)
+
+    def _run_container(self, model_details: ModelDetails):
         docker_client = docker.from_env()
         uid = os.getuid()
 
-        try:
-            self._get_container(model_details)
-        except docker.errors.NotFound:
-            protocol = self.get_protocol()
-            container_index = self._get_port_index()
-            model_folder = model_details.local_folder
-            container_spec = get_container_spec(model_details, protocol)
-            self._create_network(docker_client)
+        protocol = self.get_protocol()
+        container_index = self._get_port_index()
+        model_folder = model_details.local_folder
+        container_spec = get_container_spec(model_details, protocol)
+        self._create_network(docker_client)
 
-            docker_client.containers.run(
-                name=self._get_container_name(model_details),
-                ports={container_index: self._get_available_port()},
-                volumes={model_folder: {"bind": DefaultModelsPath, "mode": "ro"}},
-                detach=True,
-                network=DefaultNetworkName,
-                user=uid,
-                **container_spec,
-            )
+        docker_client.containers.run(
+            name=self._get_container_name(model_details),
+            ports={container_index: self._get_available_port()},
+            volumes={model_folder: {"bind": DefaultModelsPath, "mode": "ro"}},
+            detach=True,
+            network=DefaultNetworkName,
+            user=uid,
+            **container_spec,
+        )
 
     def _create_network(self, docker_client: DockerClient, network_name=DefaultNetworkName):
         try:

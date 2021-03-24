@@ -24,6 +24,7 @@ fmt:
 lint:
 	flake8 .
 	mypy ./tempo
+	isort . --check
 	black . \
 		--check \
 		--exclude "(.eggs|.tox)" \
@@ -33,10 +34,9 @@ lint:
 install-rclone:
 	curl https://rclone.org/install.sh | sudo bash
 
-.PHONY: tempo/tests/examples
-tempo/tests/examples:
-	mkdir -p tempo/tests/examples
-	cd tempo/tests/examples && \
+.PHONY: tests/testdata
+tests/testdata:
+	cd tests/testdata && \
 		gsutil -m cp -r gs://seldon-models/sklearn . && \
 		gsutil -m cp -r gs://seldon-models/xgboost . && \
 		gsutil -m cp -r gs://seldon-models/mlflow . && \
@@ -46,7 +46,7 @@ tempo/tests/examples:
 
 .PHONY: clean_test_data
 clean_test_data:
-	rm -rf tempo/tests/examples
+	rm -rf tests/examples
 
 
 .PHONY: build
