@@ -24,6 +24,7 @@ from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
 from tempo.serve.utils import pipeline, predictmethod, model
 from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.kfserving.k8s import KFServingKubernetesRuntime
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from alibi.utils.wrappers import ArgmaxTransformer
 from typing import Any
@@ -290,6 +291,18 @@ svc.remote(payload=X_mask)
 
 
 ```python
+!kubectl create namespace production
+```
+
+
+```python
+!kubectl apply -f ../../../k8s/tempo-pipeline-rbac.yaml -n production
+```
+
+## Deploy to Kubernetes with Seldon
+
+
+```python
 k8s_options = KubernetesOptions(namespace="production")
 k8s_v1_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV1Protocol())
 k8s_v2_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
@@ -301,13 +314,91 @@ svc.set_runtime(k8s_v2_runtime)
 
 
 ```python
-outlier.save(save_env=True)
+outlier.save(save_env=False)
 outlier.upload()
 ```
 
 
 ```python
 #svc.save(save_env=False)
+svc.upload()
+```
+
+
+```python
+svc.deploy()
+svc.wait_ready()
+```
+
+
+```python
+show_image(X_test[0:1])
+svc.remote(payload=X_test[0:1])
+```
+
+
+```python
+show_image(X_mask)
+svc.remote(payload=X_mask)
+```
+
+
+```python
+svc.undeploy()
+```
+
+## Deploy to Kubernetes with KFServing
+
+
+```python
+k8s_options = KubernetesOptions(namespace="production")
+k8s_v1_runtime = KFServingKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV1Protocol())
+k8s_v2_runtime = KFServingKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
+
+cifar10_model.set_runtime(k8s_v1_runtime)
+outlier.set_runtime(k8s_v2_runtime)
+svc.set_runtime(k8s_v2_runtime)
+```
+
+
+```python
+cifar10_model.deploy()
+cifar10_model.wait_ready()
+```
+
+
+```python
+idx = 1
+X = X_test[idx].reshape(1, 32, 32, 3)
+plt.imshow(X.reshape(32, 32, 3))
+plt.axis('off')
+plt.show()
+print("class:",class_names[y_test[idx][0]])
+print("prediction:",class_names[cifar10_model(X_test[idx:idx+1])[0].argmax()])
+```
+
+
+```python
+outlier.save(save_env=True)
+outlier.upload()
+```
+
+
+```python
+outlier.deploy()
+outlier.wait_ready()
+```
+
+
+```python
+show_image(X_mask)
+r = outlier.remote(payload=X_mask)
+print("Is outlier:",r["data"]["is_outlier"][0] == 1)
+```
+
+
+```python
+svc.save(save_env=True)
 svc.upload()
 ```
 

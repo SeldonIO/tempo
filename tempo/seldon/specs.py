@@ -126,6 +126,9 @@ class KubernetesSpec:
             "type": "MODEL",
         }
 
+        if self._k8s_options.authSecretName:
+            graph["envSecretRefName"] = self._k8s_options.authSecretName
+
         if self._details.platform in self.Implementations:
             model_implementation = self.Implementations[self._details.platform]
             graph["implementation"] = model_implementation

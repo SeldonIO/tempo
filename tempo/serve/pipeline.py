@@ -5,7 +5,6 @@ from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.runtime import Runtime
-from tempo.utils import logger
 
 
 class Pipeline(BaseModel):
@@ -52,7 +51,6 @@ class Pipeline(BaseModel):
         """
         Deploy all the models
         """
-        logger.info("deploying models for %s", self.details.name)
         for model in self._models:
             model.deploy()
 
@@ -71,7 +69,6 @@ class Pipeline(BaseModel):
         return True
 
     def undeploy_models(self):
-        logger.info("undeploying models for %s", self.details.name)
         for model in self._models:
             model.undeploy()
 

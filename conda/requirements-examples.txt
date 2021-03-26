@@ -1,0 +1,12 @@
+conda-pack
+jupyter
+ansible
+openshift
+opencv-python-headless
+mlops-tempo
+alibi-detect==0.5.1
+alibi==0.5.6
+dill
+mlserver==0.3.1.dev5
+mlserver-tempo==0.3.1.dev5
+xgboost

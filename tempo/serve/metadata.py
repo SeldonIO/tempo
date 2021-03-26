@@ -60,3 +60,4 @@ class KubernetesOptions(BaseModel):
     namespace = "default"
     minReplicas: Optional[int] = None
     maxReplicas: Optional[int] = None
+    authSecretName: str = None

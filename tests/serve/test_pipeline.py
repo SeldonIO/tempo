@@ -1,3 +1,5 @@
+from typing import Tuple
+
 from tempo.serve.utils import pipeline, predictmethod
 
 
@@ -61,3 +63,20 @@ def test_clear_state_func():
     y = MyPipeline2()
 
     y(X="hello")
+
+
+def test_class_two_outputs():
+    @pipeline(
+        name="classifier",
+        models=[],
+    )
+    class MyPipeline:
+        @predictmethod
+        def predict(self, X: str) -> Tuple[str, str]:
+            return X, X
+
+    x = MyPipeline()
+
+    r1, r2 = x.predict("hello")
+    assert r1 == "hello"
+    assert r2 == "hello"

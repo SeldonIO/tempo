@@ -1,3 +1,4 @@
+import logging
 import os
 import tempfile
 from os import path
@@ -8,6 +9,7 @@ from tempo.serve.constants import DefaultEnvFilename, DefaultModelFilename, Mode
 from tempo.serve.loader import download, load_custom, save_custom, save_environment, upload
 from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework
 from tempo.serve.runtime import Runtime
+from tempo.utils import logger
 
 DEFAULT_CONDA_FILE = "conda.yaml"
 
@@ -110,6 +112,7 @@ class BaseModel:
         return load_custom(file_path_pkl)
 
     def save(self, save_env=True):
+        logging.info("Saving environment")
         if not self._user_func:
             # Nothing to save
             return
@@ -203,7 +206,9 @@ class BaseModel:
         return self.runtime.to_k8s_yaml(self.details)
 
     def deploy(self):
+        logger.info("Deploying %s", self.details.name)
         self.runtime.deploy(self.details)
 
     def undeploy(self):
+        logger.info("Undeploying %s", self.details.name)
         self.runtime.undeploy(self.details)
