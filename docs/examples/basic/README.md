@@ -4,7 +4,8 @@ This notebook will walk you through an end-to-end example deploying a Tempo pipe
 
 ## Prerequisites
 
-Run this notebook within the `seldon-examples` conda environment. Details to create this can be found [here]().
+  * rclone and conda installed.
+  * Run this notebook within the `seldon-examples` conda environment. Details to create this can be found [here]().
 
 ## Architecture
 
@@ -24,6 +25,34 @@ def writetemplate(line, cell):
 
 ## Train Iris Models
 
+We will train:
+
+  * A sklearn logistic regression model
+  * A xgboost model
+
+
+```python
+from sklearn import datasets
+from sklearn.linear_model import LogisticRegression
+import joblib
+iris = datasets.load_iris()
+X = iris.data  # we only take the first two features.
+y = iris.target
+logreg = LogisticRegression(C=1e5)
+logreg.fit(X, y)
+logreg.predict_proba(X[0:1])
+with open("./artifacts/sklearn/model.joblib","wb") as f:
+    joblib.dump(logreg, f)
+```
+
+
+```python
+from xgboost import XGBClassifier
+clf = XGBClassifier()
+clf.fit(X,y)
+clf.save_model("./artifacts/xgboost/model.bst")
+```
+
 ## Defining pipeline
 
 The first step will be to define our custom pipeline.
@@ -33,7 +62,7 @@ This pipeline will access 2 models, stored remotely.
 ```python
 import os
 import numpy as np
-
+from typing import Tuple
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from tempo.serve.model import Model
 from tempo.seldon.docker import SeldonDockerRuntime
@@ -56,7 +85,7 @@ sklearn_model = Model(
         runtime=docker_runtime,
         platform=ModelFramework.SKLearn,
         local_folder=SKLEARN_FOLDER,
-        uri="gs://seldon-models/sklearn/iris"
+        uri="s3://tempo/basic/sklearn"
 )
 
 xgboost_model = Model(
@@ -64,7 +93,7 @@ xgboost_model = Model(
         runtime=docker_runtime,
         platform=ModelFramework.XGBoost,
         local_folder=XGBOOST_FOLDER,
-        uri="gs://seldon-models/xgboost/iris"
+        uri="s3://tempo/basic/xgboost"
 )
 
 docker_runtime_v2 = SeldonDockerRuntime(protocol=KFServingV2Protocol())
@@ -74,23 +103,22 @@ docker_runtime_v2 = SeldonDockerRuntime(protocol=KFServingV2Protocol())
           uri="s3://tempo/basic/pipeline",
           local_folder=PIPELINE_ARTIFACTS_FOLDER,
           models=[sklearn_model, xgboost_model])
-def classifier(payload: np.ndarray) -> np.ndarray:
+def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
     res1 = sklearn_model(payload)
 
     if res1[0][0] > 0.5:
-        return res1
+        return res1,"sklearn prediction"
     else:
-        return xgboost_model(payload)
+        return xgboost_model(payload),"xgboost prediction"
 ```
 
 ## Deploying pipeline to Docker
 
 The next step, will be to deploy our pipeline to Docker.
-We will divide this process into 3 sub-steps:
+We will divide this process into 2 steps:
 
 1. Save our artifacts and environment
-2. Download our model artifacts locally
-3. Deploy resources
+2. Deploy resources
 
 ### Saving artifacts
 
@@ -130,34 +158,7 @@ dependencies:
 
 
 ```python
-classifier.save()
-```
-
-### Downloading model artifacts
-
-Since we are going to deploy our pipeline locally using Docker, we'll need to download the model artifacts locally.
-
-### Configure rclone
-
-
-```python
-%%writefile rclone.conf
-[gs]
-type = google cloud storage
-
-```
-
-
-```python
-import os
-from tempo.conf import settings
-settings.rclone_cfg = os.getcwd() + "/rclone.conf"
-```
-
-
-```python
-sklearn_model.download()
-xgboost_model.download()
+classifier.save(save_env=True)
 ```
 
 ### Deploying pipeline
@@ -170,12 +171,25 @@ classifier.wait_ready()
 
 ### Sending requests
 
-Lastly, we can now send requests to our deployed pipeline.
-For this, we will leverage the `remote()` method, which will interact without our deployed pipeline (as opposed to executing our pipeline's code locally).
+We can send requests to the deployed components with either the python code for the classifier running locally or remotely. 
+
+First we test calling the classifer locally. It will call out to the remote models running in Docker.
+
+
+```python
+classifier(payload=np.array([[1, 2, 3, 4]]))
+```
+
+Now we can use the `.remote` method to call to the remote classifier running in Docker.
 
 
 ```python
 classifier.remote(payload=np.array([[1, 2, 3, 4]]))
+```
+
+
+```python
+classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 ```
 
 ### Undeploy pipeline
@@ -224,7 +238,7 @@ stringData:
 
 
 ```python
-!kubectl create -f minio-secret.yaml -n production
+!kubectl apply -f minio-secret.yaml -n production
 ```
 
 ### Change runtime
@@ -268,9 +282,6 @@ env_auth = false
 access_key_id = minioadmin
 secret_access_key = minioadmin
 endpoint = http://{MINIO_IP}:9000
-        
-[gs]
-type = google cloud storage
 
 ```
 
@@ -283,6 +294,8 @@ settings.rclone_cfg = os.getcwd() + "/rclone.conf"
 
 
 ```python
+sklearn_model.upload()
+xgboost_model.upload()
 classifier.upload()
 ```
 
