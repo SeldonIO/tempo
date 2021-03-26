@@ -10,20 +10,8 @@ from tempo.serve.loader import (
     _get_environment,
     _get_pip_deps,
     _has_required_deps,
-    _to_rclone,
     save_environment,
 )
-
-
-@pytest.mark.parametrize(
-    "path, expected",
-    [
-        ("gs://mybucket/sklearn/iris", "gcs://mybucket/sklearn/iris"),
-        ("s3://mybucket/sklear/iris", "s3://mybucket/sklear/iris"),
-    ],
-)
-def test_rclone_conversion(path, expected):
-    assert _to_rclone(path) == expected
 
 
 @pytest.mark.skip(reason="very slow")

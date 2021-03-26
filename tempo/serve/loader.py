@@ -1,3 +1,4 @@
+import logging
 import re
 import uuid
 from subprocess import run
@@ -8,11 +9,11 @@ import cloudpickle
 import conda_pack
 import rclone
 import yaml
-import logging
 
 from tempo.conf import settings
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.utils import logger
+
 
 def save_custom(pipeline, file_path: str) -> str:
     with open(file_path, "wb") as file:
@@ -109,7 +110,7 @@ def _get_pip_deps(dependencies: dict) -> Optional[dict]:
 
 
 def _pack_environment(env_name: str, file_path: str):
-    logger.info("packing conda environment from %s",env_name)
+    logger.info("packing conda environment from %s", env_name)
     # Pack environment
     conda_pack.pack(
         name=env_name,

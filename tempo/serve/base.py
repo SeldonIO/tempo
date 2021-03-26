@@ -1,8 +1,8 @@
+import logging
 import os
 import tempfile
 from os import path
 from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
-import logging
 
 from tempo.errors import UndefinedCustomImplementation, UndefinedRuntime
 from tempo.serve.constants import DefaultEnvFilename, DefaultModelFilename, ModelDataType
