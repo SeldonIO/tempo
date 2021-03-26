@@ -8,12 +8,11 @@ import cloudpickle
 import conda_pack
 import rclone
 import yaml
+import logging
 
 from tempo.conf import settings
 from tempo.serve.constants import MLServerEnvDeps
-
-RCLONE_CONVERSIONS = [("^gs:", "gcs:")]
-
+from tempo.utils import logger
 
 def save_custom(pipeline, file_path: str) -> str:
     with open(file_path, "wb") as file:
@@ -33,6 +32,8 @@ def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
             env = yaml.safe_load(file)
             if not _has_required_deps(env):
                 raise ValueError(f"conda.yaml does not contain {MLServerEnvDeps}")
+            else:
+                logger.info("Using found conda.yaml")
     else:
         env = _get_environment(env_name=env_name)
         env = _add_required_deps(env)
@@ -40,7 +41,6 @@ def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
 
 
 def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None):
-    # TODO: Check if Conda is installed
     if env_name:
         _pack_environment(env_name, conda_pack_file_path)
     else:
@@ -109,6 +109,7 @@ def _get_pip_deps(dependencies: dict) -> Optional[dict]:
 
 
 def _pack_environment(env_name: str, file_path: str):
+    logger.info("packing conda environment from %s",env_name)
     # Pack environment
     conda_pack.pack(
         name=env_name,
@@ -129,6 +130,7 @@ def _create_and_pack_environment(env: dict, file_path: str):
         tmp_env_path = file.name
         tmp_env_name = f"tempo-{uuid.uuid4()}"
         cmd = f"conda env create --name {tmp_env_name} --file {tmp_env_path}"
+        logger.info("Creating conda env with: %s", cmd)
         run(cmd, shell=True, check=True)
 
         try:
@@ -136,14 +138,8 @@ def _create_and_pack_environment(env: dict, file_path: str):
         finally:
             # Remove environment
             cmd = f"conda remove --name {tmp_env_name} --all --yes"
+            logger.info("Removing conda env with: %s", cmd)
             run(cmd, shell=True, check=True)
-
-
-def _to_rclone(path: str) -> str:
-    "convert standard uris to rclone prefixed ones"
-    for p, r in RCLONE_CONVERSIONS:
-        path = re.sub(p, r, path)
-    return path
 
 
 def _load_rclone_cfg() -> str:
@@ -153,11 +149,11 @@ def _load_rclone_cfg() -> str:
 
 def upload(local_path: str, remote_uri: str):
     "Upload local to remote using rclone"
-    remote_uri = _to_rclone(remote_uri)
+    logger.info("Uploading %s to %s", local_path, remote_uri)
     rclone.with_config(_load_rclone_cfg()).copy(local_path, remote_uri, flags=["-P"])
 
 
 def download(remote_uri: str, local_path: str):
     "Download remote to local using rclone"
-    remote_uri = _to_rclone(remote_uri)
+    logger.info("Downloading %s to %s", remote_uri, local_path)
     rclone.with_config(_load_rclone_cfg()).copy(remote_uri, local_path, flags=["-P"])

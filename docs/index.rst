@@ -9,13 +9,15 @@ Documentation Index (as per sidebar)
     :titlesonly:
     :caption: Python Documentation:
 
-    Quickstart <overview/quickstart>
+    Quickstart <overview/quickstart.md>
 
 .. toctree::
     :titlesonly:
     :caption: Examples:
 
-    Explainers <notebooks/explainer.nblink>
+    Basic Example <examples/basic/README.md>
+    Model Explainers <examples/explainer/README.md>
+    
 
 .. toctree::
     :titlesonly:

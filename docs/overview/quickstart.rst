@@ -1,4 +1,0 @@
-
-Tempo Quickstart Guide
-#########################
-

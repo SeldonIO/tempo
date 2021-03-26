@@ -5,11 +5,37 @@
 
 # ⏳ Tempo: The MLOps Software Development Kit
 
-An open source SDK to streamline workflows to productionise machine learning models at scale.
+## Vision
+
+*Enable data scientists to see a productionised machine learning model within moments, not months. Easy to work with locally and also in kubernetes, whatever your preferred data science tools*
 
 ## Overview
 
 Tempo provides a unified interface to multiple MLOps projects that enable data scientists to deploy and productionise machine learning systems.
+
+
+ * Package your trained model artifacts to optimized server runtimes (Tensorflow, PyTorch, Sklearn, XGBoost etc)
+ * Package custom business logic to production servers.
+ * Build a inference pipeline of models and orchestration steps.
+ * Include any custom python components as needed. Examples:
+     * Outlier detectors with Alibi-Detect.
+     * Explainers with Alibi-Explain.
+ * Deploy locally to Docker to test with Docker runtimes.
+ * Deploy to production on Kubernetes with configurable runtimes.
+ * Seldon customers can deploy with Seldon Deploy runtime.
+ * Run with local unit tests.
+ * Create stateful services. Examples:
+    * Multi-Armed Bandits.
+ * Extract declarative Kubernetes yaml to follow GitOps workflows.
+
+
+## Workflow
+
+1. Develop locally.
+2. Test locally on Docker with production artifacts.
+3. Push artifacts to remote bucket store and launch remotely (on Kubernetes).
+
+![overview](/assets/tempo-overview.png)
 
 ## Motivating Example
 

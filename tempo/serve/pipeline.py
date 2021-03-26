@@ -52,7 +52,6 @@ class Pipeline(BaseModel):
         """
         Deploy all the models
         """
-        logger.info("deploying models for %s", self.details.name)
         for model in self._models:
             model.deploy()
 
@@ -71,7 +70,6 @@ class Pipeline(BaseModel):
         return True
 
     def undeploy_models(self):
-        logger.info("undeploying models for %s", self.details.name)
         for model in self._models:
             model.undeploy()
 
