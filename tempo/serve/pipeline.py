@@ -5,7 +5,6 @@ from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.runtime import Runtime
-from tempo.utils import logger
 
 
 class Pipeline(BaseModel):
