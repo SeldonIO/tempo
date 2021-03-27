@@ -1,9 +1,9 @@
 
 Tempo Docs Home
-==========================================
+===============
 
-Documentation Index (as per sidebar)
---------
+Documentation Index
+-------------------
 
 .. toctree::
     :titlesonly:
@@ -15,8 +15,13 @@ Documentation Index (as per sidebar)
     :titlesonly:
     :caption: Examples:
 
-    Basic Example <examples/basic/README.md>
-    Model Explainers <examples/explainer/README.md>
+    Introductory Example with Docker <examples/intro/README.md>
+    Introductory Example with Kubernetes <examples/intro_k8s/README.md>
+    Introductory Example with Seldon Deploy <examples/deploy/README.md>
+    Model Explanation using Alibi <examples/explainer/README.md>
+    Outlier Detection using Alibi-Detect <examples/outlier/README.md>
+    Multi-Armed Bandit with State <examples/mab-thompson-sampling-tempo/README.md>
+    
     
 
 .. toctree::
@@ -28,8 +33,8 @@ Documentation Index (as per sidebar)
     KFServing Documentation <https://www.kubeflow.org/docs/components/serving/kfserving/>
 
 
-High Level Overview (from README)
---------
+High Level Overview
+-------------------
 
 .. mdinclude:: ../README.md
 

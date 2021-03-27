@@ -35,7 +35,7 @@ Tempo provides a unified interface to multiple MLOps projects that enable data s
 2. Test locally on Docker with production artifacts.
 3. Push artifacts to remote bucket store and launch remotely (on Kubernetes).
 
-![overview](/assets/tempo-overview.png)
+![overview](https://raw.githubusercontent.com/SeldonIO/tempo/master/docs/assets/tempo-overview.png)
 
 ## Motivating Example
 
