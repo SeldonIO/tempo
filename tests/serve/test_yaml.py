@@ -3,6 +3,7 @@ import pytest
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
+from tempo.seldon.protocol import SeldonProtocol
 
 
 @pytest.mark.parametrize(
@@ -32,6 +33,7 @@ def test_seldon_sklearn_model_yaml(expected):
         runtime=SeldonKubernetesRuntime(),
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
+        protocol=SeldonProtocol(),
         local_folder="",
     )
     assert m.to_k8s_yaml() == expected
@@ -62,6 +64,7 @@ def test_seldon_xgboost_model_yaml(expected):
     m = Model(
         name="test-iris-xgboost",
         runtime=SeldonKubernetesRuntime(),
+        protocol=SeldonProtocol(),
         platform=ModelFramework.XGBoost,
         uri="gs://seldon-models/xgboost/iris",
         local_folder="",

@@ -9,13 +9,12 @@ from tempo.serve.pipeline import Pipeline
 def test_deploy_pipeline_docker(
     inference_pipeline: Pipeline,
     runtime: SeldonDockerRuntime,
-    runtime_v2: SeldonDockerRuntime,
 ):
     for model in inference_pipeline._models:
-        container = runtime._get_container(model.details)
+        container = runtime._get_container(model.model_spec)
         assert container.status == "running"
 
-    pipeline_container = runtime_v2._get_container(inference_pipeline.details)
+    pipeline_container = runtime._get_container(inference_pipeline.model_spec)
     assert pipeline_container.status == "running"
 
 
@@ -80,4 +79,4 @@ def test_undeploy_pipeline_docker(inference_pipeline: Pipeline, runtime: SeldonD
 
     for model in inference_pipeline._models:
         with pytest.raises(docker.errors.NotFound):
-            runtime._get_container(model.details)
+            runtime._get_container(model.model_spec)

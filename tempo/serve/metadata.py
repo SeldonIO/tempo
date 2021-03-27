@@ -46,6 +46,8 @@ class ModelDataArgs(BaseModel):
         return len(self.args)
 
 
+
+
 class ModelDetails(BaseModel):
     name: str
     local_folder: str

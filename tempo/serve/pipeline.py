@@ -5,6 +5,7 @@ from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.runtime import Runtime
+from tempo.serve.protocol import Protocol
 
 
 class Pipeline(BaseModel):
@@ -13,6 +14,7 @@ class Pipeline(BaseModel):
         name: str,
         pipeline_func: Callable[[Any], Any] = None,
         runtime: Runtime = None,
+        protocol: Protocol = None,
         models: List[BaseModel] = None,
         local_folder: str = None,
         uri: str = None,
@@ -33,6 +35,7 @@ class Pipeline(BaseModel):
             conda_env=conda_env,
             runtime=runtime,
             deployed=deployed,
+            protocol=protocol,
         )
 
         if models is None:

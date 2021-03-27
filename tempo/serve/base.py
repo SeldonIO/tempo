@@ -8,8 +8,10 @@ from tempo.errors import UndefinedCustomImplementation, UndefinedRuntime
 from tempo.serve.constants import DefaultEnvFilename, DefaultModelFilename, ModelDataType
 from tempo.serve.loader import download, load_custom, save_custom, save_environment, upload
 from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework
-from tempo.serve.runtime import Runtime
+from tempo.serve.runtime import Runtime, ModelSpec
+from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.utils import logger
+from tempo.serve.protocol import Protocol
 
 DEFAULT_CONDA_FILE = "conda.yaml"
 
@@ -26,6 +28,7 @@ class BaseModel:
         outputs: ModelDataType = None,
         conda_env: str = None,
         runtime: Runtime = None,
+        protocol: Protocol = KFServingV2Protocol(),
         deployed: bool = False,
     ):
         self._name = name
@@ -50,6 +53,11 @@ class BaseModel:
 
         self.cls = None
         self.runtime = runtime
+        self.protocol = protocol
+        self.model_spec = ModelSpec(
+            model_details = self.details,
+            protocol = self.protocol
+        )
 
     def set_deployed(self, val: bool):
         self.deployed = val
@@ -151,14 +159,11 @@ class BaseModel:
         download(self.details.uri, self.details.local_folder)
 
     def request(self, req: Dict) -> Dict:
-        if self.runtime is None:
-            raise UndefinedRuntime(self.details.name)
 
         if self._user_func is None:
             raise UndefinedCustomImplementation(self.details.name)
 
-        protocol = self.runtime.get_protocol()
-        req_converted = protocol.from_protocol_request(req, self.details.inputs)
+        req_converted = self.protocol.from_protocol_request(req, self.details.inputs)
         if type(req_converted) == dict:
             if self.cls is not None:
                 response = self._user_func(self.cls, **req_converted)
@@ -176,11 +181,11 @@ class BaseModel:
                 response = self._user_func(req_converted)
 
         if type(response) == dict:
-            response_converted = protocol.to_protocol_response(self.details, **response)
+            response_converted = self.protocol.to_protocol_response(self.details, **response)
         elif type(response) == list or type(response) == tuple:
-            response_converted = protocol.to_protocol_response(self.details, *response)
+            response_converted = self.protocol.to_protocol_response(self.details, *response)
         else:
-            response_converted = protocol.to_protocol_response(self.details, response)
+            response_converted = self.protocol.to_protocol_response(self.details, response)
 
         return response_converted
 
@@ -188,13 +193,13 @@ class BaseModel:
         self.runtime = runtime
 
     def remote(self, *args, **kwargs):
-        return self.runtime.remote(self.details, *args, **kwargs)
+        return self.runtime.remote(self.model_spec, *args, **kwargs)
 
     def wait_ready(self, timeout_secs=None):
-        return self.runtime.wait_ready(self.details, timeout_secs=timeout_secs)
+        return self.runtime.wait_ready(self.model_spec, timeout_secs=timeout_secs)
 
     def get_endpoint(self):
-        return self.runtime.get_endpoint(self.details)
+        return self.runtime.get_endpoint(self.model_spec)
 
     def to_k8s_yaml(self) -> str:
         """
@@ -203,12 +208,12 @@ class BaseModel:
         if self.runtime is None:
             raise UndefinedRuntime(self.details.name)
 
-        return self.runtime.to_k8s_yaml(self.details)
+        return self.runtime.to_k8s_yaml(self.model_spec)
 
     def deploy(self):
         logger.info("Deploying %s", self.details.name)
-        self.runtime.deploy(self.details)
+        self.runtime.deploy(self.model_spec)
 
     def undeploy(self):
         logger.info("Undeploying %s", self.details.name)
-        self.runtime.undeploy(self.details)
+        self.runtime.undeploy(self.model_spec)

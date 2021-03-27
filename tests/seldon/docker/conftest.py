@@ -15,16 +15,6 @@ def runtime() -> SeldonDockerRuntime:
 
 
 @pytest.fixture
-def runtime_v2() -> SeldonDockerRuntime:
-    return SeldonDockerRuntime(protocol=KFServingV2Protocol())
-
-
-@pytest.fixture
-def runtime_kfserving() -> SeldonDockerRuntime:
-    return SeldonDockerRuntime(protocol=KFServingV1Protocol())
-
-
-@pytest.fixture
 def sklearn_model(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
     sklearn_model.set_runtime(runtime)
     sklearn_model.deploy()
@@ -57,8 +47,8 @@ def xgboost_model(xgboost_model: Model, runtime: SeldonDockerRuntime) -> Generat
 
 
 @pytest.fixture
-def cifar10_model(cifar10_model: Model, runtime_kfserving: SeldonDockerRuntime) -> Generator[Model, None, None]:
-    cifar10_model.set_runtime(runtime_kfserving)
+def cifar10_model(cifar10_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
+    cifar10_model.set_runtime(runtime)
     cifar10_model.deploy()
     cifar10_model.wait_ready(timeout_secs=60)
 
@@ -71,9 +61,8 @@ def cifar10_model(cifar10_model: Model, runtime_kfserving: SeldonDockerRuntime) 
 def inference_pipeline(
     inference_pipeline: Pipeline,
     runtime: SeldonDockerRuntime,
-    runtime_v2: SeldonDockerRuntime,
 ) -> Generator[Pipeline, None, None]:
-    inference_pipeline.set_runtime(runtime_v2)
+    inference_pipeline.set_runtime(runtime)
 
     for model in inference_pipeline._models:
         model.set_runtime(runtime)

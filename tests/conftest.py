@@ -4,6 +4,9 @@ import numpy as np
 import pytest
 
 from tempo import Model, ModelFramework, Pipeline, pipeline, predictmethod
+from tempo.seldon.protocol import SeldonProtocol
+from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
+
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -26,6 +29,7 @@ def sklearn_model() -> Model:
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
+        protocol=SeldonProtocol()
     )
 
 
@@ -38,6 +42,7 @@ def xgboost_model() -> Model:
         platform=ModelFramework.XGBoost,
         uri="gs://seldon-models/xgboost/iris",
         local_folder=model_path,
+        protocol=SeldonProtocol()
     )
 
 
@@ -69,6 +74,7 @@ def cifar10_model() -> Model:
         platform=ModelFramework.Tensorflow,
         uri="gs://seldon-models/tfserving/cifar10/resnet32",
         local_folder=model_path,
+        protocol=KFServingV1Protocol()
     )
 
 

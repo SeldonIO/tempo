@@ -9,26 +9,15 @@ from docker.client import DockerClient
 from docker.errors import NotFound
 from docker.models.containers import Container
 
-from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
-from tempo.serve.metadata import ModelDetails
-from tempo.serve.protocol import Protocol
-from tempo.serve.runtime import Runtime
+from tempo.serve.runtime import Runtime, ModelSpec
 
 DefaultNetworkName = "tempo"
 
 
 class SeldonDockerRuntime(Runtime):
-    def __init__(self, protocol=None):
-        if protocol is None:
-            self.protocol = SeldonProtocol()
-        else:
-            self.protocol = protocol
 
-    def get_protocol(self) -> Protocol:
-        return self.protocol
-
-    def _get_host_ip_port(self, model_details: ModelDetails) -> Tuple[str, str]:
+    def _get_host_ip_port(self, model_details: ModelSpec) -> Tuple[str, str]:
         container = self._get_container(model_details)
         port_index = self._get_port_index()
         host_ports = container.ports[port_index]
@@ -37,26 +26,24 @@ class SeldonDockerRuntime(Runtime):
         host_port = host_ports[0]["HostPort"]
         return host_ip, host_port
 
-    def get_endpoint(self, model_details: ModelDetails) -> str:
-        protocol = self.get_protocol()
-        predict_path = protocol.get_predict_path(model_details)
+    def get_endpoint(self, model_spec: ModelSpec) -> str:
+        predict_path = model_spec.protocol.get_predict_path(model_spec.model_details)
 
         if self._is_inside_docker():
             # If inside Docker, use internal networking
-            return f"http://{model_details.name}:{DefaultHTTPPort}{predict_path}"
+            return f"http://{model_spec.model_details.name}:{DefaultHTTPPort}{predict_path}"
 
-        host_ip, host_port = self._get_host_ip_port(model_details)
+        host_ip, host_port = self._get_host_ip_port(model_spec)
 
         return f"http://{host_ip}:{host_port}{predict_path}"
 
-    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
-        protocol = self.get_protocol()
-        req = protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint(model_details)
+    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
+        req = model_spec.protocol.to_protocol_request(*args, **kwargs)
+        endpoint = self.get_endpoint(model_spec)
         response_raw = requests.post(endpoint, json=req)
-        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
+        return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
 
-    def deploy(self, model_details: ModelDetails):
+    def deploy(self, model_details: ModelSpec):
         try:
             container = self._get_container(model_details)
             if container.status == "running":
@@ -70,14 +57,13 @@ class SeldonDockerRuntime(Runtime):
         except docker.errors.NotFound:
             self._run_container(model_details)
 
-    def _run_container(self, model_details: ModelDetails):
+    def _run_container(self, model_details: ModelSpec):
         docker_client = docker.from_env()
         uid = os.getuid()
 
-        protocol = self.get_protocol()
         container_index = self._get_port_index()
-        model_folder = model_details.local_folder
-        container_spec = get_container_spec(model_details, protocol)
+        model_folder = model_details.model_details.local_folder
+        container_spec = get_container_spec(model_details)
         self._create_network(docker_client)
 
         docker_client.containers.run(
@@ -99,12 +85,12 @@ class SeldonDockerRuntime(Runtime):
     def _get_port_index(self):
         return f"{DefaultHTTPPort}/tcp"
 
-    def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
-        host_ip, host_port = self._get_host_ip_port(model_details)
+    def wait_ready(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
+        host_ip, host_port = self._get_host_ip_port(model_spec)
         ready = False
         t0 = time.time()
         while not ready:
-            container = self._get_container(model_details)
+            container = self._get_container(model_spec)
             if container.status == "running":
                 # TODO: Use status_path to wait until container is ready
                 #  status_path = self.protocol.get_status_path(model_details)
@@ -135,11 +121,11 @@ class SeldonDockerRuntime(Runtime):
         s.close()
         return port
 
-    def undeploy(self, model_details: ModelDetails):
-        container = self._get_container(model_details)
+    def undeploy(self, model_spec: ModelSpec):
+        container = self._get_container(model_spec)
         container.remove(force=True)
 
-    def _get_container(self, model_details: ModelDetails) -> Container:
+    def _get_container(self, model_details: ModelSpec) -> Container:
         container_name = self._get_container_name(model_details)
 
         docker_client = docker.from_env()
@@ -147,13 +133,13 @@ class SeldonDockerRuntime(Runtime):
 
         return container
 
-    def _get_container_name(self, model_details: ModelDetails):
-        return model_details.name
+    def _get_container_name(self, model_details: ModelSpec):
+        return model_details.model_details.name
 
     def _is_inside_docker(self) -> bool:
         # From https://stackoverflow.com/a/48710609/5015573
         path = "/proc/self/cgroup"
         return os.path.exists("/.dockerenv") or os.path.isfile(path) and any("docker" in line for line in open(path))
 
-    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
+    def to_k8s_yaml(self, model_spec: ModelSpec) -> str:
         raise NotImplementedError()

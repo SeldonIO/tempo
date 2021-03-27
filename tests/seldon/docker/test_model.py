@@ -12,7 +12,7 @@ def test_deploy_docker(sklearn_model: Model, runtime: SeldonDockerRuntime):
     sklearn_model.deploy()
     time.sleep(2)
 
-    container = runtime._get_container(sklearn_model.details)
+    container = runtime._get_container(sklearn_model.model_spec)
     assert container.status == "running"
 
     sklearn_model.undeploy()
@@ -40,4 +40,4 @@ def test_undeploy_docker(sklearn_model: Model, runtime: SeldonDockerRuntime):
     sklearn_model.undeploy()
 
     with pytest.raises(docker.errors.NotFound):
-        runtime._get_container(sklearn_model.details)
+        runtime._get_container(sklearn_model.model_spec)

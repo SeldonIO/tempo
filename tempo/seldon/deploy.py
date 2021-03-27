@@ -85,14 +85,14 @@ class SeldonDeployRuntime(Runtime):
         dep_instance = SeldonDeploymentsApi(api_client)
         dep_instance.create_seldon_deployment(self._k8s_options.namespace, sd)
 
-    def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
+    def wait_ready(self, model_spec: ModelDetails, timeout_secs=None) -> bool:
         ready = False
         t0 = time.time()
         api_client = self._get_api_client()
         dep_instance = SeldonDeploymentsApi(api_client)
         while not ready:
             sdep: SeldonDeployment = dep_instance.read_seldon_deployment(
-                model_details.name, self._k8s_options.namespace
+                model_spec.name, self._k8s_options.namespace
             )
             sdep_dict = sdep.to_dict()
             ready = sdep_dict["status"]["state"] == "Available"
@@ -102,31 +102,31 @@ class SeldonDeployRuntime(Runtime):
                     return ready
         return ready
 
-    def undeploy(self, model_details: ModelDetails):
+    def undeploy(self, model_spec: ModelDetails):
         api_client = self._get_api_client()
         dep_instance = SeldonDeploymentsApi(api_client)
-        dep_instance.delete_seldon_deployment(model_details.name, self._k8s_options.namespace, _preload_content=False)
+        dep_instance.delete_seldon_deployment(model_spec.name, self._k8s_options.namespace, _preload_content=False)
 
-    def get_endpoint(self, model_details: ModelDetails):
-        endpoint = Endpoint(model_details.name, self._k8s_options.namespace, self.protocol)
-        return endpoint.get_url(model_details)
+    def get_endpoint(self, model_spec: ModelDetails):
+        endpoint = Endpoint(model_spec.name, self._k8s_options.namespace, self.protocol)
+        return endpoint.get_url(model_spec)
 
     def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
         return {}
 
-    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+    def remote(self, model_spec: ModelDetails, *args, **kwargs) -> Any:
         api_client = self._get_api_client()
         protocol = self.get_protocol()
         req = protocol.to_protocol_request(*args, **kwargs)
         predict_instance = PredictApi(api_client)
         prediction = predict_instance.predict_seldon_deployment(
-            model_details.name, self._k8s_options.namespace, prediction=req
+            model_spec.name, self._k8s_options.namespace, prediction=req
         )
-        return protocol.from_protocol_response(prediction, model_details.outputs)
+        return protocol.from_protocol_response(prediction, model_spec.outputs)
 
     def get_protocol(self):
         return self.protocol
 
-    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
+    def to_k8s_yaml(self, model_spec: ModelDetails) -> str:
         srt = SeldonKubernetesRuntime(k8s_options=self._k8s_options, protocol=self.protocol)
-        return srt.to_k8s_yaml(model_details)
+        return srt.to_k8s_yaml(model_spec)

@@ -1,16 +1,18 @@
 from typing import Any, Callable
 
 from tempo.serve.base import BaseModel
-from tempo.serve.constants import ModelDataType
-from tempo.serve.metadata import ModelFramework
 from tempo.serve.runtime import Runtime
-
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.constants import ModelDataType
+from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.serve.protocol import Protocol
 
 class Model(BaseModel):
     def __init__(
         self,
         name: str,
         runtime: Runtime = None,
+        protocol: Protocol = KFServingV2Protocol(),
         local_folder: str = None,
         uri: str = None,
         platform: ModelFramework = None,
@@ -32,6 +34,7 @@ class Model(BaseModel):
             runtime=runtime,
             conda_env=conda_env,
             deployed=deployed,
+            protocol=protocol,
         )
 
     def __call__(self, *args, **kwargs) -> Any:

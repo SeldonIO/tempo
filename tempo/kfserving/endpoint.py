@@ -4,8 +4,7 @@ from urllib.parse import urlparse
 from kubernetes import client, config
 
 from tempo.seldon.specs import DefaultServiceAccountName
-from tempo.serve.metadata import ModelDetails
-from tempo.serve.protocol import Protocol
+from tempo.serve.runtime import ModelSpec
 from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
@@ -17,9 +16,8 @@ class Endpoint(object):
 
     def __init__(
         self,
-        model_details: ModelDetails,
+        model_details: ModelSpec,
         namespace,
-        protocol: Protocol,
         gateway=ISTIO_GATEWAY,
     ):
         self.inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
@@ -33,9 +31,9 @@ class Endpoint(object):
         except Exception:
             logger.warning("Failed to load kubeconfig. Only local mode is possible.")
         self.gateway = gateway
-        self.model_details = model_details
+        self.model_details = model_details.model_details
         self.namespace = namespace
-        self.protocol = protocol
+        self.protocol = model_details.protocol
 
     def get_service_host(self):
         if self.inside_cluster is not None:

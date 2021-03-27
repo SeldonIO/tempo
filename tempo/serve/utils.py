@@ -3,14 +3,16 @@ from typing import Any, List
 
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
+from tempo.serve.protocol import Protocol
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.runtime import Runtime
-
+from tempo.kfserving.protocol import KFServingV2Protocol
 
 def pipeline(
     name: str,
     runtime: Runtime = None,
+    protocol: Protocol = KFServingV2Protocol(),
     local_folder: str = None,
     uri: str = None,
     models: List[Model] = None,
@@ -39,6 +41,7 @@ def pipeline(
                 pipeline_func=func,
                 conda_env=conda_env,
                 deployed=deployed,
+                protocol=protocol
             )
             setattr(K, "deploy", K.pipeline.deploy)
             setattr(K, "deploy_models", K.pipeline.deploy_models)
@@ -81,6 +84,7 @@ def pipeline(
                 pipeline_func=f,
                 conda_env=conda_env,
                 deployed=deployed,
+                protocol=protocol,
             )
 
     return _pipeline
@@ -101,6 +105,7 @@ def model(
     outputs: ModelDataType = None,
     conda_env: str = None,
     deployed: bool = False,
+    protocol: Protocol = KFServingV2Protocol(),
 ):
     def _model(f):
         if inspect.isclass(f):
@@ -115,6 +120,7 @@ def model(
             K.pipeline = Model(
                 name,
                 runtime=runtime,
+                protocol=protocol,
                 local_folder=local_folder,
                 uri=uri,
                 platform=platform,
@@ -156,6 +162,7 @@ def model(
             return Model(
                 name,
                 runtime=runtime,
+                protocol=protocol,
                 local_folder=local_folder,
                 uri=uri,
                 platform=platform,
