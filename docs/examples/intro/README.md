@@ -1,4 +1,4 @@
-# Basic Tempo Example
+# Introduction to Tempo Example
 
 This notebook will walk you through an end-to-end example deploying a Tempo pipeline, running on its own Conda environment.
 
@@ -158,7 +158,7 @@ dependencies:
 
 
 ```python
-classifier.save(save_env=True)
+classifier.save(save_env=False)
 ```
 
 ### Deploying pipeline
@@ -197,134 +197,4 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 classifier.undeploy()
-```
-
-## Deploying pipeline to K8s
-
-The next step, will be to deploy our pipeline to Kubernetes.
-We will divide this process into 3 sub-steps:
-
-1. Save our artifacts and environment
-2. Upload to remote storage
-3. Deploy resources
-
-### Setup Namespace
-
-
-```python
-!kubectl create namespace production
-```
-
-
-```python
-!kubectl apply -f ../../../k8s/tempo-pipeline-rbac.yaml -n production
-```
-
-
-```python
-%%writefile minio-secret.yaml
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-secret
-type: Opaque
-stringData:
-  AWS_ACCESS_KEY_ID: minioadmin
-  AWS_SECRET_ACCESS_KEY: minioadmin
-  AWS_ENDPOINT_URL: http://minio.minio-system.svc.cluster.local:9000
-  USE_SSL: "false"
-```
-
-
-```python
-!kubectl apply -f minio-secret.yaml -n production
-```
-
-### Change runtime
-
-
-```python
-k8s_options = KubernetesOptions(namespace="production",authSecretName="minio-secret")
-
-k8s_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options)
-sklearn_model.set_runtime(k8s_runtime)
-xgboost_model.set_runtime(k8s_runtime)
-
-k8s_runtime_v2 = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
-classifier.set_runtime(k8s_runtime_v2)
-```
-
-### Saving artifacts
-
-Just save the artfacts and not the environment as well.
-
-
-```python
-classifier.save(save_env=False)
-```
-
-### Uploading artifacts
-
-
-```python
-MINIO_IP=!kubectl get svc minio -n minio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-MINIO_IP=MINIO_IP[0]
-```
-
-
-```python
-%%writetemplate rclone.conf
-[s3]
-type = s3
-provider = minio
-env_auth = false
-access_key_id = minioadmin
-secret_access_key = minioadmin
-endpoint = http://{MINIO_IP}:9000
-
-```
-
-
-```python
-import os
-from tempo.conf import settings
-settings.rclone_cfg = os.getcwd() + "/rclone.conf"
-```
-
-
-```python
-sklearn_model.upload()
-xgboost_model.upload()
-classifier.upload()
-```
-
-### Deploy
-
-
-```python
-classifier.deploy()
-classifier.wait_ready()
-```
-
-### Sending requests
-
-Lastly, we can now send requests to our deployed pipeline.
-For this, we will leverage the `remote()` method, which will interact without our deployed pipeline (as opposed to executing our pipeline's code locally).
-
-
-```python
-classifier.remote(payload=np.array([[1, 2, 3, 4]]))
-```
-
-### Undeploy pipeline
-
-
-```python
-classifier.undeploy()
-```
-
-
-```python
-
 ```
