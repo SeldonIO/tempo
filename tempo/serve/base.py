@@ -19,7 +19,13 @@ from tempo.serve.constants import (
     ModelDataType,
 )
 from tempo.serve.loader import load_custom, save_custom, save_environment
-from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from tempo.serve.metadata import (
+    ModelDataArg,
+    ModelDataArgs,
+    ModelDetails,
+    ModelFramework,
+    RuntimeOptions,
+)
 from tempo.serve.protocol import Protocol
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
@@ -63,7 +69,11 @@ class BaseModel:
 
         self.cls = None
         self.protocol = protocol
-        self.model_spec = ModelSpec(model_details=self.details, protocol=self.protocol, runtime_options=runtime_options)
+        self.model_spec = ModelSpec(
+            model_details=self.details,
+            protocol=self.protocol,
+            runtime_options=runtime_options,
+        )
 
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
@@ -165,27 +175,24 @@ class BaseModel:
 
         req_converted = self.protocol.from_protocol_request(req, self.details.inputs)
         if type(req_converted) == dict:
-            if self.cls is not None:
-                response = self._user_func(self.cls, **req_converted)
-            else:
-                response = self._user_func(**req_converted)
+            response = self(**req_converted)
         elif type(req_converted) == list or type(req_converted) == tuple:
-            if self.cls is not None:
-                response = self._user_func(self.cls, *req_converted)
-            else:
-                response = self._user_func(*req_converted)
+            response = self(*req_converted)
         else:
-            if self.cls is not None:
-                response = self._user_func(self.cls, req_converted)
-            else:
-                response = self._user_func(req_converted)
+            response = self(req_converted)
 
         if type(response) == dict:
-            response_converted = self.protocol.to_protocol_response(self.details, **response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, **response
+            )
         elif type(response) == list or type(response) == tuple:
-            response_converted = self.protocol.to_protocol_response(self.details, *response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, *response
+            )
         else:
-            response_converted = self.protocol.to_protocol_response(self.details, response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, response
+            )
 
         return response_converted
 
@@ -238,13 +245,13 @@ class BaseModel:
         return self
 
     def __call__(self, *args, **kwargs) -> Any:
-        if not self._user_func:
+        if self._user_func is None:
             return self.remote(*args, **kwargs)
-        else:
-            if self.use_remote:
-                return self.remote(*args, **kwargs)
-            else:
-                if self.cls is not None:
-                    return self._user_func(self.cls, *args, **kwargs)
-                else:
-                    return self._user_func(*args, **kwargs)
+
+        if self.use_remote:
+            return self.remote(*args, **kwargs)
+
+        if self.cls is not None:
+            return self._user_func(self.cls, *args, **kwargs)
+
+        return self._user_func(*args, **kwargs)
