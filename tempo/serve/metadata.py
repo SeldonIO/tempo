@@ -87,6 +87,5 @@ class StateType(Enum):
 
 class StateDetails(BaseModel):
     state_type: StateType
-    key_override: str
     config: Dict[str,str]
 

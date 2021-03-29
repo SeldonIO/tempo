@@ -54,7 +54,6 @@ class LocalState(BaseState):
     def get_state_details(self):
         return StateDetails(
             state_type=StateType.local,
-            key_override="",
             config={},
         )
 
@@ -62,13 +61,11 @@ class DistributedState(BaseState):
 
     REDIS_HOST_ENV_NAME = "TEMPO_STATE_REDIS_HOST"
     REDIS_PORT_ENV_NAME = "TEMPO_STATE_REDIS_PORT"
-    REDIS_KEY_ENV_NAME = "TEMPO_STATE_REDIS_KEY"
 
     def __init__(self, state_details: StateDetails, model_details: ModelDetails = None):
         self._validate_required_params(state_details, model_details)
         self._state_details = state_details
         self._model_details = model_details
-        self._key_prefix = state_details.key_override or model_details.uri
         self._internal_state = None
 
     def _setup_state(self,
@@ -80,21 +77,19 @@ class DistributedState(BaseState):
 
         host = self._state_details.config["host"]
         port = self._state_details.config["port"]
-        key_prefix = self._state_details.key_override or self._model_details.uri
 
         self._redis_host = os.environ.get(DistributedState.REDIS_HOST_ENV_NAME, host)
         self._redis_port = int(os.environ.get(DistributedState.REDIS_PORT_ENV_NAME, port))
         self._internal_state = redis.Redis(host=self._redis_host, port=self._redis_port)
-        self._key_prefix = os.environ.get(DistributedState.REDIS_KEY_ENV_NAME, key_prefix)
 
     def set(self, key: str, value: str) -> bool:
-        return self.get_internal_state().set(self._key_prefix + key, value)
+        return self.get_internal_state().set(key, value)
 
     def get(self, key: str) -> str:
-        return self.get_internal_state().get(self._key_prefix + key)
+        return self.get_internal_state().get(key)
 
     def exists(self, key: str) -> bool:
-        return self.get_internal_state().exists(self._key_prefix + key)
+        return self.get_internal_state().exists(key)
 
     def _validate_required_params(self, state_details: StateDetails, model_details: ModelDetails = None):
         # TODO: Validate state and model details for required fields
