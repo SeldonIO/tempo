@@ -1,19 +1,18 @@
-import logging
 import os
 import tempfile
 from os import path
 from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
 
-from tempo.errors import UndefinedCustomImplementation, UndefinedRuntime
-from tempo.serve.constants import DefaultEnvFilename, DefaultModelFilename, ModelDataType
+from tempo.errors import UndefinedCustomImplementation
+from tempo.serve.constants import DefaultEnvFilename, DefaultModelFilename, ModelDataType, \
+    DefaultCondaFile
 from tempo.serve.loader import download, load_custom, save_custom, save_environment, upload
 from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework
+from tempo.serve.remote import Remote
 from tempo.serve.runtime import Runtime, ModelSpec
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.utils import logger
 from tempo.serve.protocol import Protocol
-
-DEFAULT_CONDA_FILE = "conda.yaml"
 
 
 class BaseModel:
@@ -27,7 +26,6 @@ class BaseModel:
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
         conda_env: str = None,
-        runtime: Runtime = None,
         protocol: Protocol = KFServingV2Protocol(),
         deployed: bool = False,
     ):
@@ -52,12 +50,12 @@ class BaseModel:
         )
 
         self.cls = None
-        self.runtime = runtime
         self.protocol = protocol
         self.model_spec = ModelSpec(
             model_details = self.details,
             protocol = self.protocol
         )
+        self.remoter = None
 
     def set_deployed(self, val: bool):
         self.deployed = val
@@ -120,12 +118,13 @@ class BaseModel:
         return load_custom(file_path_pkl)
 
     def save(self, save_env=True):
-        logging.info("Saving environment")
+        logger.info("Saving environment")
         if not self._user_func:
             # Nothing to save
             return
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+        logger.info("Saving tempo model to %s",file_path_pkl)
         if not self.deployed:
             self.deployed = True
             save_custom(self, file_path_pkl)
@@ -135,7 +134,7 @@ class BaseModel:
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            conda_env_file_path = path.join(self.details.local_folder, DEFAULT_CONDA_FILE)
+            conda_env_file_path = path.join(self.details.local_folder, DefaultCondaFile)
             if not path.exists(conda_env_file_path):
                 conda_env_file_path = None
 
@@ -145,18 +144,18 @@ class BaseModel:
                 env_name=self.conda_env_name,
             )
 
-    def upload(self):
-        """
-        Upload from local folder to uri
-        """
-        upload(self.details.local_folder, self.details.uri)
+    #def upload(self):
+    #    """
+    #    Upload from local folder to uri
+    #    """
+    #    upload(self.details.local_folder, self.details.uri)
 
-    def download(self):
-        """
-        Download from uri to local folder
-        """
-        # TODO: This doesn't make sense for custom methods?
-        download(self.details.uri, self.details.local_folder)
+    #def download(self):
+    #    """
+    #    Download from uri to local folder
+    #    """
+    #    # TODO: This doesn't make sense for custom methods?
+    #    download(self.details.uri, self.details.local_folder)
 
     def request(self, req: Dict) -> Dict:
 
@@ -189,31 +188,32 @@ class BaseModel:
 
         return response_converted
 
-    def set_runtime(self, runtime: Runtime):
-        self.runtime = runtime
+    def set_remote(self, remote: Remote):
+        self.remoter = remote
 
     def remote(self, *args, **kwargs):
-        return self.runtime.remote(self.model_spec, *args, **kwargs)
+        return self.remoter.remote(self.model_spec, *args, **kwargs)
 
-    def wait_ready(self, timeout_secs=None):
-        return self.runtime.wait_ready(self.model_spec, timeout_secs=timeout_secs)
+    def wait_ready(self, runtime:Runtime, timeout_secs=None):
+        return runtime.wait_ready_spec(self.model_spec, timeout_secs=timeout_secs)
 
-    def get_endpoint(self):
-        return self.runtime.get_endpoint(self.model_spec)
+    def get_endpoint(self, runtime: Runtime):
+        return runtime.get_endpoint_spec(self.model_spec)
 
-    def to_k8s_yaml(self) -> str:
+    def to_k8s_yaml(self, runtime: Runtime) -> str:
         """
         Get k8s yaml
         """
-        if self.runtime is None:
-            raise UndefinedRuntime(self.details.name)
 
-        return self.runtime.to_k8s_yaml(self.model_spec)
+        return runtime.to_k8s_yaml_spec(self.model_spec)
 
-    def deploy(self):
-        logger.info("Deploying %s", self.details.name)
-        self.runtime.deploy(self.model_spec)
+    def deploy(self, runtime: Runtime):
+        runtime.deploy_spec(self.model_spec)
 
-    def undeploy(self):
+    def undeploy(self, runtime: Runtime):
         logger.info("Undeploying %s", self.details.name)
-        self.runtime.undeploy(self.model_spec)
+        runtime.undeploy_spec(self.model_spec)
+
+
+    def get_tempo(self):
+        return self

@@ -15,8 +15,8 @@ Documentation Index
     :titlesonly:
     :caption: Examples:
 
-    Introductory Example with Docker <examples/intro/README.md>
-    Introductory Example with Kubernetes <examples/intro_k8s/README.md>
+    Introductory Example with Docker <examples/intro/local.md>
+    Introductory Example with Kubernetes <examples/intro/k8s.md>
     Introductory Example with Seldon Deploy <examples/deploy/README.md>
     Model Explanation using Alibi <examples/explainer/README.md>
     Outlier Detection using Alibi-Detect <examples/outlier/README.md>

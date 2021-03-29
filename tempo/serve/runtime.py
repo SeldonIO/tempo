@@ -17,34 +17,54 @@ class ModelSpec(BaseModel):
     class Config:
         arbitrary_types_allowed = True
 
+
+class Deployer(object):
+
+    def deploy(self, model: Any):
+        t = model.get_tempo()
+        t.deploy(self)
+
+    def undeploy(self, model: Any):
+        t = model.get_tempo()
+        t.undeploy(self)
+
+    def get_endpoint(self, model: Any):
+        t = model.get_tempo()
+        t.get_endpoint(self)
+
+    def wait_ready(self, model: Any):
+        t = model.get_tempo()
+        t.wait_ready(self)
+
+    def to_k8s_yaml(self, model: Any):
+        t = model.get_tempo()
+        t.to_k8s_yaml(self)
+
 @attr.s(auto_attribs=True)
-class Runtime(abc.ABC):
+class Runtime(abc.ABC, Deployer):
     # TODO change to deploy_model
     @abc.abstractmethod
-    def deploy(self, model_spec: ModelSpec):
+    def deploy_spec(self, model_spec: ModelSpec):
         pass
 
     # TODO change to undeploy_model
     @abc.abstractmethod
-    def undeploy(self, model_spec: ModelSpec):
+    def undeploy_spec(self, model_spec: ModelSpec):
         pass
 
     @abc.abstractmethod
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
+    def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         pass
 
     @abc.abstractmethod
-    def get_endpoint(self, model_spec: ModelSpec) -> str:
-        pass
-
-    @abc.abstractmethod
-    def wait_ready(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
+    def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         pass
 
     # TODO change to to_yaml
     @abc.abstractmethod
-    def to_k8s_yaml(self, model_spec: ModelSpec) -> str:
+    def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         pass
+
 
 
 class LocalRuntime(Runtime):

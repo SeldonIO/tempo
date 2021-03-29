@@ -11,11 +11,12 @@ from docker.models.containers import Container
 
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
 from tempo.serve.runtime import Runtime, ModelSpec
+from tempo.serve.remote import Remote
 
 DefaultNetworkName = "tempo"
 
 
-class SeldonDockerRuntime(Runtime):
+class SeldonDockerRuntime(Runtime, Remote):
 
     def _get_host_ip_port(self, model_details: ModelSpec) -> Tuple[str, str]:
         container = self._get_container(model_details)
@@ -26,7 +27,7 @@ class SeldonDockerRuntime(Runtime):
         host_port = host_ports[0]["HostPort"]
         return host_ip, host_port
 
-    def get_endpoint(self, model_spec: ModelSpec) -> str:
+    def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         predict_path = model_spec.protocol.get_predict_path(model_spec.model_details)
 
         if self._is_inside_docker():
@@ -39,11 +40,11 @@ class SeldonDockerRuntime(Runtime):
 
     def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
         req = model_spec.protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint(model_spec)
+        endpoint = self.get_endpoint_spec(model_spec)
         response_raw = requests.post(endpoint, json=req)
         return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
 
-    def deploy(self, model_details: ModelSpec):
+    def deploy_spec(self, model_details: ModelSpec):
         try:
             container = self._get_container(model_details)
             if container.status == "running":
@@ -85,7 +86,7 @@ class SeldonDockerRuntime(Runtime):
     def _get_port_index(self):
         return f"{DefaultHTTPPort}/tcp"
 
-    def wait_ready(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
+    def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         host_ip, host_port = self._get_host_ip_port(model_spec)
         ready = False
         t0 = time.time()
@@ -121,7 +122,7 @@ class SeldonDockerRuntime(Runtime):
         s.close()
         return port
 
-    def undeploy(self, model_spec: ModelSpec):
+    def undeploy_spec(self, model_spec: ModelSpec):
         container = self._get_container(model_spec)
         container.remove(force=True)
 
@@ -141,5 +142,5 @@ class SeldonDockerRuntime(Runtime):
         path = "/proc/self/cgroup"
         return os.path.exists("/.dockerenv") or os.path.isfile(path) and any("docker" in line for line in open(path))
 
-    def to_k8s_yaml(self, model_spec: ModelSpec) -> str:
+    def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         raise NotImplementedError()

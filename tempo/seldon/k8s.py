@@ -11,12 +11,13 @@ from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.metadata import KubernetesOptions
 from tempo.serve.runtime import Runtime, ModelSpec
+from tempo.serve.remote import Remote
 from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
 
-class SeldonKubernetesRuntime(Runtime):
+class SeldonKubernetesRuntime(Runtime, Remote):
     def __init__(self, k8s_options: KubernetesOptions = None):
         if k8s_options is None:
             k8s_options = KubernetesOptions()
@@ -31,19 +32,19 @@ class SeldonKubernetesRuntime(Runtime):
             logger.debug("Loading external kubernetes config")
             config.load_kube_config()
 
-    def get_endpoint(self, model_spec: ModelSpec) -> str:
+    def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         self.create_k8s_client()
         endpoint = Endpoint(model_spec.model_details.name, self.k8s_options.namespace, model_spec.protocol)
         return endpoint.get_url(model_spec.model_details)
 
     def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
         req = model_spec.protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint(model_spec)
+        endpoint = self.get_endpoint_spec(model_spec)
         logger.debug("Endpoint is ", endpoint)
         response_raw = requests.post(endpoint, json=req)
         return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
 
-    def undeploy(self, model_spec: ModelSpec):
+    def undeploy_spec(self, model_spec: ModelSpec):
         self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
         api_instance.delete_namespaced_custom_object(
@@ -55,7 +56,7 @@ class SeldonKubernetesRuntime(Runtime):
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
         )
 
-    def deploy(self, model_details: ModelSpec):
+    def deploy_spec(self, model_details: ModelSpec):
         self.create_k8s_client()
         k8s_spec = KubernetesSpec(model_details, self.k8s_options)
         model_spec = k8s_spec.spec
@@ -92,7 +93,7 @@ class SeldonKubernetesRuntime(Runtime):
             else:
                 raise e
 
-    def wait_ready(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
+    def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         self.create_k8s_client()
         ready = False
         t0 = time.time()
@@ -113,6 +114,6 @@ class SeldonKubernetesRuntime(Runtime):
                     return ready
         return ready
 
-    def to_k8s_yaml(self, model_spec: ModelSpec) -> str:
+    def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         k8s_spec = KubernetesSpec(model_spec, self.k8s_options)
         return yaml.safe_dump(k8s_spec.spec)

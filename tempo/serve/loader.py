@@ -12,6 +12,19 @@ import yaml
 from tempo.conf import settings
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.utils import logger
+from tempo.serve.constants import DefaultRemoteFilename, DefaultModelFilename, DefaultEnvFilename, \
+    DefaultCondaFile
+import os
+from os import path
+from typing import Any
+from tempo.serve.remote import Remote
+
+
+def save(tempo_artifact: Any, remote: Remote = None, save_env=True):
+    model = tempo_artifact.get_tempo()
+    model.save(save_env=save_env)
+    if remote is not None:
+        save_remote(remote, model.details.local_folder)
 
 
 def save_custom(pipeline, file_path: str) -> str:
@@ -20,11 +33,27 @@ def save_custom(pipeline, file_path: str) -> str:
 
     return file_path
 
+def load(folder: str) -> "BaseModel":
+    file_path_pkl = os.path.join(folder, DefaultModelFilename)
+    return load_custom(file_path_pkl)
 
 def load_custom(file_path: str):
     with open(file_path, "rb") as file:
         return cloudpickle.load(file)
 
+
+def save_remote(remote, folder: str) -> str:
+    file_path = os.path.join(folder, DefaultRemoteFilename)
+    logger.info("Saving remote to %s", file_path)
+    with open(file_path, "wb") as file:
+        cloudpickle.dump(remote, file)
+
+    return file_path
+
+def load_remote(folder: str):
+    file_path = os.path.join(folder, DefaultRemoteFilename)
+    with open(file_path, "rb") as file:
+        return cloudpickle.load(file)
 
 def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
     if conda_env_file_path:
@@ -147,13 +176,19 @@ def _load_rclone_cfg() -> str:
         return f.read()
 
 
-def upload(local_path: str, remote_uri: str):
+def upload(tempo_artifact: Any):
     "Upload local to remote using rclone"
+    model = tempo_artifact.get_tempo()
+    local_path = model.details.local_folder
+    remote_uri = model.details.uri
     logger.info("Uploading %s to %s", local_path, remote_uri)
     rclone.with_config(_load_rclone_cfg()).copy(local_path, remote_uri, flags=["-P"])
 
 
-def download(remote_uri: str, local_path: str):
+def download(tempo_artifact: Any):
     "Download remote to local using rclone"
+    model = tempo_artifact.get_tempo()
+    local_path = model.details.local_folder
+    remote_uri = model.details.uri
     logger.info("Downloading %s to %s", remote_uri, local_path)
     rclone.with_config(_load_rclone_cfg()).copy(remote_uri, local_path, flags=["-P"])

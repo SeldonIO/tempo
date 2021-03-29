@@ -6,12 +6,10 @@ from tempo.serve.metadata import ModelFramework
 from tempo.serve.protocol import Protocol
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
-from tempo.serve.runtime import Runtime
 from tempo.kfserving.protocol import KFServingV2Protocol
 
 def pipeline(
     name: str,
-    runtime: Runtime = None,
     protocol: Protocol = KFServingV2Protocol(),
     local_folder: str = None,
     uri: str = None,
@@ -32,7 +30,6 @@ def pipeline(
                     break
             K.pipeline = Pipeline(
                 name,
-                runtime=runtime,
                 local_folder=local_folder,
                 uri=uri,
                 models=models,
@@ -43,19 +40,9 @@ def pipeline(
                 deployed=deployed,
                 protocol=protocol
             )
-            setattr(K, "deploy", K.pipeline.deploy)
-            setattr(K, "deploy_models", K.pipeline.deploy_models)
-            setattr(K, "wait_ready", K.pipeline.wait_ready)
-            setattr(K, "undeploy", K.pipeline.undeploy)
-            setattr(K, "undeploy_models", K.pipeline.undeploy_models)
             setattr(K, "request", K.pipeline.request)
-            setattr(K, "set_runtime", K.pipeline.set_runtime)
-            setattr(K, "to_k8s_yaml", K.pipeline.to_k8s_yaml)
-            setattr(K, "save", K.pipeline.save)
             setattr(K, "remote", K.pipeline.remote)
-            setattr(K, "upload", K.pipeline.upload)
-            setattr(K, "download", K.pipeline.download)
-            setattr(K, "set_deployed", K.pipeline.set_deployed)
+            setattr(K, "get_tempo", K.pipeline.get_tempo)
 
             orig_init = K.__init__
 
@@ -75,7 +62,6 @@ def pipeline(
         else:
             return Pipeline(
                 name,
-                runtime=runtime,
                 local_folder=local_folder,
                 uri=uri,
                 models=models,
@@ -97,7 +83,6 @@ def predictmethod(f):
 
 def model(
     name: str,
-    runtime: Runtime = None,
     local_folder: str = None,
     uri: str = None,
     platform: ModelFramework = None,
@@ -119,7 +104,6 @@ def model(
 
             K.pipeline = Model(
                 name,
-                runtime=runtime,
                 protocol=protocol,
                 local_folder=local_folder,
                 uri=uri,
@@ -131,17 +115,9 @@ def model(
                 deployed=deployed,
             )
 
-            setattr(K, "deploy", K.pipeline.deploy)
-            setattr(K, "wait_ready", K.pipeline.wait_ready)
-            setattr(K, "undeploy", K.pipeline.undeploy)
             setattr(K, "request", K.pipeline.request)
-            setattr(K, "set_runtime", K.pipeline.set_runtime)
-            setattr(K, "to_k8s_yaml", K.pipeline.to_k8s_yaml)
-            setattr(K, "save", K.pipeline.save)
             setattr(K, "remote", K.pipeline.remote)
-            setattr(K, "upload", K.pipeline.upload)
-            setattr(K, "download", K.pipeline.download)
-            setattr(K, "set_deployed", K.pipeline.set_deployed)
+            setattr(K, "get_tempo", K.pipeline.get_tempo)
 
             orig_init = K.__init__
 
@@ -161,7 +137,6 @@ def model(
         else:
             return Model(
                 name,
-                runtime=runtime,
                 protocol=protocol,
                 local_folder=local_folder,
                 uri=uri,
