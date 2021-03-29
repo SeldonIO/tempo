@@ -9,6 +9,7 @@ from .model import Model
 from .pipeline import Pipeline, PipelineModels
 from .protocol import Protocol
 from .types import ModelDataType
+from .state import StateDetails
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"
@@ -207,6 +208,7 @@ def model(
     """
 
     def _model(f):
+<<<<<<< HEAD
         predict_method = f
         if isclass(f):
             predict_method = _get_predict_method(f)
@@ -229,5 +231,60 @@ def model(
             return _wrap_class(f, model)
 
         return model
+=======
+        if inspect.isclass(f):
+            K = f
+            predict_method = _get_predict_method(K)
+
+            K.pipeline = Model(
+                name,
+                protocol=protocol,
+                local_folder=local_folder,
+                uri=uri,
+                platform=platform,
+                inputs=inputs,
+                outputs=outputs,
+                model_func=predict_method,
+                conda_env=conda_env,
+                runtime_options=runtime_options,
+                state_details=state_details,
+            )
+
+            setattr(K, "request", K.pipeline.request)
+            setattr(K, "remote", K.pipeline.remote)
+            setattr(K, "get_tempo", K.pipeline.get_tempo)
+            setattr(K, "state_details", K.pipeline.state_details)
+            setattr(K, "_state", K.pipeline._state)
+
+            orig_init = K.__init__
+
+            # Make copy of original __init__, so we can call it without recursion
+            def __init__(self, *args, **kws):
+                # We bind _user_func so that `self` is passed implicitly
+                K.pipeline._user_func = _bind(self, K.pipeline._user_func)
+                orig_init(self, *args, **kws)  # Call the original __init__
+
+            K.__init__ = __init__  # Set the class' __init__ to the new one
+
+            def __call__(self, *args, **kwargs) -> Any:
+                return self.pipeline(*args, **kwargs)
+
+            K.__call__ = __call__
+
+            return K
+        else:
+            return Model(
+                name,
+                protocol=protocol,
+                local_folder=local_folder,
+                uri=uri,
+                platform=platform,
+                inputs=inputs,
+                outputs=outputs,
+                model_func=f,
+                conda_env=conda_env,
+                runtime_options=runtime_options,
+            )
+>>>>>>> b9bf8f8 (fix test)
 
     return _model

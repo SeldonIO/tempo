@@ -71,7 +71,7 @@ class BaseModel:
             else:
                 raise Exception("Error no valid StateType")
         else:
-            self.state = LocalState()
+            self._state = LocalState()
 
         self.cls = None
         self.protocol = protocol
