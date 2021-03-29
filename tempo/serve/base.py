@@ -4,32 +4,34 @@ import os
 import tempfile
 from os import path
 from pydoc import locate
-from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
+from typing import Any, Callable, Dict, Optional, Tuple
 
-import numpy as np
-
-from tempo.conf import settings
-from tempo.errors import UndefinedCustomImplementation
-from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.constants import (
+from ..conf import settings
+from ..errors import UndefinedCustomImplementation
+from ..utils import logger
+from .constants import (
     ENV_K8S_SERVICE_HOST,
     DefaultCondaFile,
     DefaultEnvFilename,
     DefaultModelFilename,
     ModelDataType,
 )
-from tempo.serve.loader import load_custom, save_custom, save_environment
-from tempo.serve.metadata import (
-    ModelDataArg,
+from .loader import (
+    load_custom,
+    save_custom,
+    save_environment,
+)
+from .metadata import (
     ModelDataArgs,
     ModelDetails,
     ModelFramework,
     RuntimeOptions,
 )
-from tempo.serve.protocol import Protocol
-from tempo.serve.remote import Remote
-from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.utils import logger
+from .remote import Remote
+from .runtime import ModelSpec, Runtime
+from .args import infer_args, process_datatypes
+from .protocol import Protocol
+from ..kfserving import KFServingV2Protocol
 
 
 class BaseModel:
@@ -77,6 +79,7 @@ class BaseModel:
 
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
+        self._ctx = None
 
     def set_remote(self, val: bool):
         self.use_remote = val
@@ -87,49 +90,14 @@ class BaseModel:
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
     ) -> Tuple[ModelDataArgs, ModelDataArgs]:
-        input_args = []
-        output_args = []
-
         if isinstance(inputs, ModelDataArgs) and isinstance(outputs, ModelDataArgs):
             return inputs, outputs
-        elif inputs is None and outputs is None:
+
+        if inputs is None and outputs is None:
             if self._user_func is not None:
-                hints = get_type_hints(self._user_func)
-                for k, v in hints.items():
-                    if k == "return":
-                        if hasattr(v, "__args__"):
-                            # NOTE: If `__args__` are present, assume this as a
-                            # `typing.Generic`, like `Tuple`
-                            targs = v.__args__
-                            for targ in targs:
-                                output_args.append(ModelDataArg(ty=targ))
-                        else:
-                            output_args.append(ModelDataArg(ty=v))
-                    else:
-                        input_args.append(ModelDataArg(name=k, ty=v))
-            else:
-                input_args.append(ModelDataArg(ty=np.ndarray))
-                output_args.append(ModelDataArg(ty=np.ndarray))
-        else:
-            if isinstance(outputs, dict):
-                for k, v in outputs.items():
-                    output_args.append(ModelDataArg(name=k, ty=v))
-            elif isinstance(outputs, tuple):
-                for ty in list(outputs):
-                    output_args.append(ModelDataArg(ty=ty))
-            else:
-                output_args.append(ModelDataArg(ty=outputs))
+                return infer_args(self._user_func)
 
-            if isinstance(inputs, dict):
-                for k, v in inputs.items():
-                    input_args.append(ModelDataArg(name=k, ty=v))
-            elif isinstance(inputs, tuple):
-                for ty in list(inputs):
-                    input_args.append(ModelDataArg(ty=ty))
-            else:
-                input_args.append(ModelDataArg(ty=inputs))
-
-        return ModelDataArgs(args=input_args), ModelDataArgs(args=output_args)
+        return process_datatypes(inputs, outputs)
 
     def _get_local_folder(self, local_folder: str = None) -> Optional[str]:
         if not local_folder:
@@ -199,7 +167,9 @@ class BaseModel:
     def _get_model_spec(self) -> ModelSpec:
         if self.runtime_options_override:
             return ModelSpec(
-                model_details=self.details, protocol=self.protocol, runtime_options=self.runtime_options_override
+                model_details=self.details,
+                protocol=self.protocol,
+                runtime_options=self.runtime_options_override,
             )
         else:
             return self.model_spec
@@ -220,7 +190,9 @@ class BaseModel:
         return remoter.remote(self._get_model_spec(), *args, **kwargs)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
-        return runtime.wait_ready_spec(self._get_model_spec(), timeout_secs=timeout_secs)
+        return runtime.wait_ready_spec(
+            self._get_model_spec(), timeout_secs=timeout_secs
+        )
 
     def get_endpoint(self, runtime: Runtime):
         return runtime.get_endpoint_spec(self._get_model_spec())
@@ -253,5 +225,8 @@ class BaseModel:
 
         if self.cls is not None:
             return self._user_func(self.cls, *args, **kwargs)
+
+        if self._ctx is not None:
+            return self._user_func(*args, **kwargs, ctx=self._ctx)
 
         return self._user_func(*args, **kwargs)
