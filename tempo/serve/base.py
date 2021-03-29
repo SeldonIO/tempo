@@ -21,6 +21,7 @@ from .remote import Remote
 from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from tempo.serve.state import StateDetails, StateType, LocalState, DistributedState
+from tempo.serve.state import BaseState, DistributedState, LocalState, StateDetails, StateType
 
 
 class BaseModel:
@@ -64,9 +65,9 @@ class BaseModel:
         # TODO: Expose via StateManager
         if state_details:
             if state_details.state_type == StateType.local:
-                self._state = LocalState()
+                self._state: BaseState = LocalState()
             elif state_details.state_type == StateType.redis:
-                self._state = DistributedState(state_details, self.details)
+                self._state: BaseState = DistributedState(state_details, self.details)  # type: ignore
             else:
                 raise Exception("Error no valid StateType")
         else:

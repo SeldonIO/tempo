@@ -34,7 +34,6 @@ class PipelineModels(SimpleNamespace):
             )
         return PipelineModels(**output)
 
-
 class Pipeline(BaseModel):
     def __init__(
         self,
