@@ -1,12 +1,12 @@
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 from tempo.errors import UndefinedCustomImplementation
 from tempo.serve.base import BaseModel
-from tempo.serve.remote import Remote
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
-from tempo.serve.runtime import Runtime
 from tempo.serve.protocol import Protocol
+from tempo.serve.remote import Remote
+from tempo.serve.runtime import Runtime
 
 
 class Pipeline(BaseModel):
@@ -14,8 +14,7 @@ class Pipeline(BaseModel):
         self,
         name: str,
         pipeline_func: Callable[[Any], Any] = None,
-        runtime: Runtime = None,
-        protocol: Protocol = None,
+        protocol: Optional[Protocol] = None,
         models: List[BaseModel] = None,
         local_folder: str = None,
         uri: str = None,
@@ -58,7 +57,7 @@ class Pipeline(BaseModel):
         self.deploy_models(runtime)
         super().deploy(runtime)
 
-    def wait_ready(self, runtime:Runtime, timeout_secs: int = None) -> bool:
+    def wait_ready(self, runtime: Runtime, timeout_secs: int = None) -> bool:
         super().wait_ready(runtime, timeout_secs=timeout_secs)
         for model in self._models:
             if not model.wait_ready(runtime, timeout_secs=timeout_secs):

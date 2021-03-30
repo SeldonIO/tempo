@@ -1,12 +1,13 @@
 import inspect
 from typing import Any, List
 
+from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
-from tempo.serve.protocol import Protocol
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
-from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.serve.protocol import Protocol
+
 
 def pipeline(
     name: str,
@@ -38,7 +39,7 @@ def pipeline(
                 pipeline_func=func,
                 conda_env=conda_env,
                 deployed=deployed,
-                protocol=protocol
+                protocol=protocol,
             )
             setattr(K, "request", K.pipeline.request)
             setattr(K, "remote", K.pipeline.remote)

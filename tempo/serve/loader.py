@@ -1,8 +1,9 @@
+import os
 import re
 import uuid
 from subprocess import run
 from tempfile import NamedTemporaryFile
-from typing import Optional
+from typing import Any, Optional
 
 import cloudpickle
 import conda_pack
@@ -10,14 +11,9 @@ import rclone
 import yaml
 
 from tempo.conf import settings
-from tempo.serve.constants import MLServerEnvDeps
-from tempo.utils import logger
-from tempo.serve.constants import DefaultRemoteFilename, DefaultModelFilename, DefaultEnvFilename, \
-    DefaultCondaFile
-import os
-from os import path
-from typing import Any
+from tempo.serve.constants import DefaultModelFilename, DefaultRemoteFilename, MLServerEnvDeps
 from tempo.serve.remote import Remote
+from tempo.utils import logger
 
 
 def save(tempo_artifact: Any, remote: Remote = None, save_env=True):
@@ -33,9 +29,11 @@ def save_custom(pipeline, file_path: str) -> str:
 
     return file_path
 
-def load(folder: str) -> "BaseModel":
+
+def load(folder: str):
     file_path_pkl = os.path.join(folder, DefaultModelFilename)
     return load_custom(file_path_pkl)
+
 
 def load_custom(file_path: str):
     with open(file_path, "rb") as file:
@@ -50,10 +48,12 @@ def save_remote(remote, folder: str) -> str:
 
     return file_path
 
+
 def load_remote(folder: str):
     file_path = os.path.join(folder, DefaultRemoteFilename)
     with open(file_path, "rb") as file:
         return cloudpickle.load(file)
+
 
 def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
     if conda_env_file_path:

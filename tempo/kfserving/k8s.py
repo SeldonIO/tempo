@@ -9,12 +9,12 @@ from kubernetes.client.rest import ApiException
 
 from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
 from tempo.serve.metadata import KubernetesOptions, ModelFramework
-from tempo.serve.runtime import Runtime, ModelSpec
-from tempo.utils import logger
-from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.remote import Remote
+from tempo.serve.runtime import ModelSpec, Runtime
+from tempo.utils import logger
 
 DefaultHTTPPort = "8080"
 DefaultGRPCPort = "9000"
@@ -103,7 +103,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 "inferenceservices",
                 model_spec.model_details.name,
             )
-            model_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
+            spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
@@ -207,7 +207,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             }
         elif model_spec.model_details.platform in Implementations:
             model_implementation = Implementations[model_spec.model_details.platform]
-            spec = {
+            spec: Dict = {
                 "apiVersion": "serving.kubeflow.org/v1beta1",
                 "kind": "InferenceService",
                 "metadata": {

@@ -48,7 +48,7 @@ def test_kubernetes_spec_pipeline():
     )
     options = KubernetesOptions(namespace="production", replicas=1)
     protocol = KFServingV2Protocol()
-    model_spec = ModelSpec(model_details=details,protocol=protocol)
+    model_spec = ModelSpec(model_details=details, protocol=protocol)
     k8s_object = KubernetesSpec(model_spec, options)
 
     container_spec = _V2ContainerFactory.get_container_spec(details)

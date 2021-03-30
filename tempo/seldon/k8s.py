@@ -10,8 +10,8 @@ from kubernetes.client.rest import ApiException
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.metadata import KubernetesOptions
-from tempo.serve.runtime import Runtime, ModelSpec
 from tempo.serve.remote import Remote
+from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"

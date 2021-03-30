@@ -75,7 +75,7 @@ def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, e
 
 
 def test_undeploy_pipeline_docker(inference_pipeline: Pipeline, runtime: SeldonDockerRuntime):
-    inference_pipeline.undeploy()
+    runtime.undeploy(inference_pipeline)
 
     for model in inference_pipeline._models:
         with pytest.raises(docker.errors.NotFound):

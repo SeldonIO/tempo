@@ -4,9 +4,8 @@ import numpy as np
 import pytest
 
 from tempo import Model, ModelFramework, Pipeline, pipeline, predictmethod
+from tempo.kfserving.protocol import KFServingV1Protocol
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
-
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -25,11 +24,10 @@ def sklearn_model() -> Model:
     model_path = os.path.join(TESTDATA_PATH, "sklearn", "iris")
     return Model(
         name="test-iris-sklearn",
-        runtime=None,
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
-        protocol=SeldonProtocol()
+        protocol=SeldonProtocol(),
     )
 
 
@@ -38,11 +36,10 @@ def xgboost_model() -> Model:
     model_path = os.path.join(TESTDATA_PATH, "xgboost", "iris")
     return Model(
         name="test-iris-xgboost",
-        runtime=None,
         platform=ModelFramework.XGBoost,
         uri="gs://seldon-models/xgboost/iris",
         local_folder=model_path,
-        protocol=SeldonProtocol()
+        protocol=SeldonProtocol(),
     )
 
 
@@ -50,9 +47,10 @@ def xgboost_model() -> Model:
 def inference_pipeline(sklearn_model: Model, xgboost_model: Model) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
-        runtime=None,
         models=[sklearn_model, xgboost_model],
-        uri="gs://seldon-models/tempo/test",
+        uri="gs://seldon-models/tempo/test_pipeline",
+        # TODO - local testing - remove when have published latest mlserver
+        # conda_env="mlops"
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
@@ -61,7 +59,7 @@ def inference_pipeline(sklearn_model: Model, xgboost_model: Model) -> Pipeline:
         else:
             return xgboost_model(payload)
 
-    _pipeline.save(save_env=False)
+    _pipeline.save(save_env=True)
 
     return _pipeline
 
@@ -74,7 +72,7 @@ def cifar10_model() -> Model:
         platform=ModelFramework.Tensorflow,
         uri="gs://seldon-models/tfserving/cifar10/resnet32",
         local_folder=model_path,
-        protocol=KFServingV1Protocol()
+        protocol=KFServingV1Protocol(),
     )
 
 
@@ -83,6 +81,7 @@ def inference_pipeline_class(sklearn_model: Model, xgboost_model: Model):
     @pipeline(
         name="mypipeline",
         models=[sklearn_model, xgboost_model],
+        local_folder=os.path.join(TESTS_PATH, "artifacts/pipeline"),
     )
     class MyClass(object):
         def __init__(self):

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import abc
 from typing import Any
-from pydantic import BaseModel
+
 import attr
+from pydantic import BaseModel
 
 from tempo.serve.metadata import ModelDetails
 from tempo.serve.protocol import Protocol
@@ -19,7 +20,6 @@ class ModelSpec(BaseModel):
 
 
 class Deployer(object):
-
     def deploy(self, model: Any):
         t = model.get_tempo()
         t.deploy(self)
@@ -32,13 +32,14 @@ class Deployer(object):
         t = model.get_tempo()
         t.get_endpoint(self)
 
-    def wait_ready(self, model: Any):
+    def wait_ready(self, model: Any, timeout_secs=None):
         t = model.get_tempo()
-        t.wait_ready(self)
+        t.wait_ready(self, timeout_secs)
 
     def to_k8s_yaml(self, model: Any):
         t = model.get_tempo()
-        t.to_k8s_yaml(self)
+        return t.to_k8s_yaml(self)
+
 
 @attr.s(auto_attribs=True)
 class Runtime(abc.ABC, Deployer):
@@ -64,7 +65,6 @@ class Runtime(abc.ABC, Deployer):
     @abc.abstractmethod
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         pass
-
 
 
 class LocalRuntime(Runtime):
