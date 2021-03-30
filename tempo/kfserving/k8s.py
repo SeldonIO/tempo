@@ -69,8 +69,8 @@ class KFServingKubernetesRuntime(Runtime, Remote):
     def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
         req = model_spec.protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint_spec(model_spec)
-        print("Endpoint is ", endpoint)
-        headers = self.get_headers(model_spec, )
+        print("Endpoint is", endpoint)
+        headers = self.get_headers(model_spec)
         print("Headers are", headers)
         response_raw = requests.post(endpoint, json=req, headers=headers)
         if response_raw.status_code == 200:

@@ -46,9 +46,14 @@ class Endpoint(object):
             "inferenceservices",
             self.model_details.name,
         )
-        url = api_response["status"]["url"]
-        o = urlparse(url)
-        return o.hostname
+        if self.inside_cluster is None:
+            url = api_response["status"]["url"]
+            o = urlparse(url)
+            return o.hostname
+        else:
+            url = api_response["status"]["address"]["url"]
+            o = urlparse(url)
+            return o.hostname
 
     def get_url(self):
         if self.gateway == ISTIO_GATEWAY:
