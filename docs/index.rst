@@ -16,8 +16,9 @@ Documentation Index
     :caption: Examples:
 
     Introductory Example with Docker <examples/intro/local.md>
-    Introductory Example with Kubernetes <examples/intro/k8s.md>
+    Introductory Example with Kubernetes (Seldon) <examples/intro/k8s.md>
     Introductory Example with Seldon Deploy <examples/deploy/README.md>
+    Introductory Example with Kubernetes (KFServing) <examples/kfserving/README.md>    
     Model Explanation using Alibi <examples/explainer/README.md>
     Outlier Detection using Alibi-Detect <examples/outlier/README.md>
     Multi-Armed Bandit with State <examples/mab-thompson-sampling-tempo/README.md>
