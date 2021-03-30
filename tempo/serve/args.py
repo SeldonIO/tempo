@@ -1,6 +1,6 @@
 from typing import Any, Callable, Tuple, get_type_hints
 
-from .constants import ModelDataType
+from .types import ModelDataType
 from .metadata import ModelDataArgs, ModelDataArg
 
 

@@ -6,7 +6,7 @@ import tempfile
 from types import SimpleNamespace
 from os import path
 from pydoc import locate
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
@@ -18,6 +18,7 @@ from .constants import (
     DefaultModelFilename,
     ModelDataType,
 )
+from .types import PredictMethodSignature, LoadMethodSignature
 from .loader import (
     load_custom,
     save_custom,
@@ -40,7 +41,8 @@ class BaseModel:
     def __init__(
         self,
         name: str,
-        user_func: Callable[..., Any] = None,
+        user_func: PredictMethodSignature = None,
+        load_func: LoadMethodSignature = None,
         local_folder: str = None,
         uri: str = None,
         platform: ModelFramework = None,
@@ -54,6 +56,7 @@ class BaseModel:
             protocol = KFServingV2Protocol()
         self._name = name
         self._user_func = user_func
+        self._load_func = load_func
         self.conda_env_name = conda_env
 
         if uri is None:

@@ -4,7 +4,7 @@ from typing import Any, Callable, Tuple, Optional, Type
 from inspect import getmembers, isfunction
 
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.constants import ModelDataType
+from tempo.serve.types import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
@@ -30,9 +30,9 @@ def _get_funcs(K: Type) -> Tuple[Optional[Callable], Optional[Callable]]:
     load_func = None
 
     for _, func in getmembers(K, isfunction):
-        if hasattr(func, "_tempo_predict"):
+        if hasattr(func, PredictMethodAttr):
             predict_func = func
-        elif hasattr(func, "_tempo_load"):
+        elif hasattr(func, LoadMethodAttr):
             load_func = func
 
     return predict_func, load_func
