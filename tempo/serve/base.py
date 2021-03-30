@@ -115,6 +115,12 @@ class BaseModel:
 
         return local_folder
 
+    def loadmethod(self, load_func: LoadMethodSignature) -> LoadMethodSignature:
+        self._load_func = load_func
+        self._load_func()
+
+        return load_func
+
     @classmethod
     def load(cls, folder: str) -> "BaseModel":
         file_path_pkl = os.path.join(folder, DefaultModelFilename)
