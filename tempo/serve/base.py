@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 import tempfile
+
+from types import SimpleNamespace
 from os import path
 from pydoc import locate
 from typing import Any, Callable, Dict, Optional, Tuple
@@ -69,7 +71,6 @@ class BaseModel:
             outputs=output_args,
         )
 
-        self.cls = None
         self.protocol = protocol
         self.model_spec = ModelSpec(
             model_details=self.details,
@@ -79,7 +80,10 @@ class BaseModel:
 
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
-        self._ctx = None
+
+        # ctx represents internal context shared (optionally) between different
+        # methods of the model (e.g. predict, loader, etc.)
+        self.ctx = SimpleNamespace()
 
     def set_remote(self, val: bool):
         self.use_remote = val
@@ -93,11 +97,13 @@ class BaseModel:
         if isinstance(inputs, ModelDataArgs) and isinstance(outputs, ModelDataArgs):
             return inputs, outputs
 
-        if inputs is None and outputs is None:
-            if self._user_func is not None:
-                return infer_args(self._user_func)
+        if inputs or outputs:
+            return process_datatypes(inputs, outputs)
 
-        return process_datatypes(inputs, outputs)
+        if self._user_func is not None:
+            return infer_args(self._user_func)
+
+        return ModelDataArgs(args=[]), ModelDataArgs(args=[])
 
     def _get_local_folder(self, local_folder: str = None) -> Optional[str]:
         if not local_folder:
@@ -105,9 +111,6 @@ class BaseModel:
             local_folder = tempfile.mkdtemp()
 
         return local_folder
-
-    def set_cls(self, cls):
-        self.cls = cls
 
     @classmethod
     def load(cls, folder: str) -> "BaseModel":
@@ -222,11 +225,5 @@ class BaseModel:
 
         if self.use_remote:
             return self.remote(*args, **kwargs)
-
-        if self.cls is not None:
-            return self._user_func(self.cls, *args, **kwargs)
-
-        if self._ctx is not None:
-            return self._user_func(*args, **kwargs, ctx=self._ctx)
 
         return self._user_func(*args, **kwargs)
