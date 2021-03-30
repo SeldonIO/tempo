@@ -1,6 +1,6 @@
 import inspect
 
-from typing import Any, Callable, Tuple, Optional, Type
+from typing import Any, Callable, Optional, Type
 from inspect import getmembers, isfunction
 
 from tempo.kfserving.protocol import KFServingV2Protocol
@@ -25,17 +25,12 @@ def _bind(instance, func):
     return func.__get__(instance, instance.__class__)
 
 
-def _get_funcs(K: Type) -> Tuple[Optional[Callable], Optional[Callable]]:
-    predict_func = None
-    load_func = None
-
+def _get_predict_method(K: Type) -> Optional[Callable]:
     for _, func in getmembers(K, isfunction):
         if hasattr(func, PredictMethodAttr):
-            predict_func = func
-        elif hasattr(func, LoadMethodAttr):
-            load_func = func
+            return func
 
-    return predict_func, load_func
+    return None
 
 
 def pipeline(
@@ -83,7 +78,7 @@ def pipeline(
     def _pipeline(f):
         if inspect.isclass(f):
             K = f
-            predict_func, load_func = _get_funcs(K)
+            predict_method = _get_predict_method(K)
 
             K.pipeline = Pipeline(
                 name,
@@ -92,7 +87,7 @@ def pipeline(
                 models=models,
                 inputs=inputs,
                 outputs=outputs,
-                pipeline_func=predict_func,
+                pipeline_func=predict_method,
                 conda_env=conda_env,
                 protocol=protocol,
                 runtime_options=runtime_options,
@@ -147,11 +142,6 @@ def predictmethod(f):
     return f
 
 
-def loadmethod(f):
-    setattr(f, LoadMethodAttr, True)
-    return f
-
-
 def model(
     name: str,
     local_folder: str = None,
@@ -196,7 +186,7 @@ def model(
     def _model(f):
         if inspect.isclass(f):
             K = f
-            predict_func, load_func = _get_funcs(K)
+            predict_method = _get_predict_method(K)
 
             K.pipeline = Model(
                 name,
@@ -206,7 +196,7 @@ def model(
                 platform=platform,
                 inputs=inputs,
                 outputs=outputs,
-                model_func=predict_func,
+                model_func=predict_method,
                 conda_env=conda_env,
                 runtime_options=runtime_options,
             )
