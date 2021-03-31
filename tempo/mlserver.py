@@ -1,8 +1,8 @@
-from . import Pipeline
-
 from mlserver import MLModel
-from mlserver.utils import get_model_uri
 from mlserver.types import InferenceRequest, InferenceResponse
+from mlserver.utils import get_model_uri
+
+from . import Pipeline
 
 
 class InferenceRuntime(MLModel):

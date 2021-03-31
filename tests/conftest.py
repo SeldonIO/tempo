@@ -3,9 +3,9 @@ import os
 import numpy as np
 import pytest
 
-from tempo import Model, model, ModelFramework, Pipeline, pipeline, predictmethod
-from tempo.serve.runtime import LocalRuntime
+from tempo import Model, ModelFramework, Pipeline, model, pipeline, predictmethod
 from tempo.kfserving import KFServingV2Protocol
+from tempo.serve.runtime import LocalRuntime
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")

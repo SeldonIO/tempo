@@ -1,8 +1,7 @@
 import pytest
-
+from mlserver.settings import ModelParameters, ModelSettings
 from mlserver.types import InferenceRequest, RequestInput
 from mlserver.utils import to_ndarray
-from mlserver.settings import ModelSettings, ModelParameters
 
 from tempo import Model
 from tempo.mlserver import InferenceRuntime
@@ -21,11 +20,7 @@ def model_settings(custom_model: Model) -> ModelSettings:
 
 @pytest.fixture
 def inference_request() -> InferenceRequest:
-    return InferenceRequest(
-        inputs=[
-            RequestInput(name="input-0", shape=[4], data=[1, 2, 3, 4], datatype="FP32")
-        ]
-    )
+    return InferenceRequest(inputs=[RequestInput(name="input-0", shape=[4], data=[1, 2, 3, 4], datatype="FP32")])
 
 
 @pytest.fixture

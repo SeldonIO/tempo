@@ -42,9 +42,7 @@ class _V1ContainerFactory:
                 ],
             }
         else:
-            parameters = [
-                {"name": "model_uri", "value": DefaultModelsPath, "type": "STRING"}
-            ]
+            parameters = [{"name": "model_uri", "value": DefaultModelsPath, "type": "STRING"}]
             env = {"PREDICTIVE_UNIT_PARAMETERS": json.dumps(parameters)}
 
             return {
@@ -152,10 +150,7 @@ class KubernetesSpec:
 
     def _get_component_specs(self) -> list:
         container_spec = get_container_spec(self._details, self._protocol)
-        container_env = [
-            {"name": name, "value": value}
-            for name, value in container_spec["environment"].items()
-        ]
+        container_env = [{"name": name, "value": value} for name, value in container_spec["environment"].items()]
 
         return [
             {
