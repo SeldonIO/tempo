@@ -1,0 +1,13 @@
+name: tempo-numpyro
+channels:
+  - defaults
+dependencies:
+  - pip=21.0.1
+  - python=3.7.9
+    
+  - pandas=1.0.1
+  - pip:
+    - mlops-tempo
+    - numpyro==0.6.0
+    - mlserver==0.3.1.dev5
+    - mlserver-tempo==0.3.1.dev5
