@@ -22,12 +22,10 @@ dependencies:
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7b6447c_3
   - pip:
-    - opencv-python-headless
-    - mlops-tempo
-    - alibi-detect
-    - dill
-    - mlserver==0.3.1.dev5
-    - mlserver-tempo==0.3.1.dev5
-    - jupyter
-    - ansible
-
+      - opencv-python-headless
+      - mlops-tempo
+      - alibi-detect
+      - dill
+      - mlserver==0.3.1.dev5
+      - jupyter
+      - ansible

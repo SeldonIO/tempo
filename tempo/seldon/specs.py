@@ -52,12 +52,13 @@ class _V1ContainerFactory:
 
 
 class _V2ContainerFactory:
-    MLServerImage = "seldonio/mlserver:0.3.1.dev6"
+    MLServerImage = "seldonio/mlserver:0.3.1.dev7"
 
     MLServerRuntimes = {
         ModelFramework.SKLearn: "mlserver_sklearn.SKLearnModel",
         ModelFramework.XGBoost: "mlserver_xgboost.XGBoostModel",
-        ModelFramework.TempoPipeline: "mlserver_tempo.TempoModel",
+        ModelFramework.Custom: "tempo.mlserver.InferenceRuntime",
+        ModelFramework.TempoPipeline: "tempo.mlserver.InferenceRuntime",
     }
 
     @classmethod

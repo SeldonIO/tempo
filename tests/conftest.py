@@ -3,7 +3,9 @@ import os
 import numpy as np
 import pytest
 
-from tempo import Model, ModelFramework, Pipeline, pipeline, predictmethod
+from tempo import Model, ModelFramework, Pipeline, model, pipeline, predictmethod
+from tempo.kfserving import KFServingV2Protocol
+from tempo.serve.runtime import LocalRuntime
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -42,10 +44,22 @@ def xgboost_model() -> Model:
 
 
 @pytest.fixture
+def custom_model() -> Model:
+    @model(
+        name="custom-model",
+        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
+        platform=ModelFramework.Custom,
+    )
+    def _custom_model(payload: np.ndarray) -> np.ndarray:
+        return payload.sum(keepdims=True)
+
+    return _custom_model
+
+
+@pytest.fixture
 def inference_pipeline(sklearn_model: Model, xgboost_model: Model) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
-        runtime=None,
         models=[sklearn_model, xgboost_model],
         uri="gs://seldon-models/tempo/test",
     )
