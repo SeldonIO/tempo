@@ -58,7 +58,8 @@ class _V2ContainerFactory:
     MLServerRuntimes = {
         ModelFramework.SKLearn: "mlserver_sklearn.SKLearnModel",
         ModelFramework.XGBoost: "mlserver_xgboost.XGBoostModel",
-        ModelFramework.TempoPipeline: "mlserver_tempo.TempoModel",
+        ModelFramework.Custom: "tempo.mlserver.InferenceRuntime",
+        ModelFramework.TempoPipeline: "tempo.mlserver.InferenceRuntime",
     }
 
     @classmethod

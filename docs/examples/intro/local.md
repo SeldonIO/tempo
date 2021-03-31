@@ -142,7 +142,6 @@ dependencies:
   - pip:
     - mlops-tempo
     - mlserver==0.3.1.dev5
-    - mlserver-tempo==0.3.1.dev5
 ```
 
 

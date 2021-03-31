@@ -4,8 +4,10 @@ import numpy as np
 import pytest
 
 from tempo import Model, ModelFramework, Pipeline, pipeline, predictmethod
-from tempo.kfserving.protocol import KFServingV1Protocol
+from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
+from tempo.serve.runtime import LocalRuntime
+from tempo.serve.utils import model
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -41,6 +43,19 @@ def xgboost_model() -> Model:
         local_folder=model_path,
         protocol=SeldonProtocol(),
     )
+
+
+@pytest.fixture
+def custom_model() -> Model:
+    @model(
+        name="custom-model",
+        protocol=KFServingV2Protocol(),
+        platform=ModelFramework.Custom,
+    )
+    def _custom_model(payload: np.ndarray) -> np.ndarray:
+        return payload.sum(keepdims=True)
+
+    return _custom_model
 
 
 @pytest.fixture

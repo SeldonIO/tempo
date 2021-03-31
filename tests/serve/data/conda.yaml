@@ -22,7 +22,5 @@ dependencies:
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7b6447c_3
   - pip:
-    - tqdm==4.58.0
-    - mlserver
-    - mlserver-tempo
-
+      - tqdm==4.58.0
+      - mlserver

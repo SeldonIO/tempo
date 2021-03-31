@@ -15,5 +15,5 @@ DefaultRemoteFilename = "remote.pickle"
 DefaultEnvFilename = "environment.tar.gz"
 
 # TODO: Update once tempo is published
-MLServerEnvDeps = ["mlserver==0.3.1.dev5", "mlserver-tempo==0.3.1.dev5"]
+MLServerEnvDeps = ["mlserver==0.3.1.dev7"]
 DefaultCondaFile = "conda.yaml"
