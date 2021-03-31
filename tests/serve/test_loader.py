@@ -71,7 +71,7 @@ def test_add_required_deps(env):
         (
             {
                 "foo": "bar",
-                "dependencies": ["foo==1.0", {"pip": ["mlserver", "mlserver-tempo"]}],
+                "dependencies": ["foo==1.0", {"pip": ["mlserver"]}],
             },
             True,
         ),

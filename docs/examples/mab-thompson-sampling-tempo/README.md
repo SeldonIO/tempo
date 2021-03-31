@@ -258,7 +258,6 @@ dependencies:
     - websocket-client==0.58.0
     - mlops-tempo==0.1.0.dev4
     - mlserver==0.3.1.dev5
-    - mlserver-tempo==0.3.1.dev5
 ```
 
 
