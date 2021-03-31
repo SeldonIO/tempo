@@ -78,11 +78,11 @@ def custom_model() -> Model:
         platform=ModelFramework.Custom,
     )
     def _custom_model(payload: np.ndarray) -> np.ndarray:
-        return _custom_model.ctx.model(payload)
+        return _custom_model.context.model(payload)
 
     @_custom_model.loadmethod
     def _load():
-        _custom_model.ctx.model = lambda a: a.sum(keepdims=True)
+        _custom_model.context.model = lambda a: a.sum(keepdims=True)
 
     return _custom_model
 

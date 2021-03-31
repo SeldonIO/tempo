@@ -84,9 +84,9 @@ class BaseModel:
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
 
-        # ctx represents internal context shared (optionally) between different
+        # context represents internal context shared (optionally) between different
         # methods of the model (e.g. predict, loader, etc.)
-        self.ctx = SimpleNamespace()
+        self.context = SimpleNamespace()
 
     def set_remote(self, val: bool):
         self.use_remote = val

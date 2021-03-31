@@ -144,7 +144,7 @@ from tempo import model, ModelFramework
 )
 def numpyro_divorce(marriage: np.ndarray, age: np.ndarray) -> np.ndarray:
     rng_key = random.PRNGKey(0)
-    predictions = numpyro_divorce.ctx.predictive_dist(
+    predictions = numpyro_divorce.context.predictive_dist(
         rng_key=rng_key,
         marriage=marriage,
         age=age
@@ -166,7 +166,7 @@ def load_numpyro_divorce():
     for k, v in raw_samples.items():
         samples[k] = np.array(v)
 
-    numpyro_divorce.ctx.predictive_dist = Predictive(model_function, samples)
+    numpyro_divorce.context.predictive_dist = Predictive(model_function, samples)
 ```
 
 We can now test our custom logic by running inference locally.
