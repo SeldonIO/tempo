@@ -133,6 +133,12 @@ class BaseModel:
             return
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+        # TODO: Is it necessary to change the `deployed` flag here?
+        #  if not self.deployed:
+        #  self.deployed = True
+        #  save_custom(self, file_path_pkl)
+        #  self.deployed = False
+        #  else:
         logger.info("Saving tempo model to %s", file_path_pkl)
         save_custom(self, file_path_pkl)
 
