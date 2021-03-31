@@ -19,13 +19,13 @@ channels:
 dependencies:
   - pip=21.0.1
   - python=3.7.9
-    
   - pandas=1.0.1
   - pip:
-    - mlops-tempo
+    # TODO: Change once changes are upstream
+    # - mlops-tempo
+    - /home/agm/Seldon/tempo
     - numpyro==0.6.0
-    - mlserver==0.3.1.dev5
-    - mlserver-tempo==0.3.1.dev5
+    - mlserver==0.3.1.dev7
 ```
 
 Note that this environment will need to be created before running this notebook.
@@ -131,16 +131,19 @@ With Tempo, this can be achieved as:
 ```python
 import os
 import json
+import numpy as np
 
 from numpyro.infer import Predictive
 from numpyro import distributions as dist
 from jax import random
 from tempo import model, ModelFramework
 
+local_folder = os.path.join(os.getcwd(), "artifacts")
+
 @model(
     name='numpyro-divorce',
     platform=ModelFramework.Custom,
-    local_folder="./artifacts",
+    local_folder=local_folder,
 )
 def numpyro_divorce(marriage: np.ndarray, age: np.ndarray) -> np.ndarray:
     rng_key = random.PRNGKey(0)
@@ -150,7 +153,8 @@ def numpyro_divorce(marriage: np.ndarray, age: np.ndarray) -> np.ndarray:
         age=age
     )
     
-    return predictions['obs'].mean()
+    mean = predictions['obs'].mean(axis=0)
+    return np.asarray(mean)
 
 @numpyro_divorce.loadmethod
 def load_numpyro_divorce():
@@ -198,4 +202,14 @@ numpyro_divorce.deploy()
 numpyro_divorce.wait_ready()
 ```
 
+We can now test our model deployed in Docker as:
 
+
+```python
+numpyro_divorce.remote(marriage=marriage, age=age)
+```
+
+
+```python
+
+```
