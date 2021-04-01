@@ -1,0 +1,3 @@
+---
+istio_version: 1.7.6
+istio_verify_install: true

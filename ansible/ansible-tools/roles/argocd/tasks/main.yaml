@@ -1,0 +1,52 @@
+---
+- name: "Create a k8s namespaces: {{ argocd_namespace }}"
+  community.kubernetes.k8s:
+    name: "{{ argocd_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Deploy ArgoCD
+  community.kubernetes.k8s:
+    state: present
+    namespace: "{{ argocd_namespace }}"
+    definition: "{{ lookup('url', argocd_manifest, split_lines=False) }}"
+
+- name: Wait for ArgoCD deployments
+  community.kubernetes.k8s_info:
+    kind: Deployment
+    wait: yes
+    wait_condition:
+      type: Available
+      status: "True"
+      reason: MinimumReplicasAvailable
+    name: "{{ item }}"
+    namespace: "{{ argocd_namespace }}"
+    wait_timeout: 360
+  with_items:
+    - argocd-application-controller
+    - argocd-repo-server
+    - argocd-server
+    - argocd-redis
+    - argocd-dex-server
+
+- name: Create a k8s namespaces
+  community.kubernetes.k8s:
+    name: "{{ item }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+  with_items: "{{ gitops_namespaces }}"
+
+- name: Configure ArgoCD Project
+  community.kubernetes.k8s:
+    state: present
+    template: templates/project.j2
+
+- name: Configure ArgoCD Applications
+  community.kubernetes.k8s:
+    state: present
+    template: templates/application.j2
+  loop: "{{ gitops_namespaces }}"
+  loop_control:
+    loop_var: loop_namespace

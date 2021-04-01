@@ -1,0 +1,3 @@
+---
+kfserving_version: v0.5.1
+kfserving_repo: https://github.com/kubeflow/kfserving.git

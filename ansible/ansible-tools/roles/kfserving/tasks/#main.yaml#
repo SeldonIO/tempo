@@ -1,0 +1,17 @@
+---
+- name: Git clone KFServing repo 
+  ansible.builtin.git:
+    repo: "{{ kfserving_repo }}"
+    dest: "{{ inventory_dir }}/.resources/kfserving"
+  when: kfserving_source_dir is undefined
+
+- name: Set KFServing Directory
+  set_fact: kfserving_source_dir="{{ inventory_dir }}/.resources/kfserving"
+  when: kfserving_source_dir is undefined
+
+- name: Deploy KfServing
+  shell: |
+    ./hack/quick_install.sh
+  args:
+    chdir: "{{ kfserving_source_dir }}"
+

@@ -1,0 +1,60 @@
+---
+- name: "Get information about kind network in docker."
+  community.docker.docker_network:
+    name: kind
+  register: docker_kind_network
+
+
+- name: "Extract subnet of kind network"
+  set_fact:
+    kind_subnet: "{{ docker_kind_network.network.IPAM.Config[0].Subnet }}"
+
+- name: "Set ranges for MetalLB"
+  set_fact:
+    metallb_range_start: "{{ kind_subnet.split('.')[:2] | join('.') }}.255.1"
+    metallb_range_stop: "{{ kind_subnet.split('.')[:2] | join('.') }}.255.255"
+
+
+- name: Echo message about kind network 2
+  ansible.builtin.debug:
+    msg:
+      - "metallb_range_start: {{ metallb_range_start }}"
+      - "metallb_range_stop: {{ metallb_range_stop }}"
+
+
+- name: Deploy MetalLB
+  community.kubernetes.k8s:
+    state: present
+    definition: "{{ lookup('url', item, split_lines=False) }}"
+  with_items:
+    - "{{ metallb_manifest_namespace }}"
+    - "{{ metallb_manifest_metallb }}"
+
+
+- name: Create OpenSSL secretkey
+  command:
+    argv:
+      - openssl
+      - rand
+      - -base64
+      - 128
+  register: openssl_secretkey
+
+
+- name: Create memberlist secret
+  community.kubernetes.k8s:
+    state: present
+    name: memberlist
+    namespace: metallb-system
+    definition:
+      apiVersion: v1
+      kind: Secret
+      type: Opaque
+      stringData:
+        secretkey: "{{ openssl_secretkey.stdout }}"
+
+- name: Create MetalLB Config
+  community.kubernetes.k8s:
+    state: present
+    template: templates/metallb_config.yaml.j2
+  when: (metallb_range_start is defined) and (metallb_range_stop is defined)
