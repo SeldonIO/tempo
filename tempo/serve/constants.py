@@ -11,6 +11,9 @@ ONNX_MODEL = "onnx"
 ModelDataType = Optional[Union[Type, List, Dict[str, Type]]]
 
 DefaultModelFilename = "model.pickle"
+DefaultRemoteFilename = "remote.pickle"
 DefaultEnvFilename = "environment.tar.gz"
 
+# TODO: Update once tempo is published
 MLServerEnvDeps = ["mlserver==0.3.1.dev7"]
+DefaultCondaFile = "conda.yaml"

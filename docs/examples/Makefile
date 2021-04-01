@@ -1,13 +1,16 @@
-EXAMPLES := $(wildcard */.)
-EXAMPLES_MD=$(patsubst %, %/README.md, $(EXAMPLES))
+.SUFFIXES: .ipynb .md
+
+EXAMPLES := $(wildcard */*.ipynb)
+EXAMPLES_MD=$(patsubst %.ipynb, %.md, $(EXAMPLES))
 
 all: $(EXAMPLES_MD)
 
-%/README.md: %/README.ipynb
+.ipynb.md:
 	jupyter nbconvert \
-		$? \
+		$< \
 		--ClearOutputPreprocessor.enabled=True \
 		--to markdown \
-		--output README.md
+		--output $(notdir $@)
+
 
 .PHONY: all

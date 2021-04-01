@@ -1,2 +1,4 @@
+conda.yaml
 environment.tar.gz
 model.pickle
+remote.pickle

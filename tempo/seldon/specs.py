@@ -1,8 +1,9 @@
 import json
 
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
+from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
-from tempo.serve.protocol import Protocol
+from tempo.serve.runtime import ModelSpec
 
 DefaultHTTPPort = "9000"
 DefaultGRPCPort = "9500"
@@ -11,14 +12,14 @@ DefaultModelsPath = "/mnt/models"
 DefaultServiceAccountName = "tempo-pipeline"
 
 
-def get_container_spec(model_details: ModelDetails, protocol: Protocol) -> dict:
-    if model_details.platform == ModelFramework.TempoPipeline:
-        return _V2ContainerFactory.get_container_spec(model_details)
+def get_container_spec(model_details: ModelSpec) -> dict:
+    if model_details.model_details.platform == ModelFramework.TempoPipeline:
+        return _V2ContainerFactory.get_container_spec(model_details.model_details)
 
-    if isinstance(protocol, KFServingV2Protocol):
-        return _V2ContainerFactory.get_container_spec(model_details)
+    if isinstance(model_details.protocol, KFServingV2Protocol):
+        return _V2ContainerFactory.get_container_spec(model_details.model_details)
 
-    return _V1ContainerFactory.get_container_spec(model_details)
+    return _V1ContainerFactory.get_container_spec(model_details.model_details)
 
 
 class _V1ContainerFactory:
@@ -52,7 +53,7 @@ class _V1ContainerFactory:
 
 
 class _V2ContainerFactory:
-    MLServerImage = "seldonio/mlserver:0.3.1.dev7"
+    MLServerImage = MLSERVER_IMAGE
 
     MLServerRuntimes = {
         ModelFramework.SKLearn: "mlserver_sklearn.SKLearnModel",
@@ -95,12 +96,10 @@ class KubernetesSpec:
 
     def __init__(
         self,
-        model_details: ModelDetails,
-        protocol: Protocol,
+        model_details: ModelSpec,
         k8s_options: KubernetesOptions,
     ):
         self._details = model_details
-        self._protocol = protocol
         self._k8s_options = k8s_options
 
     @property
@@ -112,7 +111,7 @@ class KubernetesSpec:
             "apiVersion": "machinelearning.seldon.io/v1",
             "kind": "SeldonDeployment",
             "metadata": {
-                "name": self._details.name,
+                "name": self._details.model_details.name,
                 "namespace": self._k8s_options.namespace,
             },
             "spec": {"protocol": protocol, "predictors": [predictor]},
@@ -122,19 +121,19 @@ class KubernetesSpec:
         # TODO: We need to insert `type: MODEL`, otherwise the validation
         # webhook complains
         graph = {
-            "modelUri": self._details.uri,
-            "name": self._details.name,
+            "modelUri": self._details.model_details.uri,
+            "name": self._details.model_details.name,
             "type": "MODEL",
         }
 
         if self._k8s_options.authSecretName:
             graph["envSecretRefName"] = self._k8s_options.authSecretName
 
-        if self._details.platform in self.Implementations:
-            model_implementation = self.Implementations[self._details.platform]
+        if self._details.model_details.platform in self.Implementations:
+            model_implementation = self.Implementations[self._details.model_details.platform]
             graph["implementation"] = model_implementation
 
-        if self._details.platform == ModelFramework.TempoPipeline:
+        if self._details.model_details.platform == ModelFramework.TempoPipeline:
             graph["serviceAccountName"] = DefaultServiceAccountName
 
         predictor = {
@@ -143,13 +142,13 @@ class KubernetesSpec:
             "replicas": self._k8s_options.replicas,
         }
 
-        if self._details.platform == ModelFramework.TempoPipeline:
+        if self._details.model_details.platform == ModelFramework.TempoPipeline:
             predictor["componentSpecs"] = self._get_component_specs()
 
         return predictor
 
     def _get_component_specs(self) -> list:
-        container_spec = get_container_spec(self._details, self._protocol)
+        container_spec = get_container_spec(self._details)
         container_env = [{"name": name, "value": value} for name, value in container_spec["environment"].items()]
 
         return [
@@ -157,7 +156,7 @@ class KubernetesSpec:
                 "spec": {
                     "containers": [
                         {
-                            "name": self._details.name,
+                            "name": self._details.model_details.name,
                             "image": container_spec["image"],
                             "env": container_env,
                             # TODO: Necessary to override Triton defaults (see
@@ -170,10 +169,10 @@ class KubernetesSpec:
         ]
 
     def _get_spec_protocol(self) -> str:
-        if isinstance(self._protocol, KFServingV2Protocol):
+        if isinstance(self._details.protocol, KFServingV2Protocol):
             return "kfserving"
 
-        if isinstance(self._protocol, KFServingV1Protocol):
+        if isinstance(self._details.protocol, KFServingV1Protocol):
             return "tensorflow"
 
         return "seldon"

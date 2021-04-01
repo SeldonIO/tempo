@@ -1,6 +1,6 @@
-# Introction to Tempo on Kubernetes
+# Introduction to Tempo Example
 
-This notebook will walk you through an end-to-end example deploying a Tempo pipeline deployed to Kubernetes.
+This notebook will walk you through an end-to-end example deploying a Tempo pipeline, running on its own Conda environment.
 
 ## Prerequisites
 
@@ -12,16 +12,6 @@ This notebook will walk you through an end-to-end example deploying a Tempo pipe
 We will show two Iris dataset prediction models combined with service orchestration that shows some arbitrary python code to control predictions from the two models.
 
 ![architecture](architecture.png)
-
-
-```python
-from IPython.core.magic import register_line_cell_magic
-
-@register_line_cell_magic
-def writetemplate(line, cell):
-    with open(line, 'w') as f:
-        f.write(cell.format(**globals()))
-```
 
 ## Train Iris Models
 
@@ -65,11 +55,13 @@ import numpy as np
 from typing import Tuple
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from tempo.serve.model import Model
+from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.utils import pipeline, predictmethod
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.utils import pipeline
+from tempo.serve.loader import save_remote, load_remote, save
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -78,31 +70,25 @@ SKLEARN_FOLDER = os.getcwd()+"/artifacts/sklearn"
 XGBOOST_FOLDER = os.getcwd()+"/artifacts/xgboost"
 PIPELINE_ARTIFACTS_FOLDER = os.getcwd()+"/artifacts/classifier"
 
-k8s_options = KubernetesOptions(namespace="production",authSecretName="minio-secret")
-k8s_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options)
-k8s_runtime_v2 = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
-
-
 sklearn_model = Model(
         name="test-iris-sklearn",
-        runtime=k8s_runtime,
         platform=ModelFramework.SKLearn,
+        protocol=SeldonProtocol(),
         local_folder=SKLEARN_FOLDER,
         uri="s3://tempo/basic/sklearn"
 )
 
 xgboost_model = Model(
         name="test-iris-xgboost",
-        runtime=k8s_runtime,
         platform=ModelFramework.XGBoost,
+        protocol=SeldonProtocol(),
         local_folder=XGBOOST_FOLDER,
         uri="s3://tempo/basic/xgboost"
 )
 
-docker_runtime_v2 = SeldonDockerRuntime(protocol=KFServingV2Protocol())
-
 @pipeline(name="classifier",
-          runtime=k8s_runtime_v2,
+          #TODO: Remove after development when mlserver published
+          conda_env="tempo-minimal",
           uri="s3://tempo/basic/pipeline",
           local_folder=PIPELINE_ARTIFACTS_FOLDER,
           models=[sklearn_model, xgboost_model])
@@ -114,6 +100,14 @@ def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
     else:
         return xgboost_model(payload),"xgboost prediction"
 ```
+
+## Deploying pipeline to Docker
+
+The next step, will be to deploy our pipeline to Docker.
+We will divide this process into 2 steps:
+
+1. Save our artifacts and environment
+2. Deploy resources
 
 ### Saving artifacts
 
@@ -152,103 +146,35 @@ dependencies:
 
 
 ```python
-classifier.save(save_env=True)
+docker_runtime = SeldonDockerRuntime()
+save(classifier, docker_runtime, save_env=True)
 ```
 
-## Deploying pipeline to K8s
-
-The next step, will be to deploy our pipeline to Kubernetes.
-We will divide this process into 3 sub-steps:
-
-1. Save our artifacts and environment
-2. Upload to remote storage
-3. Deploy resources
-
-### Setup Namespace with Minio Secret
+### Deploying pipeline
 
 
 ```python
-!kubectl create namespace production
-```
-
-
-```python
-!kubectl apply -f ../../../k8s/tempo-pipeline-rbac.yaml -n production
-```
-
-
-```python
-%%writefile minio-secret.yaml
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-secret
-type: Opaque
-stringData:
-  AWS_ACCESS_KEY_ID: minioadmin
-  AWS_SECRET_ACCESS_KEY: minioadmin
-  AWS_ENDPOINT_URL: http://minio.minio-system.svc.cluster.local:9000
-  USE_SSL: "false"
-```
-
-
-```python
-!kubectl apply -f minio-secret.yaml -n production
-```
-
-### Uploading artifacts
-
-
-```python
-MINIO_IP=!kubectl get svc minio -n minio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-MINIO_IP=MINIO_IP[0]
-```
-
-
-```python
-%%writetemplate rclone.conf
-[s3]
-type = s3
-provider = minio
-env_auth = false
-access_key_id = minioadmin
-secret_access_key = minioadmin
-endpoint = http://{MINIO_IP}:9000
-
-```
-
-
-```python
-import os
-from tempo.conf import settings
-settings.rclone_cfg = os.getcwd() + "/rclone.conf"
-```
-
-
-```python
-sklearn_model.upload()
-xgboost_model.upload()
-classifier.upload()
-```
-
-### Deploy
-
-
-```python
-classifier.deploy()
-classifier.wait_ready()
+docker_runtime.deploy(classifier)
+docker_runtime.wait_ready(classifier)
 ```
 
 ### Sending requests
 
-Lastly, we can now send requests to our deployed pipeline.
-For this, we will leverage the `remote()` method, which will interact without our deployed pipeline (as opposed to executing our pipeline's code locally).
+We can send requests to the deployed components with either the python code for the classifier running locally or remotely. 
+
+First we test calling the classifer locally. It will call out to the remote models running in Docker.
+
+
+```python
+docker_runtime.set_remote(classifier)
+```
 
 
 ```python
 classifier(payload=np.array([[1, 2, 3, 4]]))
 ```
+
+Now we can use the `.remote` method to call to the remote classifier running in Docker.
 
 
 ```python
@@ -264,7 +190,7 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 
 ```python
-classifier.undeploy()
+docker_runtime.undeploy(classifier)
 ```
 
 

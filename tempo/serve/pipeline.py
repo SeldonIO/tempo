@@ -1,9 +1,11 @@
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Optional
 
 from tempo.errors import UndefinedCustomImplementation
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework
+from tempo.serve.protocol import Protocol
+from tempo.serve.remote import Remote
 from tempo.serve.runtime import Runtime
 
 
@@ -12,7 +14,7 @@ class Pipeline(BaseModel):
         self,
         name: str,
         pipeline_func: Callable[[Any], Any] = None,
-        runtime: Runtime = None,
+        protocol: Optional[Protocol] = None,
         models: List[BaseModel] = None,
         local_folder: str = None,
         uri: str = None,
@@ -31,8 +33,8 @@ class Pipeline(BaseModel):
             inputs=inputs,
             outputs=outputs,
             conda_env=conda_env,
-            runtime=runtime,
             deployed=deployed,
+            protocol=protocol,
         )
 
         if models is None:
@@ -47,49 +49,42 @@ class Pipeline(BaseModel):
         for model in self._models:
             model.set_deployed(False)
 
-    def deploy_models(self):
-        """
-        Deploy all the models
-        """
+    def deploy_models(self, runtime: Runtime):
         for model in self._models:
-            model.deploy()
+            model.deploy(runtime)
 
-    def deploy(self):
-        """
-        Deploy all models and the pipeline.
-        """
-        self.deploy_models()
-        super().deploy()
+    def deploy(self, runtime: Runtime):
+        self.deploy_models(runtime)
+        super().deploy(runtime)
 
-    def wait_ready(self, timeout_secs: int = None) -> bool:
-        super().wait_ready(timeout_secs=timeout_secs)
+    def wait_ready(self, runtime: Runtime, timeout_secs: int = None) -> bool:
+        super().wait_ready(runtime, timeout_secs=timeout_secs)
         for model in self._models:
-            if not model.wait_ready(timeout_secs=timeout_secs):
+            if not model.wait_ready(runtime, timeout_secs=timeout_secs):
                 return False
         return True
 
-    def undeploy_models(self):
+    def undeploy_models(self, runtime: Runtime):
         for model in self._models:
-            model.undeploy()
+            model.undeploy(runtime)
 
-    def undeploy(self):
+    def undeploy(self, runtime: Runtime):
         """
         Undeploy all models and pipeline.
         """
-        super().undeploy()
-        self.undeploy_models()
+        super().undeploy(runtime)
+        self.undeploy_models(runtime)
 
-    def set_runtime(self, runtime: Runtime, models=False):
-        super().set_runtime(runtime)
-        if models:
-            for model in self._models:
-                model.set_runtime(runtime)
+    def set_remote(self, runtime: Remote):
+        super().set_remote(runtime)
+        for model in self._models:
+            model.set_remote(runtime)
 
-    def to_k8s_yaml(self) -> str:
-        yamls = super().to_k8s_yaml()
+    def to_k8s_yaml(self, runtime: Runtime) -> str:
+        yamls = super().to_k8s_yaml(runtime)
         yamls += "\n---\n"
         for model in self._models:
-            y = model.to_k8s_yaml()
+            y = model.to_k8s_yaml(runtime)
             yamls += y
             yamls += "\n---\n"
         return yamls

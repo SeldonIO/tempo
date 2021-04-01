@@ -8,27 +8,20 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from tempo.seldon.endpoint import Endpoint
-from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec
-from tempo.serve.metadata import KubernetesOptions, ModelDetails
-from tempo.serve.runtime import Runtime
+from tempo.serve.metadata import KubernetesOptions
+from tempo.serve.remote import Remote
+from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
 
-class SeldonKubernetesRuntime(Runtime):
-    def __init__(self, k8s_options: KubernetesOptions = None, protocol=None):
+class SeldonKubernetesRuntime(Runtime, Remote):
+    def __init__(self, k8s_options: KubernetesOptions = None):
         if k8s_options is None:
             k8s_options = KubernetesOptions()
         self.k8s_options = k8s_options
-        if protocol is None:
-            self.protocol = SeldonProtocol()
-        else:
-            self.protocol = protocol
-
-    def get_protocol(self):
-        return self.protocol
 
     def create_k8s_client(self):
         inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
@@ -39,20 +32,19 @@ class SeldonKubernetesRuntime(Runtime):
             logger.debug("Loading external kubernetes config")
             config.load_kube_config()
 
-    def get_endpoint(self, model_details: ModelDetails) -> str:
+    def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         self.create_k8s_client()
-        endpoint = Endpoint(model_details.name, self.k8s_options.namespace, self.protocol)
-        return endpoint.get_url(model_details)
+        endpoint = Endpoint(model_spec.model_details.name, self.k8s_options.namespace, model_spec.protocol)
+        return endpoint.get_url(model_spec.model_details)
 
-    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
-        protocol = self.get_protocol()
-        req = protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint(model_details)
+    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
+        req = model_spec.protocol.to_protocol_request(*args, **kwargs)
+        endpoint = self.get_endpoint_spec(model_spec)
         logger.debug("Endpoint is ", endpoint)
         response_raw = requests.post(endpoint, json=req)
-        return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
+        return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
 
-    def undeploy(self, model_details: ModelDetails):
+    def undeploy_spec(self, model_spec: ModelSpec):
         self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
         api_instance.delete_namespaced_custom_object(
@@ -60,13 +52,13 @@ class SeldonKubernetesRuntime(Runtime):
             "v1",
             self.k8s_options.namespace,
             "seldondeployments",
-            model_details.name,
+            model_spec.model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
         )
 
-    def deploy(self, model_details: ModelDetails):
+    def deploy_spec(self, model_details: ModelSpec):
         self.create_k8s_client()
-        k8s_spec = KubernetesSpec(model_details, self.protocol, self.k8s_options)
+        k8s_spec = KubernetesSpec(model_details, self.k8s_options)
         model_spec = k8s_spec.spec
         logger.debug(model_spec)
 
@@ -78,7 +70,7 @@ class SeldonKubernetesRuntime(Runtime):
                 "v1",
                 self.k8s_options.namespace,
                 "seldondeployments",
-                model_details.name,
+                model_details.model_details.name,
             )
             model_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
@@ -86,7 +78,7 @@ class SeldonKubernetesRuntime(Runtime):
                 "v1",
                 self.k8s_options.namespace,
                 "seldondeployments",
-                model_details.name,
+                model_details.model_details.name,
                 model_spec,
             )
         except ApiException as e:
@@ -101,7 +93,7 @@ class SeldonKubernetesRuntime(Runtime):
             else:
                 raise e
 
-    def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
+    def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         self.create_k8s_client()
         ready = False
         t0 = time.time()
@@ -112,7 +104,7 @@ class SeldonKubernetesRuntime(Runtime):
                 "v1",
                 self.k8s_options.namespace,
                 "seldondeployments",
-                model_details.name,
+                model_spec.model_details.name,
             )
             if "status" in existing and "state" in existing["status"]:
                 ready = existing["status"]["state"] == "Available"
@@ -122,6 +114,6 @@ class SeldonKubernetesRuntime(Runtime):
                     return ready
         return ready
 
-    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
-        k8s_spec = KubernetesSpec(model_details, self.protocol, self.k8s_options)
+    def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
+        k8s_spec = KubernetesSpec(model_spec, self.k8s_options)
         return yaml.safe_dump(k8s_spec.spec)

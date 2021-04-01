@@ -6,7 +6,6 @@ import pytest
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
-from tempo.serve.runtime import LocalRuntime
 from tempo.serve.utils import model, predictmethod
 
 
@@ -44,7 +43,7 @@ from tempo.serve.utils import model, predictmethod
 def test_custom_model(v2_input, expected):
     @model(
         name="custom",
-        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
+        protocol=KFServingV2Protocol(),
         platform=ModelFramework.Custom,
     )
     def custom_model(a: np.ndarray) -> np.ndarray:
@@ -61,7 +60,6 @@ def test_custom_model(v2_input, expected):
 def test_lambda(input, expected):
     model = Model(
         name="test-iris-sklearn",
-        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
         model_func=lambda x: np.array([[0, 0, 1]]),
     )
@@ -106,7 +104,6 @@ def test_lambda(input, expected):
 def test_custom_model_decorator_types(v2_input, expected):
     @model(
         name="custom",
-        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
         inputs=np.ndarray,
         outputs=np.ndarray,
@@ -159,7 +156,6 @@ def test_custom_model_decorator_types(v2_input, expected):
 def test_custom_multiheaded_model_tuple(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
     )
     def custom_multiheaded_model_tuple(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -210,7 +206,6 @@ def test_custom_multiheaded_model_tuple(v2_input, expected):
 def test_custom_multiheaded_model_list(v2_input, expected):
     @model(
         name="multi-headed",
-        runtime=LocalRuntime(protocol=KFServingV2Protocol()),
         platform=ModelFramework.Custom,
     )
     def custom_multiheaded_model_list(a: np.ndarray, b: np.ndarray) -> List[np.ndarray]:

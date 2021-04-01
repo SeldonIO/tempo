@@ -8,10 +8,12 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from tempo.kfserving.endpoint import Endpoint
-from tempo.kfserving.protocol import KFServingV1Protocol
+from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
-from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
-from tempo.serve.runtime import Runtime
+from tempo.serve.metadata import KubernetesOptions, ModelFramework
+from tempo.serve.remote import Remote
+from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
 
 DefaultHTTPPort = "8080"
@@ -29,19 +31,16 @@ Implementations = {
 }
 
 
-class KFServingKubernetesRuntime(Runtime):
+class KFServingKubernetesRuntime(Runtime, Remote):
     def __init__(self, k8s_options: KubernetesOptions = None, protocol=None):
         if k8s_options is None:
             k8s_options = KubernetesOptions()
         self.k8s_options = k8s_options
-        self.inside_cluster = self.create_k8s_client()
-        if protocol is None:
-            self.protocol = KFServingV1Protocol()
+        if self.k8s_options.serviceAccountName is None:
+            self.serviceAccountName = DefaultServiceAccountName
         else:
-            self.protocol = protocol
-
-    def get_protocol(self):
-        return self.protocol
+            self.serviceAccountName = self.k8s_options.serviceAccountName
+        self.inside_cluster = self.create_k8s_client()
 
     def create_k8s_client(self):
         inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
@@ -54,45 +53,44 @@ class KFServingKubernetesRuntime(Runtime):
             config.load_kube_config()
             return False
 
-    def get_endpoint(self, model_details: ModelDetails) -> str:
-        endpoint = Endpoint(model_details, self.k8s_options.namespace, self.protocol)
+    def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
+        endpoint = Endpoint(model_spec, self.k8s_options.namespace)
         return endpoint.get_url()
 
-    def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
+    def get_headers(self, model_spec: ModelSpec) -> Dict[str, str]:
         self.inside_cluster = self.create_k8s_client()
         if not self.inside_cluster:
-            endpoint = Endpoint(model_details, self.k8s_options.namespace, self.protocol)
+            endpoint = Endpoint(model_spec, self.k8s_options.namespace)
             service_host = endpoint.get_service_host()
             return {"Host": service_host}
         else:
             return {}
 
-    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
-        protocol = self.get_protocol()
-        req = protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint(model_details)
-        print("Endpoint is ", endpoint)
-        headers = self.get_headers(model_details)
+    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
+        req = model_spec.protocol.to_protocol_request(*args, **kwargs)
+        endpoint = self.get_endpoint_spec(model_spec)
+        print("Endpoint is", endpoint)
+        headers = self.get_headers(model_spec)
         print("Headers are", headers)
         response_raw = requests.post(endpoint, json=req, headers=headers)
         if response_raw.status_code == 200:
-            return protocol.from_protocol_response(response_raw.json(), model_details.outputs)
+            return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
         else:
             raise ValueError("Bad return code", response_raw.status_code, response_raw.text)
 
-    def undeploy(self, model_details: ModelDetails):
+    def undeploy_spec(self, model_spec: ModelSpec):
         api_instance = client.CustomObjectsApi()
         api_instance.delete_namespaced_custom_object(
             "serving.kubeflow.org",
             "v1beta1",
             self.k8s_options.namespace,
             "inferenceservices",
-            model_details.name,
+            model_spec.model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
         )
 
-    def deploy(self, model_details: ModelDetails):
-        model_spec = self._get_spec(model_details)
+    def deploy_spec(self, model_spec: ModelSpec):
+        spec = self._get_spec(model_spec)
         logger.debug(model_spec)
 
         api_instance = client.CustomObjectsApi()
@@ -103,16 +101,16 @@ class KFServingKubernetesRuntime(Runtime):
                 "v1beta1",
                 self.k8s_options.namespace,
                 "inferenceservices",
-                model_details.name,
+                model_spec.model_details.name,
             )
-            model_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
+            spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
                 self.k8s_options.namespace,
                 "inferenceservices",
-                model_details.name,
-                model_spec,
+                model_spec.model_details.name,
+                spec,
             )
         except ApiException as e:
             if e.status == 404:
@@ -121,12 +119,12 @@ class KFServingKubernetesRuntime(Runtime):
                     "v1beta1",
                     self.k8s_options.namespace,
                     "inferenceservices",
-                    model_spec,
+                    spec,
                 )
             else:
                 raise e
 
-    def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
+    def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         ready = False
         t0 = time.time()
         while not ready:
@@ -136,7 +134,7 @@ class KFServingKubernetesRuntime(Runtime):
                 "v1beta1",
                 self.k8s_options.namespace,
                 "inferenceservices",
-                model_details.name,
+                model_spec.model_details.name,
             )
             default_ready = False
             routes_ready = False
@@ -160,26 +158,26 @@ class KFServingKubernetesRuntime(Runtime):
             time.sleep(1)
         return ready
 
-    def _get_spec(self, model_details: ModelDetails) -> dict:
-        if model_details.platform == ModelFramework.TempoPipeline:
+    def _get_spec(self, model_spec: ModelSpec) -> dict:
+        if model_spec.model_details.platform == ModelFramework.TempoPipeline:
             return {
                 "apiVersion": "serving.kubeflow.org/v1beta1",
                 "kind": "InferenceService",
                 "metadata": {
-                    "name": model_details.name,
+                    "name": model_spec.model_details.name,
                     "namespace": self.k8s_options.namespace,
                 },
                 "spec": {
                     "predictor": {
-                        "serviceAccountName": DefaultServiceAccountName,
+                        "serviceAccountName": self.serviceAccountName,
                         "containers": [
                             {
-                                "image": "seldonio/mlserver:0.3.1.dev6",
+                                "image": MLSERVER_IMAGE,
                                 "name": "mlserver",
                                 "env": [
                                     {
                                         "name": "STORAGE_URI",
-                                        "value": model_details.uri,
+                                        "value": model_spec.model_details.uri,
                                     },
                                     {
                                         "name": "MLSERVER_HTTP_PORT",
@@ -195,7 +193,7 @@ class KFServingKubernetesRuntime(Runtime):
                                     },
                                     {
                                         "name": "MLSERVER_MODEL_NAME",
-                                        "value": model_details.name,
+                                        "value": model_spec.model_details.name,
                                     },
                                     {
                                         "name": "MLSERVER_MODEL_URI",
@@ -207,24 +205,29 @@ class KFServingKubernetesRuntime(Runtime):
                     },
                 },
             }
-        elif model_details.platform in Implementations:
-            model_implementation = Implementations[model_details.platform]
-            return {
+        elif model_spec.model_details.platform in Implementations:
+            model_implementation = Implementations[model_spec.model_details.platform]
+            spec: Dict = {
                 "apiVersion": "serving.kubeflow.org/v1beta1",
                 "kind": "InferenceService",
                 "metadata": {
-                    "name": model_details.name,
+                    "name": model_spec.model_details.name,
                     "namespace": self.k8s_options.namespace,
                 },
                 "spec": {
                     "predictor": {
-                        model_implementation: {"storageUri": model_details.uri},
+                        model_implementation: {"storageUri": model_spec.model_details.uri},
                     },
                 },
             }
+            if self.k8s_options.serviceAccountName is not None:
+                spec["spec"]["predictor"]["serviceAccountName"] = self.k8s_options.serviceAccountName
+            if isinstance(model_spec.protocol, KFServingV2Protocol):
+                spec["spec"]["predictor"][model_implementation]["protocolVersion"] = "v2"
+            return spec
         else:
-            raise ValueError("Can't create spec for implementation ", model_details.platform)
+            raise ValueError("Can't create spec for implementation ", model_spec.model_details.platform)
 
-    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
-        d = self._get_spec(model_details)
+    def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
+        d = self._get_spec(model_spec)
         return yaml.safe_dump(d)

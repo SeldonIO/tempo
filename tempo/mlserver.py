@@ -2,14 +2,15 @@ from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri
 
-from . import Pipeline
+from tempo.serve.loader import load, load_remote
 
 
 class InferenceRuntime(MLModel):
     async def load(self) -> bool:
         pipeline_uri = await get_model_uri(self._settings)
-        self._pipeline = Pipeline.load(pipeline_uri)
-
+        self._pipeline = load(pipeline_uri)
+        remote = load_remote(pipeline_uri)
+        remote.set_remote(self._pipeline)
         self.ready = True
         return self.ready
 

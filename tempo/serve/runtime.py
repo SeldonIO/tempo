@@ -4,42 +4,66 @@ import abc
 from typing import Any
 
 import attr
+from pydantic import BaseModel
 
 from tempo.serve.metadata import ModelDetails
 from tempo.serve.protocol import Protocol
 
 
+class ModelSpec(BaseModel):
+
+    model_details: ModelDetails
+    protocol: Protocol
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class Deployer(object):
+    def deploy(self, model: Any):
+        t = model.get_tempo()
+        t.deploy(self)
+
+    def undeploy(self, model: Any):
+        t = model.get_tempo()
+        t.undeploy(self)
+
+    def get_endpoint(self, model: Any):
+        t = model.get_tempo()
+        t.get_endpoint(self)
+
+    def wait_ready(self, model: Any, timeout_secs=None):
+        t = model.get_tempo()
+        t.wait_ready(self, timeout_secs)
+
+    def to_k8s_yaml(self, model: Any):
+        t = model.get_tempo()
+        return t.to_k8s_yaml(self)
+
+
 @attr.s(auto_attribs=True)
-class Runtime(abc.ABC):
+class Runtime(abc.ABC, Deployer):
     # TODO change to deploy_model
     @abc.abstractmethod
-    def deploy(self, model_details: ModelDetails):
+    def deploy_spec(self, model_spec: ModelSpec):
         pass
 
     # TODO change to undeploy_model
     @abc.abstractmethod
-    def undeploy(self, model_details: ModelDetails):
+    def undeploy_spec(self, model_spec: ModelSpec):
         pass
 
     @abc.abstractmethod
-    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+    def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         pass
 
     @abc.abstractmethod
-    def get_endpoint(self, model_details: ModelDetails) -> str:
-        pass
-
-    @abc.abstractmethod
-    def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
-        pass
-
-    @abc.abstractmethod
-    def get_protocol(self):
+    def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         pass
 
     # TODO change to to_yaml
     @abc.abstractmethod
-    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
+    def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         pass
 
 
@@ -48,27 +72,23 @@ class LocalRuntime(Runtime):
     LocalRuntime lets you run model functions explicitly as a local function.
     """
 
-    def __init__(self, protocol: Protocol):
+    def __init__(self):
         super().__init__()
-        self._protocol = protocol
 
     def deploy(self, model_details: ModelDetails):
         pass
 
-    def undeploy(self, model_details: ModelDetails):
+    def undeploy(self, model_spec: ModelDetails):
         pass
 
-    def remote(self, model_details: ModelDetails, *args, **kwargs) -> Any:
+    def remote(self, model_spec: ModelDetails, *args, **kwargs) -> Any:
         raise NotImplementedError("LocalRuntime is only meant to be used locally")
 
-    def get_endpoint(self, model_details: ModelDetails) -> str:
+    def get_endpoint(self, model_spec: ModelDetails) -> str:
         return ""
 
-    def wait_ready(self, model_details: ModelDetails, timeout_secs=None) -> bool:
+    def wait_ready(self, model_spec: ModelDetails, timeout_secs=None) -> bool:
         return True
 
-    def get_protocol(self) -> Protocol:
-        return self._protocol
-
-    def to_k8s_yaml(self, model_details: ModelDetails) -> str:
+    def to_k8s_yaml(self, model_spec: ModelDetails) -> str:
         return ""

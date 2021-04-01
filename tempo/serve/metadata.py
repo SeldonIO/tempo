@@ -61,3 +61,4 @@ class KubernetesOptions(BaseModel):
     minReplicas: Optional[int] = None
     maxReplicas: Optional[int] = None
     authSecretName: Optional[str] = None
+    serviceAccountName: Optional[str] = None
