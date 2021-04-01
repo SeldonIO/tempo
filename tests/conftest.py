@@ -1,16 +1,19 @@
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
+import yaml
 
 from tempo import Model, ModelFramework, Pipeline, pipeline, predictmethod
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.serve.runtime import LocalRuntime
+from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.utils import model
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
+PIPELINE_LOCAL_DIR = os.path.join(TESTS_PATH, "artifacts/pipeline")
 
 
 def pytest_collection_modifyitems(items):
@@ -19,6 +22,22 @@ def pytest_collection_modifyitems(items):
     """
     for item in items:
         item.add_marker("asyncio")
+
+
+@pytest.fixture
+def pipeline_conda_yaml() -> str:
+    condaPath = PIPELINE_LOCAL_DIR + "/conda.yaml"
+    if not os.path.isfile(condaPath):
+        with open(PIPELINE_LOCAL_DIR + "/conda.yaml.tmpl") as f:
+            env = yaml.safe_load(f)
+            path = Path(TESTS_PATH)
+            parent = path.parent.absolute()
+            pip_deps = {"pip": MLServerEnvDeps}
+            env["dependencies"].append(pip_deps)
+            pip_deps["pip"].append("mlops-tempo @ file://" + str(parent))
+            with open(condaPath, "w") as f2:
+                yaml.safe_dump(env, f2)
+    return condaPath
 
 
 @pytest.fixture
@@ -59,13 +78,12 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(sklearn_model: Model, xgboost_model: Model) -> Pipeline:
+def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
         models=[sklearn_model, xgboost_model],
         uri="gs://seldon-models/tempo/test_pipeline",
-        # TODO - local testing - remove when have published latest mlserver
-        # conda_env="mlops"
+        local_folder=PIPELINE_LOCAL_DIR,
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = sklearn_model(payload)
@@ -96,7 +114,7 @@ def inference_pipeline_class(sklearn_model: Model, xgboost_model: Model):
     @pipeline(
         name="mypipeline",
         models=[sklearn_model, xgboost_model],
-        local_folder=os.path.join(TESTS_PATH, "artifacts/pipeline"),
+        local_folder=PIPELINE_LOCAL_DIR,
     )
     class MyClass(object):
         def __init__(self):

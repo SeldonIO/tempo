@@ -1,9 +1,20 @@
 import docker
 import numpy as np
 import pytest
+import yaml
 
 from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.pipeline import Pipeline
+
+
+def test_conda_yaml(pipeline_conda_yaml):
+    print(pipeline_conda_yaml)
+    with open(pipeline_conda_yaml) as f:
+        env = yaml.safe_load(f)
+        for dep in env["dependencies"]:
+            if dep == "pip":
+                assert dep[0] == MLServerEnvDeps[0]
 
 
 def test_deploy_pipeline_docker(
