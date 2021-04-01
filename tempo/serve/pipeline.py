@@ -2,11 +2,11 @@ from types import SimpleNamespace
 from typing import Any, Callable, Optional
 
 from tempo.serve.base import BaseModel
-from tempo.serve.types import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.protocol import Protocol
 from tempo.serve.runtime import Runtime
+from tempo.serve.types import ModelDataType
 
 
 class PipelineModels(SimpleNamespace):

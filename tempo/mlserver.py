@@ -8,8 +8,8 @@ from mlserver.utils import get_model_uri
 from .serve.metadata import RuntimeOptions
 from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.base import BaseModel
-from .serve.utils import PredictMethodAttr
 from .serve.loader import load
+from .serve.utils import PredictMethodAttr
 
 
 def _is_class(model: BaseModel) -> bool:

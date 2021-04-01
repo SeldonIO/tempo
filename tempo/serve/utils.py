@@ -4,11 +4,11 @@ from typing import Any, Callable, Optional, Type
 from inspect import getmembers, isfunction
 
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.types import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.protocol import Protocol
+from tempo.serve.types import ModelDataType
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"

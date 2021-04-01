@@ -1,7 +1,7 @@
 from typing import Any, Callable, Tuple, get_type_hints
 
+from .metadata import ModelDataArg, ModelDataArgs
 from .types import ModelDataType
-from .metadata import ModelDataArgs, ModelDataArg
 
 
 def infer_args(func: Callable[..., Any]) -> Tuple[ModelDataArgs, ModelDataArgs]:
@@ -25,9 +25,7 @@ def infer_args(func: Callable[..., Any]) -> Tuple[ModelDataArgs, ModelDataArgs]:
     return ModelDataArgs(args=input_args), ModelDataArgs(args=output_args)
 
 
-def process_datatypes(
-    inputs: ModelDataType, outputs: ModelDataType
-) -> Tuple[ModelDataArgs, ModelDataArgs]:
+def process_datatypes(inputs: ModelDataType, outputs: ModelDataType) -> Tuple[ModelDataArgs, ModelDataArgs]:
     input_args = _process_datatypes(datatypes=inputs)
     output_args = _process_datatypes(datatypes=outputs)
 

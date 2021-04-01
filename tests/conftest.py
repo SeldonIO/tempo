@@ -1,11 +1,11 @@
 import os
-from pathlib import Path
-
 import numpy as np
 import pytest
 import yaml
 
-from tempo import Model, model, ModelFramework, Pipeline, pipeline, predictmethod
+from pathlib import Path
+
+from tempo import Model, ModelFramework, Pipeline, model, pipeline, predictmethod
 from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps

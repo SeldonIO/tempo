@@ -3,10 +3,9 @@ from __future__ import annotations
 import os
 import tempfile
 
-from types import SimpleNamespace
-from os import path
 from pydoc import locate
 from typing import Any, Dict, Optional, Tuple
+from types import SimpleNamespace
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
@@ -16,9 +15,8 @@ from .constants import (
     DefaultCondaFile,
     DefaultEnvFilename,
     DefaultModelFilename,
-    ModelDataType,
 )
-from .types import PredictMethodSignature, LoadMethodSignature
+from .types import PredictMethodSignature, ModelDataType, LoadMethodSignature
 from .loader import (
     load_custom,
     save_custom,
@@ -30,11 +28,12 @@ from .metadata import (
     ModelFramework,
     RuntimeOptions,
 )
-from .remote import Remote
-from .runtime import ModelSpec, Runtime
+
+from ..kfserving import KFServingV2Protocol
 from .args import infer_args, process_datatypes
 from .protocol import Protocol
-from ..kfserving import KFServingV2Protocol
+from .remote import Remote
+from .runtime import ModelSpec, Runtime
 
 
 class BaseModel:
@@ -144,8 +143,10 @@ class BaseModel:
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            conda_env_file_path = path.join(self.details.local_folder, DefaultCondaFile)
-            if not path.exists(conda_env_file_path):
+            conda_env_file_path = os.path.join(
+                self.details.local_folder, DefaultCondaFile
+            )
+            if not os.path.exists(conda_env_file_path):
                 conda_env_file_path = None
 
             save_environment(
