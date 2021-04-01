@@ -63,7 +63,7 @@ def inference_pipeline(
 ) -> Generator[Pipeline, None, None]:
 
     # NOTE: Need to re-save the pipeline so that it knows about the runtime
-    save(inference_pipeline, runtime, save_env=False)
+    save(inference_pipeline, runtime, save_env=True)
     runtime.deploy(inference_pipeline)
     runtime.set_remote(inference_pipeline)
     runtime.wait_ready(inference_pipeline, timeout_secs=60)

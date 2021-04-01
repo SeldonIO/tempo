@@ -74,7 +74,7 @@ def inference_pipeline(sklearn_model: Model, xgboost_model: Model) -> Pipeline:
         else:
             return xgboost_model(payload)
 
-    _pipeline.save(save_env=True)
+    _pipeline.save(save_env=False)
 
     return _pipeline
 
