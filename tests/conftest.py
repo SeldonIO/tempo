@@ -32,8 +32,10 @@ def pipeline_conda_yaml() -> str:
             env = yaml.safe_load(f)
             path = Path(TESTS_PATH)
             parent = path.parent.absolute()
-            pip_deps = {"pip": MLServerEnvDeps}
+            pip_deps = {"pip": []}
             env["dependencies"].append(pip_deps)
+            for dep in MLServerEnvDeps:
+                pip_deps["pip"].append(dep)
             pip_deps["pip"].append("mlops-tempo @ file://" + str(parent))
             with open(condaPath, "w") as f2:
                 yaml.safe_dump(env, f2)
