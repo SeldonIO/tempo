@@ -1,0 +1,3 @@
+---
+kfserving_version: v0.5.1
+kfserving_yaml: https://github.com/kubeflow/kfserving/releases/download/{{ kfserving_version }}/kfserving.yaml

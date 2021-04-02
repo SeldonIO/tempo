@@ -22,5 +22,5 @@ dependencies:
   - xz=5.2.5=h7b6447c_0
   - zlib=1.2.11=h7b6447c_3
   - pip:
-    - mlops-tempo
-    - mlserver==0.3.1.dev5
+    - mlops-tempo @ file:///home/clive/work/mlops/fork-tempo
+    - mlserver==0.3.1.dev7

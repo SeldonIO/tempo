@@ -1,0 +1,11 @@
+---
+- name: Install Seldon Core
+  hosts: localhost
+  roles:
+    - ambassador
+    - seldon_core
+  vars:
+    seldon_core_version: master
+    core_values:
+      ambassador:
+        enabled: true

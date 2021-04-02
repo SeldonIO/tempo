@@ -1,0 +1,40 @@
+---
+
+#### Install
+
+- name: "Create a k8s namespaces: {{ argo_namespace }}"
+  community.kubernetes.k8s:
+    name: "{{ argo_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Install Argo Workflows
+  community.kubernetes.helm:
+    name: argo
+    release_namespace: "{{ argo_namespace }}"
+    chart_repo_url: "https://argoproj.github.io/argo-helm"
+    chart_ref: "argo"
+    chart_version: "{{ argo_version }}"
+    values: "{{ argo_values }}"
+    values_files: "{{ argo_values_files }}"
+
+- name: Wait for Argo deployments
+  community.kubernetes.k8s_info:
+    kind: Deployment
+    wait: yes
+    wait_condition:
+      type: Available
+      status: "True"
+      reason: MinimumReplicasAvailable
+    name: "{{ item }}"
+    namespace: "{{ argo_namespace }}"
+    wait_timeout: 360
+  with_items:
+    - argo-server
+    - workflow-controller
+  when: argo_wait_for_deployments | bool
+
+- name: Configure Service RBAC
+  include: rbac.yaml
+  when: argo_configure_rbac | bool

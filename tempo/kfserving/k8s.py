@@ -45,11 +45,11 @@ class KFServingKubernetesRuntime(Runtime, Remote):
     def create_k8s_client(self):
         inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         if inside_cluster:
-            print("Loading cluster local config")
+            logger.debug("Loading cluster local config")
             config.load_incluster_config()
             return True
         else:
-            print("Loading external kubernetes config")
+            logger.debug("Loading external kubernetes config")
             config.load_kube_config()
             return False
 
@@ -69,9 +69,9 @@ class KFServingKubernetesRuntime(Runtime, Remote):
     def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
         req = model_spec.protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint_spec(model_spec)
-        print("Endpoint is", endpoint)
+        logger.debug("Endpoint is", endpoint)
         headers = self.get_headers(model_spec)
-        print("Headers are", headers)
+        logger.debug("Headers are", headers)
         response_raw = requests.post(endpoint, json=req, headers=headers)
         if response_raw.status_code == 200:
             return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
@@ -189,7 +189,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                                     },
                                     {
                                         "name": "MLSERVER_MODEL_IMPLEMENTATION",
-                                        "value": "mlserver_tempo.TempoModel",
+                                        "value": "tempo.mlserver.InferenceRuntime",
                                     },
                                     {
                                         "name": "MLSERVER_MODEL_NAME",

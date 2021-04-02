@@ -1,0 +1,9 @@
+---
+- name: Install Seldon Core
+  hosts: localhost
+  roles:
+    - kind
+  vars:
+    kind_cluster_name: ansible-multi-node
+    kind_image_version: kindest/node:v1.18.15
+    kind_config_file: files/kind_config.yaml

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: seldon
+  namespace: {{ argocd_namespace }}
+spec:
+  description: Seldon Gitops Project
+  sourceRepos:
+  - {{ gitops_repository }}
+  destinations:
+{% for namespace in gitops_namespaces %}
+  - namespace: {{ namespace }}
+    server: https://kubernetes.default.svc
+{% endfor %}
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+  roles:
+  - name: seldon-admin
+    policies:
+    - p, proj:seldon:seldon-admin, applications, get, seldon/*, allow
+    - p, proj:seldon:seldon-admin, applications, create, seldon/*, allow
+    - p, proj:seldon:seldon-admin, applications, update, seldon/*, allow
+    - p, proj:seldon:seldon-admin, applications, delete, seldon/*, allow
+    - p, proj:seldon:seldon-admin, applications, sync, seldon/*, allow

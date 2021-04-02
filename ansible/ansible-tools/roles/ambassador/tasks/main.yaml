@@ -1,0 +1,19 @@
+---
+- name: "Create a k8s namespace: {{ ambassador_namespace }}"
+  community.kubernetes.k8s:
+    name: "{{ ambassador_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Install ambassador
+  community.kubernetes.helm:
+    name: ambassador
+    release_namespace: "{{ ambassador_namespace }}"
+    chart_repo_url: "https://www.getambassador.io"
+    chart_ref: "ambassador"
+    values:
+      image:
+        repository: quay.io/datawire/ambassador
+      enableAES: false
+      crds.keep: false

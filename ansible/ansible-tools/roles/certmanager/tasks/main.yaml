@@ -1,0 +1,10 @@
+---
+- name: Install Certmanager
+  community.kubernetes.k8s:
+    state: present
+    definition: "{{ lookup('url', item, split_lines=False) }}"
+  with_items:
+    - "{{ certmanager_yaml }}"
+
+
+
