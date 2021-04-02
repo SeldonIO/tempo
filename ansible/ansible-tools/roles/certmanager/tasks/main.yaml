@@ -1,10 +1,10 @@
 ---
-- name: Install Knative for Istio
+- name: Install Certmanager
   community.kubernetes.k8s:
     state: present
     definition: "{{ lookup('url', item, split_lines=False) }}"
   with_items:
-    - "{{ knative_crds }}"
-    - "{{ knative_core }}"
-    - "{{ knative_net_istio }}"      
+    - "{{ certmanager_yaml }}"
+
+
 

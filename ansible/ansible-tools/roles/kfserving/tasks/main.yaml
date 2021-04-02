@@ -1,16 +1,27 @@
 ---
-- name: Git clone KFServing repo 
-  ansible.builtin.git:
-    repo: "{{ kfserving_repo }}"
-    dest: "{{ inventory_dir }}/.resources/kfserving"
-  when: kfserving_source_dir is undefined
+- name: Install KFServing
+  community.kubernetes.k8s:
+    state: present
+    definition: "{{ lookup('url', item, split_lines=False) }}"
+  with_items:
+    - "{{ kfserving_yaml }}"
 
-- name: Set KFServing Directory
-  set_fact: kfserving_source_dir="{{ inventory_dir }}/.resources/kfserving"
-  when: kfserving_source_dir is undefined
-
-- name: Deploy KfServing
-  shell: |
-    ./hack/quick_install.sh
-  args:
-    chdir: "{{ kfserving_source_dir }}"
+- name: Update KfServing ConfigMap
+  community.kubernetes.k8s:
+    kind: ConfigMap
+    name: inferenceservice-config
+    namespace: kfserving-system
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: inferenceservice-config
+        namespace: kfserving-system
+      data:
+        ingress: |-
+                {
+                  "ingressGateway" : "knative-ingress-gateway.knative-serving",
+                  "ingressService" : "istio-ingressgateway.istio-system.svc.cluster.local",
+                  "localGateway" : "knative-local-gateway.knative-serving",
+                  "localGatewayService" : "knative-local-gateway.istio-system.svc.cluster.local"
+                }
