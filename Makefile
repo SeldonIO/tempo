@@ -27,12 +27,17 @@ fmt:
 
 .PHONY: lint
 lint:
-	flake8 .
+	flake8 . \
+		--extend-exclude "ansible"
 	mypy ./tempo
-	isort . --check
+	isort . --check \
+		--skip ansible \
+		--skip .tox \
+		--skip .eggs \
+		--skip build
 	black . \
 		--check \
-		--exclude "(.eggs|.tox)" \
+		--exclude "(.eggs|.tox|ansible|build)" \
 		--line-length 120
 
 .PHONY: install-rclone
