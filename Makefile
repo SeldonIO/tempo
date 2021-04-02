@@ -16,9 +16,13 @@ test:
 
 .PHONY: fmt
 fmt:
-	isort .
+	isort . \
+		--skip ansible \
+		--skip .tox \
+		--skip .eggs \
+		--skip build
 	black . \
-		--exclude "(.eggs|.tox)" \
+		--exclude "(.eggs|.tox|ansible|build)" \
 		--line-length 120
 
 .PHONY: lint
