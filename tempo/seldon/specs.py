@@ -2,7 +2,7 @@ import json
 
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
-from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
+from tempo.serve.metadata import ModelDetails, ModelFramework
 from tempo.serve.runtime import ModelSpec
 
 DefaultHTTPPort = "9000"
@@ -97,10 +97,8 @@ class KubernetesSpec:
     def __init__(
         self,
         model_details: ModelSpec,
-        k8s_options: KubernetesOptions,
     ):
         self._details = model_details
-        self._k8s_options = k8s_options
 
     @property
     def spec(self) -> dict:
@@ -112,7 +110,7 @@ class KubernetesSpec:
             "kind": "SeldonDeployment",
             "metadata": {
                 "name": self._details.model_details.name,
-                "namespace": self._k8s_options.namespace,
+                "namespace": self._details.runtime_options.k8s_options.namespace,
             },
             "spec": {"protocol": protocol, "predictors": [predictor]},
         }
@@ -126,8 +124,8 @@ class KubernetesSpec:
             "type": "MODEL",
         }
 
-        if self._k8s_options.authSecretName:
-            graph["envSecretRefName"] = self._k8s_options.authSecretName
+        if self._details.runtime_options.k8s_options.authSecretName:
+            graph["envSecretRefName"] = self._details.runtime_options.k8s_options.authSecretName
 
         if self._details.model_details.platform in self.Implementations:
             model_implementation = self.Implementations[self._details.model_details.platform]
@@ -139,7 +137,7 @@ class KubernetesSpec:
         predictor = {
             "graph": graph,
             "name": "default",
-            "replicas": self._k8s_options.replicas,
+            "replicas": self._details.runtime_options.k8s_options.replicas,
         }
 
         if self._details.model_details.platform == ModelFramework.TempoPipeline:

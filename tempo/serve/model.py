@@ -3,7 +3,7 @@ from typing import Any, Callable
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
-from tempo.serve.metadata import ModelFramework
+from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.protocol import Protocol
 
 
@@ -19,7 +19,7 @@ class Model(BaseModel):
         outputs: ModelDataType = None,
         model_func: Callable[..., Any] = None,
         conda_env: str = None,
-        deployed: bool = False,
+        runtime_options: RuntimeOptions = RuntimeOptions(),
     ):
         super().__init__(
             name,
@@ -31,18 +31,6 @@ class Model(BaseModel):
             inputs=inputs,
             outputs=outputs,
             conda_env=conda_env,
-            deployed=deployed,
             protocol=protocol,
+            runtime_options=runtime_options,
         )
-
-    def __call__(self, *args, **kwargs) -> Any:
-        if self._user_func is not None:
-            if self.deployed:
-                return self.remote(*args, **kwargs)
-            else:
-                if self.cls is not None:
-                    return self._user_func(self.cls, *args, **kwargs)
-                else:
-                    return self._user_func(*args, **kwargs)
-
-        return self.remote(*args, **kwargs)

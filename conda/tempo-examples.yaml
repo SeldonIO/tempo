@@ -1,0 +1,18 @@
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - pip=21.0.1=py37h06a4308_0
+  - python=3.7.9=h7579374_0
+  - pip:
+      - opencv-python-headless
+      - conda-pack
+      - jupyter
+      - mlops-tempo
+      - alibi
+      - alibi-detect==0.5.1
+      - dill
+      - mlserver==0.3.1.dev7
+      - xgboost
+      - ansible
+      - openshift

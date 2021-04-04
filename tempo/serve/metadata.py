@@ -62,3 +62,14 @@ class KubernetesOptions(BaseModel):
     maxReplicas: Optional[int] = None
     authSecretName: Optional[str] = None
     serviceAccountName: Optional[str] = None
+    defaultRuntime: str = "tempo.seldon.SeldonKubernetesRuntime"
+
+
+class DockerOptions(BaseModel):
+    defaultRuntime: str = "tempo.seldon.SeldonDockerRuntime"
+
+
+class RuntimeOptions(BaseModel):
+    runtime: Optional[str] = None
+    docker_options: DockerOptions = DockerOptions()
+    k8s_options: KubernetesOptions = KubernetesOptions()

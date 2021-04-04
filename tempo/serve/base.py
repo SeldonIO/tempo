@@ -1,17 +1,26 @@
+from __future__ import annotations
+
 import os
 import tempfile
 from os import path
+from pydoc import locate
 from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
 
 from tempo.errors import UndefinedCustomImplementation
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.constants import DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename, ModelDataType
+from tempo.serve.constants import (
+    ENV_K8S_SERVICE_HOST,
+    DefaultCondaFile,
+    DefaultEnvFilename,
+    DefaultModelFilename,
+    ModelDataType,
+)
 from tempo.serve.loader import load_custom, save_custom, save_environment
-from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework
+from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from tempo.serve.protocol import Protocol
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.utils import logger
+from tempo.utils import logger, tempo_settings
 
 
 class BaseModel:
@@ -26,14 +35,13 @@ class BaseModel:
         outputs: ModelDataType = None,
         conda_env: str = None,
         protocol: Protocol = None,
-        deployed: bool = False,
+        runtime_options: RuntimeOptions = RuntimeOptions(),
     ):
         if protocol is None:
             protocol = KFServingV2Protocol()
         self._name = name
         self._user_func = user_func
         self.conda_env_name = conda_env
-        self.deployed = deployed
 
         if uri is None:
             uri = ""
@@ -52,11 +60,12 @@ class BaseModel:
 
         self.cls = None
         self.protocol = protocol
-        self.model_spec = ModelSpec(model_details=self.details, protocol=self.protocol)
-        self.remoter: Optional[Remote] = None
+        self.model_spec = ModelSpec(model_details=self.details, protocol=self.protocol, runtime_options=runtime_options)
 
-    def set_deployed(self, val: bool):
-        self.deployed = val
+        self.use_remote: bool = False
+
+    def set_remote(self):
+        self.use_remote = True
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
@@ -123,12 +132,7 @@ class BaseModel:
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
         logger.info("Saving tempo model to %s", file_path_pkl)
-        if not self.deployed:
-            self.deployed = True
-            save_custom(self, file_path_pkl)
-            self.deployed = False
-        else:
-            save_custom(self, file_path_pkl)
+        save_custom(self, file_path_pkl)
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
@@ -173,11 +177,20 @@ class BaseModel:
 
         return response_converted
 
-    def set_remote(self, remote: Remote):
-        self.remoter = remote
+    def _create_remote(self) -> Remote:
+        cls_path = self.model_spec.runtime_options.runtime
+        if cls_path is None:
+            if tempo_settings.use_kubernetes() or os.getenv(ENV_K8S_SERVICE_HOST):
+                cls_path = self.model_spec.runtime_options.k8s_options.defaultRuntime
+            else:
+                cls_path = self.model_spec.runtime_options.docker_options.defaultRuntime
+        logger.debug("Using remote class %s", cls_path)
+        cls: Any = locate(cls_path)
+        return cls()
 
     def remote(self, *args, **kwargs):
-        return self.remoter.remote(self.model_spec, *args, **kwargs)
+        remoter = self._create_remote()
+        return remoter.remote(self.model_spec, *args, **kwargs)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
         return runtime.wait_ready_spec(self.model_spec, timeout_secs=timeout_secs)
@@ -193,11 +206,25 @@ class BaseModel:
         return runtime.to_k8s_yaml_spec(self.model_spec)
 
     def deploy(self, runtime: Runtime):
+        # self.set_runtime(runtime)
         runtime.deploy_spec(self.model_spec)
 
     def undeploy(self, runtime: Runtime):
+        # self.unset_runtime()
         logger.info("Undeploying %s", self.details.name)
         runtime.undeploy_spec(self.model_spec)
 
-    def get_tempo(self):
+    def get_tempo(self) -> BaseModel:
         return self
+
+    def __call__(self, *args, **kwargs) -> Any:
+        if not self._user_func:
+            return self.remote(*args, **kwargs)
+        else:
+            if self.use_remote:
+                return self.remote(*args, **kwargs)
+            else:
+                if self.cls is not None:
+                    return self._user_func(self.cls, *args, **kwargs)
+                else:
+                    return self._user_func(*args, **kwargs)

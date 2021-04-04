@@ -9,20 +9,13 @@ from kubernetes.client.rest import ApiException
 
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
-from tempo.serve.metadata import KubernetesOptions
+from tempo.serve.constants import ENV_K8S_SERVICE_HOST
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
 
-ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
-
 
 class SeldonKubernetesRuntime(Runtime, Remote):
-    def __init__(self, k8s_options: KubernetesOptions = None):
-        if k8s_options is None:
-            k8s_options = KubernetesOptions()
-        self.k8s_options = k8s_options
-
     def create_k8s_client(self):
         inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         if inside_cluster:
@@ -34,7 +27,9 @@ class SeldonKubernetesRuntime(Runtime, Remote):
 
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         self.create_k8s_client()
-        endpoint = Endpoint(model_spec.model_details.name, self.k8s_options.namespace, model_spec.protocol)
+        endpoint = Endpoint(
+            model_spec.model_details.name, model_spec.runtime_options.k8s_options.namespace, model_spec.protocol
+        )
         return endpoint.get_url(model_spec.model_details)
 
     def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
@@ -50,17 +45,17 @@ class SeldonKubernetesRuntime(Runtime, Remote):
         api_instance.delete_namespaced_custom_object(
             "machinelearning.seldon.io",
             "v1",
-            self.k8s_options.namespace,
+            model_spec.runtime_options.k8s_options.namespace,
             "seldondeployments",
             model_spec.model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
         )
 
-    def deploy_spec(self, model_details: ModelSpec):
+    def deploy_spec(self, model_spec: ModelSpec):
         self.create_k8s_client()
-        k8s_spec = KubernetesSpec(model_details, self.k8s_options)
-        model_spec = k8s_spec.spec
-        logger.debug(model_spec)
+        k8s_specer = KubernetesSpec(model_spec)
+        k8s_spec = k8s_specer.spec
+        logger.debug(k8s_spec)
 
         api_instance = client.CustomObjectsApi()
 
@@ -68,27 +63,27 @@ class SeldonKubernetesRuntime(Runtime, Remote):
             existing = api_instance.get_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
-                self.k8s_options.namespace,
+                model_spec.runtime_options.k8s_options.namespace,
                 "seldondeployments",
-                model_details.model_details.name,
+                model_spec.model_details.name,
             )
-            model_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
+            k8s_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
-                self.k8s_options.namespace,
+                model_spec.runtime_options.k8s_options.namespace,
                 "seldondeployments",
-                model_details.model_details.name,
-                model_spec,
+                model_spec.model_details.name,
+                k8s_spec,
             )
         except ApiException as e:
             if e.status == 404:
                 api_instance.create_namespaced_custom_object(
                     "machinelearning.seldon.io",
                     "v1",
-                    self.k8s_options.namespace,
+                    model_spec.runtime_options.k8s_options.namespace,
                     "seldondeployments",
-                    model_spec,
+                    k8s_spec,
                 )
             else:
                 raise e
@@ -102,7 +97,7 @@ class SeldonKubernetesRuntime(Runtime, Remote):
             existing = api_instance.get_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
-                self.k8s_options.namespace,
+                model_spec.runtime_options.k8s_options.namespace,
                 "seldondeployments",
                 model_spec.model_details.name,
             )
@@ -115,5 +110,5 @@ class SeldonKubernetesRuntime(Runtime, Remote):
         return ready
 
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
-        k8s_spec = KubernetesSpec(model_spec, self.k8s_options)
+        k8s_spec = KubernetesSpec(model_spec)
         return yaml.safe_dump(k8s_spec.spec)

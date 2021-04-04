@@ -4,7 +4,6 @@
   roles:
     - kind
     - metallb
-    - ambassador
     - istio
     - minio
     - seldon_core

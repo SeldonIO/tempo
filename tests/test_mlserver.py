@@ -5,14 +5,12 @@ from mlserver.utils import to_ndarray
 
 from tempo import Model
 from tempo.mlserver import InferenceRuntime
-from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.serve.loader import save
 
 
 @pytest.fixture
 def model_settings(custom_model: Model) -> ModelSettings:
-    runtime = SeldonDockerRuntime()
-    save(custom_model, runtime, save_env=False)
+    save(custom_model, save_env=False)
     pipeline_uri = custom_model.details.local_folder
 
     return ModelSettings(
@@ -49,6 +47,7 @@ async def test_predict(
     assert len(res.outputs) == 1
 
     pipeline_input = to_ndarray(inference_request.inputs[0])
+    custom_model.get_tempo().use_remote = False  # ensure direct call to class does not try to do remote
     expected_output = custom_model(pipeline_input)
 
     pipeline_output = res.outputs[0].data

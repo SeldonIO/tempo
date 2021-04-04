@@ -17,7 +17,6 @@ def runtime() -> SeldonDockerRuntime:
 @pytest.fixture
 def sklearn_model(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
     runtime.deploy(sklearn_model)
-    runtime.set_remote(sklearn_model)
     runtime.wait_ready(sklearn_model, timeout_secs=60)
 
     yield sklearn_model
@@ -33,7 +32,6 @@ def sklearn_model(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generat
 @pytest.fixture
 def xgboost_model(xgboost_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
     runtime.deploy(xgboost_model)
-    runtime.set_remote(xgboost_model)
     runtime.wait_ready(xgboost_model, timeout_secs=60)
 
     yield xgboost_model
@@ -63,9 +61,8 @@ def inference_pipeline(
 ) -> Generator[Pipeline, None, None]:
 
     # NOTE: Need to re-save the pipeline so that it knows about the runtime
-    save(inference_pipeline, runtime, save_env=True)
+    save(inference_pipeline, save_env=True)
     runtime.deploy(inference_pipeline)
-    runtime.set_remote(inference_pipeline)
     runtime.wait_ready(inference_pipeline, timeout_secs=60)
     # TODO: Fix wait_ready for pipelines
     time.sleep(8)

@@ -122,5 +122,5 @@ class SeldonDeployRuntime(Runtime, Remote):
         return model_spec.protocol.from_protocol_response(prediction, model_spec.model_details.outputs)
 
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
-        srt = SeldonKubernetesRuntime(k8s_options=self._k8s_options)
+        srt = SeldonKubernetesRuntime()
         return srt.to_k8s_yaml_spec(model_spec)
