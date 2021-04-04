@@ -5,7 +5,6 @@ from mlserver.utils import to_ndarray
 
 from tempo import Model
 from tempo.mlserver import InferenceRuntime
-from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.serve.loader import save
 
 
