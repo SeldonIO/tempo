@@ -16,7 +16,6 @@ from tempo.utils import logger
 
 
 class SeldonKubernetesRuntime(Runtime, Remote):
-
     def create_k8s_client(self):
         inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         if inside_cluster:
@@ -28,7 +27,9 @@ class SeldonKubernetesRuntime(Runtime, Remote):
 
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         self.create_k8s_client()
-        endpoint = Endpoint(model_spec.model_details.name, model_spec.runtime_options.k8s_options.namespace, model_spec.protocol)
+        endpoint = Endpoint(
+            model_spec.model_details.name, model_spec.runtime_options.k8s_options.namespace, model_spec.protocol
+        )
         return endpoint.get_url(model_spec.model_details)
 
     def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
@@ -52,8 +53,8 @@ class SeldonKubernetesRuntime(Runtime, Remote):
 
     def deploy_spec(self, model_spec: ModelSpec):
         self.create_k8s_client()
-        k8s_spec = KubernetesSpec(model_spec)
-        k8s_spec = k8s_spec.spec
+        k8s_specer = KubernetesSpec(model_spec)
+        k8s_spec = k8s_specer.spec
         logger.debug(k8s_spec)
 
         api_instance = client.CustomObjectsApi()

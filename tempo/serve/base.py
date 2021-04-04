@@ -1,14 +1,20 @@
 from __future__ import annotations
+
 import os
 import tempfile
 from os import path
-from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
 from pydoc import locate
+from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
 
 from tempo.errors import UndefinedCustomImplementation
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.constants import DefaultCondaFile, DefaultEnvFilename, \
-    DefaultModelFilename, ModelDataType, ENV_K8S_SERVICE_HOST
+from tempo.serve.constants import (
+    ENV_K8S_SERVICE_HOST,
+    DefaultCondaFile,
+    DefaultEnvFilename,
+    DefaultModelFilename,
+    ModelDataType,
+)
 from tempo.serve.loader import load_custom, save_custom, save_environment
 from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from tempo.serve.protocol import Protocol
@@ -178,7 +184,7 @@ class BaseModel:
                 cls_path = self.model_spec.runtime_options.k8s_options.defaultRuntime
             else:
                 cls_path = self.model_spec.runtime_options.docker_options.defaultRuntime
-        logger.debug("Using remote class %s",cls_path)
+        logger.debug("Using remote class %s", cls_path)
         cls: Any = locate(cls_path)
         return cls()
 
@@ -200,11 +206,11 @@ class BaseModel:
         return runtime.to_k8s_yaml_spec(self.model_spec)
 
     def deploy(self, runtime: Runtime):
-        #self.set_runtime(runtime)
+        # self.set_runtime(runtime)
         runtime.deploy_spec(self.model_spec)
 
     def undeploy(self, runtime: Runtime):
-        #self.unset_runtime()
+        # self.unset_runtime()
         logger.info("Undeploying %s", self.details.name)
         runtime.undeploy_spec(self.model_spec)
 

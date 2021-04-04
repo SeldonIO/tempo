@@ -49,7 +49,7 @@ async def test_predict(
     assert len(res.outputs) == 1
 
     pipeline_input = to_ndarray(inference_request.inputs[0])
-    custom_model.unset_runtime() # ensure direct call to class does not try to do remote
+    custom_model.unset_runtime()  # ensure direct call to class does not try to do remote
     expected_output = custom_model(pipeline_input)
 
     pipeline_output = res.outputs[0].data

@@ -9,13 +9,14 @@ def _get_logger():
 
 
 def _get_env():
-    if os.environ.get("a",None):
+    if os.environ.get("a", None):
         pass
+
 
 logger = _get_logger()
 
-class TempoSettings():
 
+class TempoSettings:
     def __init__(self):
         self.kubernetes = False
 

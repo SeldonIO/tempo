@@ -2,7 +2,7 @@ import json
 
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
-from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework
+from tempo.serve.metadata import ModelDetails, ModelFramework
 from tempo.serve.runtime import ModelSpec
 
 DefaultHTTPPort = "9000"

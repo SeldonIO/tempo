@@ -9,8 +9,8 @@ from tempo import Model, ModelFramework, Pipeline, pipeline, predictmethod
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
+from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
 from tempo.serve.utils import model
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -52,7 +52,7 @@ def sklearn_model() -> Model:
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
         protocol=SeldonProtocol(),
-        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace="production", replicas=1))
+        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace="production", replicas=1)),
     )
 
 

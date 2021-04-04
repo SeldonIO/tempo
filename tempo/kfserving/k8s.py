@@ -11,7 +11,7 @@ from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
-from tempo.serve.metadata import KubernetesOptions, ModelFramework
+from tempo.serve.metadata import ModelFramework
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
@@ -32,7 +32,6 @@ Implementations = {
 
 
 class KFServingKubernetesRuntime(Runtime, Remote):
-
     def _inside_cluster(self):
         return os.getenv(ENV_K8S_SERVICE_HOST)
 
@@ -218,7 +217,9 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 },
             }
             if model_spec.runtime_options.k8s_options.serviceAccountName is not None:
-                spec["spec"]["predictor"]["serviceAccountName"] = model_spec.runtime_options.k8s_options.serviceAccountName
+                spec["spec"]["predictor"][
+                    "serviceAccountName"
+                ] = model_spec.runtime_options.k8s_options.serviceAccountName
             if isinstance(model_spec.protocol, KFServingV2Protocol):
                 spec["spec"]["predictor"][model_implementation]["protocolVersion"] = "v2"
             return spec

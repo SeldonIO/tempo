@@ -39,7 +39,7 @@ def pipeline(
                 pipeline_func=func,
                 conda_env=conda_env,
                 protocol=protocol,
-                runtime_options=runtime_options
+                runtime_options=runtime_options,
             )
             setattr(K, "request", K.pipeline.request)
             setattr(K, "remote", K.pipeline.remote)

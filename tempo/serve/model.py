@@ -32,5 +32,5 @@ class Model(BaseModel):
             outputs=outputs,
             conda_env=conda_env,
             protocol=protocol,
-            runtime_options=runtime_options
+            runtime_options=runtime_options,
         )

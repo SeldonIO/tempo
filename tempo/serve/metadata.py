@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import List, Optional, Type, Union
+
 from pydantic import BaseModel
 
 
@@ -63,11 +64,12 @@ class KubernetesOptions(BaseModel):
     serviceAccountName: Optional[str] = None
     defaultRuntime: str = "tempo.seldon.SeldonKubernetesRuntime"
 
+
 class DockerOptions(BaseModel):
     defaultRuntime: str = "tempo.seldon.SeldonDockerRuntime"
 
+
 class RuntimeOptions(BaseModel):
-    runtime: str = None
+    runtime: Optional[str] = None
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
-
