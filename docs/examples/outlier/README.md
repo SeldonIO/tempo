@@ -1,15 +1,30 @@
 # Outlier Detection with CIFAR10 using Alibi-Detect
 
+This e
 
 
-## Conda env create
 
-We create a conda environment for the runtime of our explainer from the `./artifacts/income_explainer/conda.yaml`
-**This only needs to be done once**.
+## Prerequisites
+
+This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create with:
+
+```bash
+conda env create --name tempo-examples --file tempo-examples.yaml
+```
 
 
 ```python
-!conda env create --name tempo-outlier-example --file ./artifacts/cifar10_outlier/conda.yaml
+!cat ../../../conda/tempo-examples.yaml
+```
+
+
+```python
+from IPython.core.magic import register_line_cell_magic
+
+@register_line_cell_magic
+def writetemplate(line, cell):
+    with open(line, 'w') as f:
+        f.write(cell.format(**globals()))
 ```
 
 
@@ -18,7 +33,7 @@ import cloudpickle
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from tempo.serve.metadata import ModelFramework
+from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
@@ -26,6 +41,7 @@ from tempo.serve.utils import pipeline, predictmethod, model
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.kfserving.k8s import KFServingKubernetesRuntime
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
+from tempo.serve.loader import save, upload, download
 from alibi.utils.wrappers import ArgmaxTransformer
 from typing import Any
 
@@ -37,6 +53,9 @@ import json
 OUTLIER_FOLDER = os.getcwd()+"/artifacts/cifar10_outlier"
 MODEL_FOLDER = os.getcwd()+"/artifacts/cifar10_model"
 SVC_FOLDER = os.getcwd()+"/artifacts/svc"
+
+import logging
+logging.basicConfig(level=logging.INFO)
 ```
 
 
@@ -107,13 +126,73 @@ class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer',
                'dog', 'frog', 'horse', 'ship', 'truck']
 ```
 
+
+```python
+%%writefile rclone.conf
+[gcs]
+type = google cloud storage
+anonymous = true
+```
+
+
+```python
+load_pretrained = True
+if load_pretrained:  # load pre-trained detector
+    !rclone copy gs://seldon-models/tempo/cifar10/outlier/cifar10 ./artifacts/cifar10_outlier/cifar10
+else:  # define model, initialize, train and save outlier detector
+
+    # define encoder and decoder networks
+    latent_dim = 1024
+    encoder_net = tf.keras.Sequential(
+      [
+          InputLayer(input_shape=(32, 32, 3)),
+          Conv2D(64, 4, strides=2, padding='same', activation=tf.nn.relu),
+          Conv2D(128, 4, strides=2, padding='same', activation=tf.nn.relu),
+          Conv2D(512, 4, strides=2, padding='same', activation=tf.nn.relu)
+      ]
+    )
+
+    decoder_net = tf.keras.Sequential(
+      [
+          InputLayer(input_shape=(latent_dim,)),
+          Dense(4*4*128),
+          Reshape(target_shape=(4, 4, 128)),
+          Conv2DTranspose(256, 4, strides=2, padding='same', activation=tf.nn.relu),
+          Conv2DTranspose(64, 4, strides=2, padding='same', activation=tf.nn.relu),
+          Conv2DTranspose(3, 4, strides=2, padding='same', activation='sigmoid')
+      ]
+    )
+
+    # initialize outlier detector
+    od = OutlierVAE(
+        threshold=.015,  # threshold for outlier score
+        encoder_net=encoder_net,  # can also pass VAE model instead
+        decoder_net=decoder_net,  # of separate encoder and decoder
+        latent_dim=latent_dim
+    )
+
+    # train
+    od.fit(X_train, epochs=50, verbose=False)
+
+    # save the trained outlier detector
+    save_detector(od, filepath)
+```
+
 ## Create Tempo Artifacts
 
 
 ```python
+runtimeOptions=RuntimeOptions(  
+                              k8s_options=KubernetesOptions( 
+                                        namespace="production",
+                                        authSecretName="minio-secret")
+                              )
+
+
 cifar10_model = Model(
         name="resnet32",
-        runtime=SeldonDockerRuntime(protocol=KFServingV1Protocol()),
+        protocol=KFServingV1Protocol(),
+        runtime_options=runtimeOptions,
         platform=ModelFramework.Tensorflow,
         uri="gs://seldon-models/tfserving/cifar10/resnet32",
         local_folder=MODEL_FOLDER,
@@ -122,9 +201,9 @@ cifar10_model = Model(
 @model(
         name="outlier",
         platform=ModelFramework.TempoPipeline,
-        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
-        uri="gs://seldon-models/tempo/cifar10/outlier",
-        conda_env="tempo-outlier-example",
+        protocol=KFServingV2Protocol(),
+        runtime_options=runtimeOptions,
+        uri="s3://tempo/outlier/cifar10/outlier",
         local_folder=OUTLIER_FOLDER,
     )
 class OutlierModel(object):
@@ -160,9 +239,9 @@ outlier = OutlierModel()
 
 @pipeline(
         name="cifar10-service",
-        runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
-        uri="gs://seldon-models/tempo/cifar10/svc",
-        conda_env="tempo-outlier-example",
+        protocol=KFServingV2Protocol(),
+        runtime_options=runtimeOptions,
+        uri="s3://tempo/outlier/cifar10/svc",
         local_folder=SVC_FOLDER,
         models=[outlier, cifar10_model]
     )
@@ -194,85 +273,76 @@ X_mask, mask = apply_mask(X.reshape(1, 32, 32, 3),
                                   clip_rng=(0,1))
 ```
 
+## Saving Artifacts
+
+
+```python
+import sys
+import os
+PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
+```
+
+
+```python
+%%writetemplate artifacts/cifar10_outlier/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python={PYTHON_VERSION}
+  - pip:
+    - alibi-detect
+    - dill
+    - opencv-python-headless
+    - mlops-tempo @ file://{TEMPO_DIR}
+    - mlserver==0.3.1.dev7
+```
+
+FIXME: remove alibi-detect from pip in below when isolated
+
+
+```python
+%%writetemplate artifacts/svc/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python={PYTHON_VERSION}
+  - pip:
+    - alibi-detect
+    - dill
+    - opencv-python-headless
+    - mlops-tempo @ file://{TEMPO_DIR}
+    - mlserver==0.3.1.dev7
+```
+
+
+```python
+outlier = OutlierModel()
+save(outlier, save_env=True)
+```
+
+
+```python
+svc = Cifar10()
+save(svc, save_env=True)
+```
+
 ## Test on docker with local pipelines
 
 
 ```python
-cifar10_model.download()
-```
-
-
-```python
-cifar10_model.deploy()
-cifar10_model.wait_ready()
-```
-
-
-```python
-idx = 1
-X = X_test[idx].reshape(1, 32, 32, 3)
-plt.imshow(X.reshape(32, 32, 3))
-plt.axis('off')
-plt.show()
-print("class:",class_names[y_test[idx][0]])
-print("prediction:",class_names[cifar10_model(X_test[idx:idx+1])[0].argmax()])
-```
-
-
-```python
-show_image(X_mask)
-r = outlier(payload=X_mask)
-print("Is outlier:",r["data"]["is_outlier"][0] == 1)
-```
-
-
-```python
-svc.predict(X_test[idx:idx+1])
-```
-
-
-```python
-svc.predict(X_mask)
-```
-
-## Test on Outlier on docker 
-
-
-```python
-outlier.unload()
-outlier.save(save_env=True)
-```
-
-
-```python
-outlier.deploy()
-```
-
-
-```python
-show_image(X_mask)
-r = outlier.remote(payload=X_mask)
-print("Is outlier:",r["data"]["is_outlier"][0] == 1)
-```
-
-
-```python
-show_image(X_test[0:1])
-r = outlier.remote(payload=X_test[0:1])
-print("Is outlier:",r["data"]["is_outlier"][0] == 1)
+download(cifar10_model)
 ```
 
 ## Test Svc on docker
 
 
 ```python
-outlier.unload()
-svc.save(save_env=True)
-```
-
-
-```python
-svc.deploy()
+docker_runtime = SeldonDockerRuntime()
+docker_runtime.deploy(svc)
+docker_runtime.wait_ready(svc)
 ```
 
 
@@ -289,6 +359,18 @@ svc.remote(payload=X_mask)
 
 ## Deploy to Kubernetes
 
+To create a Kubernetes cluster in Kind with all the required install use the ansible playbook defined  below.
+Create with
+
+```bash
+ansible-playbook ansible/playbooks/default.yaml
+```
+
+
+```python
+!cat ../../../ansible/playbooks/default.yaml
+```
+
 
 ```python
 !kubectl create namespace production
@@ -299,35 +381,77 @@ svc.remote(payload=X_mask)
 !kubectl apply -f ../../../k8s/tempo-pipeline-rbac.yaml -n production
 ```
 
+
+```python
+%%writefile minio-secret.yaml
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-secret
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: minioadmin
+  AWS_SECRET_ACCESS_KEY: minioadmin
+  AWS_ENDPOINT_URL: http://minio.minio-system.svc.cluster.local:9000
+  USE_SSL: "false"
+```
+
+
+```python
+!kubectl apply -f minio-secret.yaml -n production
+```
+
+### Uploading artifacts
+
+
+```python
+MINIO_IP=!kubectl get svc minio -n minio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+MINIO_IP=MINIO_IP[0]
+```
+
+
+```python
+%%writetemplate rclone.conf
+[gcs]
+type = google cloud storage
+anonymous = true
+
+[s3]
+type = s3
+provider = minio
+env_auth = false
+access_key_id = minioadmin
+secret_access_key = minioadmin
+endpoint = http://{MINIO_IP}:9000
+```
+
+
+```python
+import os
+from tempo.conf import settings
+settings.rclone_cfg = os.getcwd() + "/rclone.conf"
+```
+
+
+```python
+upload(outlier)
+upload(svc)
+```
+
 ## Deploy to Kubernetes with Seldon
 
 
 ```python
-k8s_options = KubernetesOptions(namespace="production")
-k8s_v1_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV1Protocol())
-k8s_v2_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
-
-cifar10_model.set_runtime(k8s_v1_runtime)
-outlier.set_runtime(k8s_v2_runtime)
-svc.set_runtime(k8s_v2_runtime)
+k8s_runtime = SeldonKubernetesRuntime()
+k8s_runtime.deploy(svc)
+k8s_runtime.wait_ready(svc)
 ```
 
 
 ```python
-outlier.save(save_env=False)
-outlier.upload()
-```
-
-
-```python
-#svc.save(save_env=False)
-svc.upload()
-```
-
-
-```python
-svc.deploy()
-svc.wait_ready()
+from tempo.utils import tempo_settings
+tempo_settings.remote_kubernetes(True)
 ```
 
 
@@ -344,85 +468,7 @@ svc.remote(payload=X_mask)
 
 
 ```python
-svc.undeploy()
-```
-
-## Deploy to Kubernetes with KFServing
-
-
-```python
-k8s_options = KubernetesOptions(namespace="production")
-k8s_v1_runtime = KFServingKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV1Protocol())
-k8s_v2_runtime = KFServingKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
-
-cifar10_model.set_runtime(k8s_v1_runtime)
-outlier.set_runtime(k8s_v2_runtime)
-svc.set_runtime(k8s_v2_runtime)
-```
-
-
-```python
-cifar10_model.deploy()
-cifar10_model.wait_ready()
-```
-
-
-```python
-idx = 1
-X = X_test[idx].reshape(1, 32, 32, 3)
-plt.imshow(X.reshape(32, 32, 3))
-plt.axis('off')
-plt.show()
-print("class:",class_names[y_test[idx][0]])
-print("prediction:",class_names[cifar10_model(X_test[idx:idx+1])[0].argmax()])
-```
-
-
-```python
-outlier.save(save_env=True)
-outlier.upload()
-```
-
-
-```python
-outlier.deploy()
-outlier.wait_ready()
-```
-
-
-```python
-show_image(X_mask)
-r = outlier.remote(payload=X_mask)
-print("Is outlier:",r["data"]["is_outlier"][0] == 1)
-```
-
-
-```python
-svc.save(save_env=True)
-svc.upload()
-```
-
-
-```python
-svc.deploy()
-svc.wait_ready()
-```
-
-
-```python
-show_image(X_test[0:1])
-svc.remote(payload=X_test[0:1])
-```
-
-
-```python
-show_image(X_mask)
-svc.remote(payload=X_mask)
-```
-
-
-```python
-svc.undeploy()
+k8s_runtime.undeploy(svc)
 ```
 
 

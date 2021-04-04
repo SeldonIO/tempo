@@ -32,19 +32,12 @@ Implementations = {
 
 
 class KFServingKubernetesRuntime(Runtime, Remote):
-    def __init__(self, k8s_options: KubernetesOptions = None, protocol=None):
-        if k8s_options is None:
-            k8s_options = KubernetesOptions()
-        self.k8s_options = k8s_options
-        if self.k8s_options.serviceAccountName is None:
-            self.serviceAccountName = DefaultServiceAccountName
-        else:
-            self.serviceAccountName = self.k8s_options.serviceAccountName
-        self.inside_cluster = self.create_k8s_client()
+
+    def _inside_cluster(self):
+        return os.getenv(ENV_K8S_SERVICE_HOST)
 
     def create_k8s_client(self):
-        inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
-        if inside_cluster:
+        if self._inside_cluster():
             logger.debug("Loading cluster local config")
             config.load_incluster_config()
             return True
@@ -54,13 +47,12 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             return False
 
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
-        endpoint = Endpoint(model_spec, self.k8s_options.namespace)
+        endpoint = Endpoint(model_spec, model_spec.runtime_options.k8s_options.namespace)
         return endpoint.get_url()
 
     def get_headers(self, model_spec: ModelSpec) -> Dict[str, str]:
-        self.inside_cluster = self.create_k8s_client()
-        if not self.inside_cluster:
-            endpoint = Endpoint(model_spec, self.k8s_options.namespace)
+        if not self._inside_cluster():
+            endpoint = Endpoint(model_spec, model_spec.runtime_options.k8s_options.namespace)
             service_host = endpoint.get_service_host()
             return {"Host": service_host}
         else:
@@ -79,11 +71,12 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             raise ValueError("Bad return code", response_raw.status_code, response_raw.text)
 
     def undeploy_spec(self, model_spec: ModelSpec):
+        self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
         api_instance.delete_namespaced_custom_object(
             "serving.kubeflow.org",
             "v1beta1",
-            self.k8s_options.namespace,
+            model_spec.runtime_options.k8s_options.namespace,
             "inferenceservices",
             model_spec.model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
@@ -92,14 +85,14 @@ class KFServingKubernetesRuntime(Runtime, Remote):
     def deploy_spec(self, model_spec: ModelSpec):
         spec = self._get_spec(model_spec)
         logger.debug(model_spec)
-
+        self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
 
         try:
             existing = api_instance.get_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
-                self.k8s_options.namespace,
+                model_spec.runtime_options.k8s_options.namespace,
                 "inferenceservices",
                 model_spec.model_details.name,
             )
@@ -107,7 +100,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             api_instance.replace_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
-                self.k8s_options.namespace,
+                model_spec.runtime_options.k8s_options.namespace,
                 "inferenceservices",
                 model_spec.model_details.name,
                 spec,
@@ -117,7 +110,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 api_instance.create_namespaced_custom_object(
                     "serving.kubeflow.org",
                     "v1beta1",
-                    self.k8s_options.namespace,
+                    model_spec.runtime_options.k8s_options.namespace,
                     "inferenceservices",
                     spec,
                 )
@@ -125,6 +118,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 raise e
 
     def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
+        self.create_k8s_client()
         ready = False
         t0 = time.time()
         while not ready:
@@ -132,7 +126,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             existing = api_instance.get_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
-                self.k8s_options.namespace,
+                model_spec.runtime_options.k8s_options.namespace,
                 "inferenceservices",
                 model_spec.model_details.name,
             )
@@ -160,16 +154,19 @@ class KFServingKubernetesRuntime(Runtime, Remote):
 
     def _get_spec(self, model_spec: ModelSpec) -> dict:
         if model_spec.model_details.platform == ModelFramework.TempoPipeline:
+            serviceAccountName = model_spec.runtime_options.k8s_options.serviceAccountName
+            if serviceAccountName is None:
+                serviceAccountName = DefaultServiceAccountName
             return {
                 "apiVersion": "serving.kubeflow.org/v1beta1",
                 "kind": "InferenceService",
                 "metadata": {
                     "name": model_spec.model_details.name,
-                    "namespace": self.k8s_options.namespace,
+                    "namespace": model_spec.runtime_options.k8s_options.namespace,
                 },
                 "spec": {
                     "predictor": {
-                        "serviceAccountName": self.serviceAccountName,
+                        "serviceAccountName": serviceAccountName,
                         "containers": [
                             {
                                 "image": MLSERVER_IMAGE,
@@ -212,7 +209,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 "kind": "InferenceService",
                 "metadata": {
                     "name": model_spec.model_details.name,
-                    "namespace": self.k8s_options.namespace,
+                    "namespace": model_spec.runtime_options.k8s_options.namespace,
                 },
                 "spec": {
                     "predictor": {
@@ -220,8 +217,8 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                     },
                 },
             }
-            if self.k8s_options.serviceAccountName is not None:
-                spec["spec"]["predictor"]["serviceAccountName"] = self.k8s_options.serviceAccountName
+            if model_spec.runtime_options.k8s_options.serviceAccountName is not None:
+                spec["spec"]["predictor"]["serviceAccountName"] = model_spec.runtime_options.k8s_options.serviceAccountName
             if isinstance(model_spec.protocol, KFServingV2Protocol):
                 spec["spec"]["predictor"][model_implementation]["protocolVersion"] = "v2"
             return spec

@@ -12,15 +12,13 @@ import yaml
 
 from tempo.conf import settings
 from tempo.serve.constants import DefaultModelFilename, DefaultRemoteFilename, MLServerEnvDeps
-from tempo.serve.remote import Remote
 from tempo.utils import logger
 
 
-def save(tempo_artifact: Any, remote: Remote = None, save_env=True):
+def save(tempo_artifact: Any, save_env=True):
     model = tempo_artifact.get_tempo()
+    model.set_remote()
     model.save(save_env=save_env)
-    if remote is not None:
-        save_remote(remote, model.details.local_folder)
 
 
 def save_custom(pipeline, file_path: str) -> str:
@@ -38,15 +36,6 @@ def load(folder: str):
 def load_custom(file_path: str):
     with open(file_path, "rb") as file:
         return cloudpickle.load(file)
-
-
-def save_remote(remote, folder: str) -> str:
-    file_path = os.path.join(folder, DefaultRemoteFilename)
-    logger.info("Saving remote to %s", file_path)
-    with open(file_path, "wb") as file:
-        cloudpickle.dump(remote, file)
-
-    return file_path
 
 
 def load_remote(folder: str):

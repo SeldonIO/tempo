@@ -3,7 +3,7 @@ from typing import Any, List
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.constants import ModelDataType
-from tempo.serve.metadata import ModelFramework
+from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
 from tempo.serve.protocol import Protocol
@@ -18,7 +18,7 @@ def pipeline(
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
-    deployed: bool = False,
+    runtime_options: RuntimeOptions = RuntimeOptions(),
 ):
     def _pipeline(f):
         if inspect.isclass(f):
@@ -38,8 +38,8 @@ def pipeline(
                 outputs=outputs,
                 pipeline_func=func,
                 conda_env=conda_env,
-                deployed=deployed,
                 protocol=protocol,
+                runtime_options=runtime_options
             )
             setattr(K, "request", K.pipeline.request)
             setattr(K, "remote", K.pipeline.remote)
@@ -70,8 +70,8 @@ def pipeline(
                 outputs=outputs,
                 pipeline_func=f,
                 conda_env=conda_env,
-                deployed=deployed,
                 protocol=protocol,
+                runtime_options=runtime_options,
             )
 
     return _pipeline
@@ -90,8 +90,8 @@ def model(
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
-    deployed: bool = False,
     protocol: Protocol = KFServingV2Protocol(),
+    runtime_options: RuntimeOptions = RuntimeOptions(),
 ):
     def _model(f):
         if inspect.isclass(f):
@@ -113,7 +113,7 @@ def model(
                 outputs=outputs,
                 model_func=func,
                 conda_env=conda_env,
-                deployed=deployed,
+                runtime_options=runtime_options,
             )
 
             setattr(K, "request", K.pipeline.request)
@@ -146,6 +146,7 @@ def model(
                 outputs=outputs,
                 model_func=f,
                 conda_env=conda_env,
+                runtime_options=runtime_options,
             )
 
     return _model

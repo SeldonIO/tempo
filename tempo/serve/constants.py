@@ -17,3 +17,5 @@ DefaultEnvFilename = "environment.tar.gz"
 # TODO: Update once tempo is published
 MLServerEnvDeps = ["mlserver==0.3.1.dev7"]
 DefaultCondaFile = "conda.yaml"
+
+ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"

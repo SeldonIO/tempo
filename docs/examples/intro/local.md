@@ -13,6 +13,16 @@ We will show two Iris dataset prediction models combined with service orchestrat
 
 ![architecture](architecture.png)
 
+
+```python
+from IPython.core.magic import register_line_cell_magic
+
+@register_line_cell_magic
+def writetemplate(line, cell):
+    with open(line, 'w') as f:
+        f.write(cell.format(**globals()))
+```
+
 ## Train Iris Models
 
 We will train:
@@ -61,7 +71,7 @@ from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.utils import pipeline, predictmethod
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.utils import pipeline
-from tempo.serve.loader import save_remote, load_remote, save
+from tempo.serve.loader import save
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -87,8 +97,6 @@ xgboost_model = Model(
 )
 
 @pipeline(name="classifier",
-          #TODO: Remove after development when mlserver published
-          conda_env="tempo-minimal",
           uri="s3://tempo/basic/pipeline",
           local_folder=PIPELINE_ARTIFACTS_FOLDER,
           models=[sklearn_model, xgboost_model])
@@ -115,45 +123,35 @@ We provide a conda yaml in out `local_folder` which tempo will use as the runtim
 
 
 ```python
-%%writefile artifacts/classifier/conda.yaml
-name: tempo
-channels:
-  - defaults
-dependencies:
-  - _libgcc_mutex=0.1=main
-  - ca-certificates=2021.1.19=h06a4308_0
-  - certifi=2020.12.5=py37h06a4308_0
-  - ld_impl_linux-64=2.33.1=h53a641e_7
-  - libedit=3.1.20191231=h14c3975_1
-  - libffi=3.3=he6710b0_2
-  - libgcc-ng=9.1.0=hdf63c60_0
-  - libstdcxx-ng=9.1.0=hdf63c60_0
-  - ncurses=6.2=he6710b0_1
-  - openssl=1.1.1j=h27cfd23_0
-  - pip=21.0.1=py37h06a4308_0
-  - python=3.7.9=h7579374_0
-  - readline=8.1=h27cfd23_0
-  - setuptools=52.0.0=py37h06a4308_0
-  - sqlite=3.33.0=h62c20be_0
-  - tk=8.6.10=hbc83047_0
-  - wheel=0.36.2=pyhd3eb1b0_0
-  - xz=5.2.5=h7b6447c_0
-  - zlib=1.2.11=h7b6447c_3
-  - pip:
-    - mlops-tempo
-    - mlserver==0.3.1.dev5
+import sys
+import os
+PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
 ```
 
 
 ```python
-docker_runtime = SeldonDockerRuntime()
-save(classifier, docker_runtime, save_env=True)
+%%writetemplate artifacts/classifier/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python={PYTHON_VERSION}
+  - pip:
+    - mlops-tempo @ file://{TEMPO_DIR}
+    - mlserver==0.3.1.dev7
+```
+
+
+```python
+save(classifier, save_env=True)
 ```
 
 ### Deploying pipeline
 
 
 ```python
+docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(classifier)
 docker_runtime.wait_ready(classifier)
 ```
@@ -163,11 +161,6 @@ docker_runtime.wait_ready(classifier)
 We can send requests to the deployed components with either the python code for the classifier running locally or remotely. 
 
 First we test calling the classifer locally. It will call out to the remote models running in Docker.
-
-
-```python
-docker_runtime.set_remote(classifier)
-```
 
 
 ```python

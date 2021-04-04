@@ -52,7 +52,7 @@ def test_deploy_pipeline_docker(
         ),
     ],
 )
-def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
+def test_pipeline_remote(inference_pipeline: Pipeline, runtime: SeldonDockerRuntime, x_input):
     y_pred = inference_pipeline.remote(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)

@@ -63,7 +63,7 @@ This pipeline will access 2 models, stored remotely.
 import os
 import numpy as np
 from typing import Tuple
-from tempo.serve.metadata import ModelFramework, KubernetesOptions
+from tempo.serve.metadata import ModelFramework, KubernetesOptions, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.docker import SeldonDockerRuntime
@@ -81,10 +81,19 @@ SKLEARN_FOLDER = os.getcwd()+"/artifacts/sklearn"
 XGBOOST_FOLDER = os.getcwd()+"/artifacts/xgboost"
 PIPELINE_ARTIFACTS_FOLDER = os.getcwd()+"/artifacts/classifier"
 
+runtimeOptions=RuntimeOptions(  
+                              k8s_options=KubernetesOptions( 
+                                        defaultRuntime="tempo.kfserving.KFServingKubernetesRuntime",
+                                        namespace="production",
+                                        serviceAccountName="kf-tempo")
+                              )
+
+
 sklearn_model = Model(
         name="test-iris-sklearn",
         platform=ModelFramework.SKLearn,
         protocol=KFServingV2Protocol(),
+        runtime_options=runtimeOptions,
         local_folder=SKLEARN_FOLDER,
         uri="s3://tempo/basic/sklearn",
         inputs=np.ndarray,
@@ -95,6 +104,7 @@ xgboost_model = Model(
         name="test-iris-xgboost",
         platform=ModelFramework.XGBoost,
         protocol=KFServingV2Protocol(),
+        runtime_options=runtimeOptions,
         local_folder=XGBOOST_FOLDER,
         uri="s3://tempo/basic/xgboost",
         inputs=np.ndarray,
@@ -102,10 +112,9 @@ xgboost_model = Model(
 )
 
 @pipeline(name="classifier",
-          #TODO: Remove after development when mlserver published
-          conda_env="tempo-minimal",
           uri="s3://tempo/basic/pipeline",
           local_folder=PIPELINE_ARTIFACTS_FOLDER,
+          runtime_options=runtimeOptions,
           models=[sklearn_model, xgboost_model])
 def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
     res1 = sklearn_model(input=payload)
@@ -122,40 +131,28 @@ We provide a conda yaml in out `local_folder` which tempo will use as the runtim
 
 
 ```python
-%%writefile artifacts/classifier/conda.yaml
-name: tempo
-channels:
-  - defaults
-dependencies:
-  - _libgcc_mutex=0.1=main
-  - ca-certificates=2021.1.19=h06a4308_0
-  - certifi=2020.12.5=py37h06a4308_0
-  - ld_impl_linux-64=2.33.1=h53a641e_7
-  - libedit=3.1.20191231=h14c3975_1
-  - libffi=3.3=he6710b0_2
-  - libgcc-ng=9.1.0=hdf63c60_0
-  - libstdcxx-ng=9.1.0=hdf63c60_0
-  - ncurses=6.2=he6710b0_1
-  - openssl=1.1.1j=h27cfd23_0
-  - pip=21.0.1=py37h06a4308_0
-  - python=3.7.9=h7579374_0
-  - readline=8.1=h27cfd23_0
-  - setuptools=52.0.0=py37h06a4308_0
-  - sqlite=3.33.0=h62c20be_0
-  - tk=8.6.10=hbc83047_0
-  - wheel=0.36.2=pyhd3eb1b0_0
-  - xz=5.2.5=h7b6447c_0
-  - zlib=1.2.11=h7b6447c_3
-  - pip:
-    - mlops-tempo
-    - mlserver==0.3.1.dev5
-    - mlserver-tempo==0.3.1.dev5
+import sys
+import os
+PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
 ```
 
 
 ```python
-k8s_options = KubernetesOptions(namespace="production",serviceAccountName="kf-tempo")
-k8s_runtime = KFServingKubernetesRuntime(k8s_options=k8s_options)
+%%writetemplate artifacts/classifier/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python={PYTHON_VERSION}
+  - pip:
+    - mlops-tempo @ file://{TEMPO_DIR}
+    - mlserver==0.3.1.dev7
+```
+
+
+```python
+k8s_runtime = KFServingKubernetesRuntime()
 save(classifier, k8s_runtime, save_env=True)
 ```
 
@@ -283,7 +280,8 @@ For this, we will leverage the `remote()` method, which will interact without ou
 
 
 ```python
-k8s_runtime.set_remote(classifier)
+from tempo.utils import tempo_settings
+tempo_settings.remote_kubernetes(True)
 ```
 
 

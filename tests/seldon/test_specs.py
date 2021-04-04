@@ -1,21 +1,20 @@
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec, _V2ContainerFactory, get_container_spec
-from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework
+from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.runtime import ModelSpec
 
 
 def test_kubernetes_spec(sklearn_model: Model):
-    options = KubernetesOptions(namespace="production", replicas=1)
-    k8s_object = KubernetesSpec(sklearn_model.model_spec, options)
+    k8s_object = KubernetesSpec(sklearn_model.model_spec)
 
     expected = {
         "apiVersion": "machinelearning.seldon.io/v1",
         "kind": "SeldonDeployment",
         "metadata": {
             "name": sklearn_model.details.name,
-            "namespace": options.namespace,
+            "namespace": sklearn_model.model_spec.runtime_options.k8s_options.namespace,
         },
         "spec": {
             "protocol": "seldon",
@@ -28,7 +27,7 @@ def test_kubernetes_spec(sklearn_model: Model):
                         "implementation": KubernetesSpec.Implementations[sklearn_model.details.platform],
                     },
                     "name": "default",
-                    "replicas": options.replicas,
+                    "replicas": sklearn_model.model_spec.runtime_options.k8s_options.replicas,
                 }
             ],
         },
@@ -48,8 +47,9 @@ def test_kubernetes_spec_pipeline():
     )
     options = KubernetesOptions(namespace="production", replicas=1)
     protocol = KFServingV2Protocol()
-    model_spec = ModelSpec(model_details=details, protocol=protocol)
-    k8s_object = KubernetesSpec(model_spec, options)
+    runtime_options = RuntimeOptions(k8s_options=options)
+    model_spec = ModelSpec(model_details=details, protocol=protocol, runtime_options=runtime_options)
+    k8s_object = KubernetesSpec(model_spec)
 
     container_spec = _V2ContainerFactory.get_container_spec(details)
     container_env = [{"name": name, "value": value} for name, value in container_spec["environment"].items()]
@@ -103,7 +103,9 @@ def test_tensorflow_spec():
         outputs=ModelDataArgs(args=[]),
     )
     protocol = SeldonProtocol()
-    model_spec = ModelSpec(model_details=md, protocol=protocol)
+    options = KubernetesOptions(namespace="production", replicas=1)
+    runtime_options = RuntimeOptions(k8s_options=options)
+    model_spec = ModelSpec(model_details=md, protocol=protocol, runtime_options=runtime_options)
     spec = get_container_spec(model_spec)
     assert "image" in spec
     assert "command" in spec

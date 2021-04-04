@@ -6,7 +6,7 @@ from typing import Any
 import attr
 from pydantic import BaseModel
 
-from tempo.serve.metadata import ModelDetails
+from tempo.serve.metadata import ModelDetails, RuntimeOptions
 from tempo.serve.protocol import Protocol
 
 
@@ -14,6 +14,7 @@ class ModelSpec(BaseModel):
 
     model_details: ModelDetails
     protocol: Protocol
+    runtime_options: RuntimeOptions
 
     class Config:
         arbitrary_types_allowed = True

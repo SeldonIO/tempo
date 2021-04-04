@@ -7,21 +7,28 @@ We create a conda environment for the runtime of our explainer from the `./artif
 
 
 ```python
-!conda env create --name tempo-explainer-example --file ./artifacts/income_explainer/conda.yaml
+from IPython.core.magic import register_line_cell_magic
+
+@register_line_cell_magic
+def writetemplate(line, cell):
+    with open(line, 'w') as f:
+        f.write(cell.format(**globals()))
 ```
 
 ## Setup and download Data
 
 
 ```python
-from tempo.serve.metadata import ModelFramework
+from tempo.serve.metadata import ModelFramework, KubernetesOptions, RuntimeOptions
 from tempo.serve.model import Model
+from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.utils import pipeline, predictmethod
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from alibi.utils.wrappers import ArgmaxTransformer
+from tempo.serve.loader import save, upload
 from typing import Any
 
 import numpy as np
@@ -32,6 +39,9 @@ import json
 
 EXPLAINER_FOLDER = os.getcwd()+"/artifacts/income_explainer"
 MODEL_FOLDER = os.getcwd()+"/artifacts/income_model"
+
+import logging
+logging.basicConfig(level=logging.INFO)
 ```
 
 
@@ -113,28 +123,28 @@ with open(EXPLAINER_FOLDER+"/explainer.dill", 'wb') as f:
 
 
 ```python
-k8s_options = KubernetesOptions(namespace="production")
-k8s_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options)
+
+runtimeOptions=RuntimeOptions(  
+                              k8s_options=KubernetesOptions( 
+                                        namespace="production",
+                                        authSecretName="minio-secret")
+                              )
+
 
 sklearn_model = Model(
         name="income-sklearn",
-        runtime=SeldonDockerRuntime(),
         platform=ModelFramework.SKLearn,
+        protocol=SeldonProtocol(),
+        runtime_options=runtimeOptions,
         local_folder=MODEL_FOLDER,
         uri="gs://seldon-models/test/income/model"
 )
 
-```
-
-
-```python
-
 
 @pipeline(name="income-explainer",
-          runtime=SeldonDockerRuntime(protocol=KFServingV2Protocol()),
-          uri="gs://seldon-models/test/income/explainer",
+          uri="s3://tempo/explainer/pipeline",
           local_folder=EXPLAINER_FOLDER,
-          conda_env="tempo-explainer-example",
+          runtime_options=runtimeOptions,
           models=[sklearn_model])
 class ExplainerPipeline(object):
 
@@ -166,103 +176,161 @@ class ExplainerPipeline(object):
         return explanation.to_json()
 ```
 
-### Deploy model to Docker and test
+### Saving Artifacts
 
 
 ```python
-sklearn_model.deploy()
-sklearn_model.wait_ready()
+import sys
+import os
+PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
 ```
 
 
 ```python
-sklearn_model(X_test[0:1])
-```
-
-### Create explainer and test against model
-
-
-```python
-p = ExplainerPipeline() 
-```
-
-
-```python
-p.save(save_env=True)
+%%writetemplate artifacts/income_explainer/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python={PYTHON_VERSION}
+  - pip:
+    - alibi
+    - dill
+    - mlops-tempo @ file://{TEMPO_DIR}
+    - mlserver==0.3.1.dev7
 ```
 
 
 ```python
-r = json.loads(p.explain(X_test[0:1], {"threshold":0.95}))
-print(r["data"]["anchor"])
+explainer = ExplainerPipeline()
+save(explainer, save_env=True)
 ```
 
 ### Deploy explainer to docker
 
 
 ```python
-p.deploy()
-p.wait_ready()
+docker_runtime = SeldonDockerRuntime()
+docker_runtime.deploy(explainer)
+docker_runtime.wait_ready(explainer)
 ```
 
 
 ```python
-r = json.loads(p.remote(payload=X_test[0:1], parameters={"threshold":0.99}))
+r = json.loads(explainer(payload=X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-p.undeploy()
-```
-
-### Deploy to production on Kubernetes
-
-
-```python
-k8s_options = KubernetesOptions(namespace="production")
-k8s_runtime = SeldonKubernetesRuntime(k8s_options=k8s_options)
-k8s_runtime_v2 = SeldonKubernetesRuntime(k8s_options=k8s_options, protocol=KFServingV2Protocol())
-
-sklearn_model.set_runtime(k8s_runtime)
-p.set_runtime(k8s_runtime_v2)
-```
-
-
-```python
-p.save(save_env=False)
-```
-
-Upload artifacts. **This step may take some time**
-
-
-```python
-sklearn_model.upload()
-p.upload()
-```
-
-
-```python
-p.deploy()
-p.wait_ready()
-```
-
-
-```python
-r = json.loads(p.remote(payload=X_test[0:1], parameters={"threshold":0.95}))
+r = json.loads(explainer.remote(payload=X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-p.undeploy()
+docker_runtime.undeploy(explainer)
+```
+
+## Deploy to production on Kubernetes
+
+### Setup Namespace with Minio Secret
+
+
+```python
+!kubectl create namespace production
+```
+
+
+```python
+!kubectl apply -f ../../../k8s/tempo-pipeline-rbac.yaml -n production
+```
+
+
+```python
+%%writefile minio-secret.yaml
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-secret
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: minioadmin
+  AWS_SECRET_ACCESS_KEY: minioadmin
+  AWS_ENDPOINT_URL: http://minio.minio-system.svc.cluster.local:9000
+  USE_SSL: "false"
+```
+
+
+```python
+!kubectl apply -f minio-secret.yaml -n production
+```
+
+### Uploading artifacts
+
+
+```python
+MINIO_IP=!kubectl get svc minio -n minio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+MINIO_IP=MINIO_IP[0]
+```
+
+
+```python
+%%writetemplate rclone.conf
+[s3]
+type = s3
+provider = minio
+env_auth = false
+access_key_id = minioadmin
+secret_access_key = minioadmin
+endpoint = http://{MINIO_IP}:9000
+```
+
+
+```python
+import os
+from tempo.conf import settings
+settings.rclone_cfg = os.getcwd() + "/rclone.conf"
+```
+
+
+```python
+upload(explainer)
+```
+
+### Deploy
+
+
+```python
+k8s_runtime = SeldonKubernetesRuntime()
+k8s_runtime.deploy(explainer)
+k8s_runtime.wait_ready(explainer)
+```
+
+
+```python
+from tempo.utils import tempo_settings
+tempo_settings.remote_kubernetes(True)
+```
+
+
+```python
+r = json.loads(explainer.remote(payload=X_test[0:1], parameters={"threshold":0.95}))
+print(r["data"]["anchor"])
+```
+
+
+```python
+k8s_runtime.undeploy(explainer)
 ```
 
 ## Prepare for Gitops
 
 
 ```python
-yaml = p.to_k8s_yaml()
+yaml = k8s_runtime.to_k8s_yaml(explainer)
 print (eval(pprint.pformat(yaml)))
 ```
 

@@ -1,11 +1,9 @@
 from typing import Any, Callable, List, Optional
 
-from tempo.errors import UndefinedCustomImplementation
 from tempo.serve.base import BaseModel
 from tempo.serve.constants import ModelDataType
-from tempo.serve.metadata import ModelFramework
+from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.protocol import Protocol
-from tempo.serve.remote import Remote
 from tempo.serve.runtime import Runtime
 
 
@@ -21,7 +19,7 @@ class Pipeline(BaseModel):
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
         conda_env: str = None,
-        deployed: bool = False,
+        runtime_options: RuntimeOptions = RuntimeOptions(),
     ):
         super().__init__(
             name=name,
@@ -33,8 +31,8 @@ class Pipeline(BaseModel):
             inputs=inputs,
             outputs=outputs,
             conda_env=conda_env,
-            deployed=deployed,
             protocol=protocol,
+            runtime_options=runtime_options
         )
 
         if models is None:
@@ -42,16 +40,13 @@ class Pipeline(BaseModel):
 
         self._models = models
 
-    def save(self, save_env=True):
+    def set_remote(self):
         for model in self._models:
-            model.set_deployed(True)
-        super().save(save_env=save_env)
-        for model in self._models:
-            model.set_deployed(False)
+            model.get_tempo().use_remote = True
 
     def deploy_models(self, runtime: Runtime):
         for model in self._models:
-            model.deploy(runtime)
+            model.get_tempo().deploy(runtime)
 
     def deploy(self, runtime: Runtime):
         self.deploy_models(runtime)
@@ -60,13 +55,13 @@ class Pipeline(BaseModel):
     def wait_ready(self, runtime: Runtime, timeout_secs: int = None) -> bool:
         super().wait_ready(runtime, timeout_secs=timeout_secs)
         for model in self._models:
-            if not model.wait_ready(runtime, timeout_secs=timeout_secs):
+            if not model.get_tempo().wait_ready(runtime, timeout_secs=timeout_secs):
                 return False
         return True
 
     def undeploy_models(self, runtime: Runtime):
         for model in self._models:
-            model.undeploy(runtime)
+            model.get_tempo().undeploy(runtime)
 
     def undeploy(self, runtime: Runtime):
         """
@@ -75,29 +70,11 @@ class Pipeline(BaseModel):
         super().undeploy(runtime)
         self.undeploy_models(runtime)
 
-    def set_remote(self, runtime: Remote):
-        super().set_remote(runtime)
-        for model in self._models:
-            model.set_remote(runtime)
-
     def to_k8s_yaml(self, runtime: Runtime) -> str:
         yamls = super().to_k8s_yaml(runtime)
         yamls += "\n---\n"
         for model in self._models:
-            y = model.to_k8s_yaml(runtime)
+            y = model.get_tempo().to_k8s_yaml(runtime)
             yamls += y
             yamls += "\n---\n"
         return yamls
-
-    def __call__(self, *args, **kwargs) -> Any:
-        if not self._user_func:
-            # TODO: Group generic errors
-            raise UndefinedCustomImplementation(self.details.name)
-
-        if self.deployed:
-            return self.remote(*args, **kwargs)
-        else:
-            if self.cls is not None:
-                return self._user_func(self.cls, *args, **kwargs)
-            else:
-                return self._user_func(*args, **kwargs)

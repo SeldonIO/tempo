@@ -10,6 +10,7 @@ from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.utils import model
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -51,6 +52,7 @@ def sklearn_model() -> Model:
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
         protocol=SeldonProtocol(),
+        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace="production", replicas=1))
     )
 
 
@@ -93,8 +95,6 @@ def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_cond
             return res1
         else:
             return xgboost_model(payload)
-
-    _pipeline.save(save_env=False)
 
     return _pipeline
 
