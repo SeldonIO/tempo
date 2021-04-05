@@ -1,55 +1,71 @@
-import os
-
 import numpy as np
 import pytest
 
-from tempo.seldon.deploy import SeldonDeployRuntime
+from tempo.seldon.deploy import SeldonDeployAuthType, SeldonDeployRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.serve.metadata import KubernetesOptions, ModelFramework
+from tempo.seldon.protocol import SeldonProtocol
+from tempo.serve.metadata import IngressOptions, KubernetesOptions, ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 
 
 @pytest.mark.skip("needs deploy cluster")
 def test_deploy():
     rt = SeldonDeployRuntime(
-        host="http://34.105.136.157/seldon-deploy/api/v1alpha1",
-        user="admin@kubeflow.org",
+        host="https://34.78.44.92/seldon-deploy/api/v1alpha1",
+        user="admin@seldon.io",
         password="12341234",
+        oidc_server="https://34.78.44.92/auth/realms/deploy-realm",
+        oidc_client_id="sd-api",
+        verify_ssl=False,
+        auth_type=SeldonDeployAuthType.oidc,
+    )
+
+    options = RuntimeOptions(
+        runtime="tempo.seldon.SeldonKubernetesRuntime",
         k8s_options=KubernetesOptions(namespace="seldon"),
+        ingress_options=IngressOptions(ssl=True, verify_ssl=False),
     )
 
     sklearn_model = Model(
         name="test-iris-sklearn",
-        runtime=rt,
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder=os.getcwd() + "/sklearn",
+        protocol=SeldonProtocol(),
+        runtime_options=options,
     )
 
-    sklearn_model.deploy()
-    sklearn_model.wait_ready()
-    sklearn_model(np.array([[4.9, 3.1, 1.5, 0.2]]))
+    rt.deploy(sklearn_model)
+    rt.wait_ready(sklearn_model)
+    print(sklearn_model(np.array([[4.9, 3.1, 1.5, 0.2]])))
+    rt.undeploy(sklearn_model)
 
 
 @pytest.mark.skip("needs deploy cluster")
 def test_deploy_yaml():
     rt = SeldonDeployRuntime(
-        host="http://34.105.136.157/seldon-deploy/api/v1alpha1",
+        host="http://34.78.44.92/seldon-deploy/api/v1alpha1",
         user="admin@kubeflow.org",
+        oidc_server="https://34.78.44.92/auth/realms/deploy-realm",
         password="12341234",
+        oidc_client_id="sd-api",
+        verify_ssl=False,
+    )
+
+    options = RuntimeOptions(
+        runtime="tempo.seldon.SeldonKubernetesRuntime",
         k8s_options=KubernetesOptions(namespace="seldon"),
+        ingress_options=IngressOptions(ssl=True, verify_ssl=False),
     )
 
     sklearn_model = Model(
         name="test-iris-sklearn",
-        runtime=rt,
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
-        local_folder=os.getcwd() + "/sklearn",
+        protocol=SeldonProtocol(),
+        runtime_options=options,
     )
 
-    srt = SeldonKubernetesRuntime(k8s_options=KubernetesOptions(namespace="seldon"))
-    sklearn_model.set_runtime(srt)
-    expected = sklearn_model.to_k8s_yaml()
-    sklearn_model.set_runtime(rt)
-    assert sklearn_model.to_k8s_yaml() == expected
+    spec = rt.to_k8s_yaml(sklearn_model)
+    rtk = SeldonKubernetesRuntime()
+    expected = rtk.to_k8s_yaml(sklearn_model)
+    assert spec == expected

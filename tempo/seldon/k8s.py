@@ -27,16 +27,14 @@ class SeldonKubernetesRuntime(Runtime, Remote):
 
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         self.create_k8s_client()
-        endpoint = Endpoint(
-            model_spec.model_details.name, model_spec.runtime_options.k8s_options.namespace, model_spec.protocol
-        )
-        return endpoint.get_url(model_spec.model_details)
+        endpoint = Endpoint()
+        return endpoint.get_url(model_spec)
 
     def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
         req = model_spec.protocol.to_protocol_request(*args, **kwargs)
         endpoint = self.get_endpoint_spec(model_spec)
         logger.debug("Endpoint is ", endpoint)
-        response_raw = requests.post(endpoint, json=req)
+        response_raw = requests.post(endpoint, json=req, verify=model_spec.runtime_options.ingress_options.verify_ssl)
         return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
 
     def undeploy_spec(self, model_spec: ModelSpec):

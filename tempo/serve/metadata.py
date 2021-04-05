@@ -69,7 +69,14 @@ class DockerOptions(BaseModel):
     defaultRuntime: str = "tempo.seldon.SeldonDockerRuntime"
 
 
+class IngressOptions(BaseModel):
+    ingress: str = "tempo.ingress.istio.IstioIngress"
+    ssl: bool = False
+    verify_ssl: bool = True
+
+
 class RuntimeOptions(BaseModel):
     runtime: Optional[str] = None
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
+    ingress_options: IngressOptions = IngressOptions()

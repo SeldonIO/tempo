@@ -46,13 +46,13 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             return False
 
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
-        endpoint = Endpoint(model_spec, model_spec.runtime_options.k8s_options.namespace)
-        return endpoint.get_url()
+        endpoint = Endpoint()
+        return endpoint.get_url(model_spec)
 
     def get_headers(self, model_spec: ModelSpec) -> Dict[str, str]:
         if not self._inside_cluster():
-            endpoint = Endpoint(model_spec, model_spec.runtime_options.k8s_options.namespace)
-            service_host = endpoint.get_service_host()
+            endpoint = Endpoint()
+            service_host = endpoint.get_service_host(model_spec)
             return {"Host": service_host}
         else:
             return {}
@@ -63,7 +63,9 @@ class KFServingKubernetesRuntime(Runtime, Remote):
         logger.debug("Endpoint is", endpoint)
         headers = self.get_headers(model_spec)
         logger.debug("Headers are", headers)
-        response_raw = requests.post(endpoint, json=req, headers=headers)
+        response_raw = requests.post(
+            endpoint, json=req, headers=headers, verify_ssl=model_spec.runtime_options.ingress_options.verify_ssl
+        )
         if response_raw.status_code == 200:
             return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
         else:
