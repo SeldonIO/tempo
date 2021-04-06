@@ -1,17 +1,15 @@
-from typing import Any, Callable, List, Optional
 from types import SimpleNamespace
-
+from typing import Any, Callable, Optional
 
 from tempo.serve.base import BaseModel
-from tempo.serve.model import Model
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
+from tempo.serve.model import Model
 from tempo.serve.protocol import Protocol
 from tempo.serve.runtime import Runtime
 
 
 class PipelineModels(SimpleNamespace):
-
     def keys(self):
         return self.__dict__.keys()
 
@@ -32,7 +30,7 @@ class PipelineModels(SimpleNamespace):
                 inputs=model.get_tempo().details.inputs,
                 outputs=model.get_tempo().details.outputs,
                 protocol=model.get_tempo().protocol,
-                runtime_options=model.get_tempo().model_spec.runtime_options
+                runtime_options=model.get_tempo().model_spec.runtime_options,
             )
         return PipelineModels(**output)
 

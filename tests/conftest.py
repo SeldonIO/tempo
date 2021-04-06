@@ -10,9 +10,8 @@ from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
-from tempo.serve.utils import model
 from tempo.serve.pipeline import PipelineModels
-
+from tempo.serve.utils import model
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")

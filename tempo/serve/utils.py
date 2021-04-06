@@ -1,12 +1,11 @@
 import inspect
-from typing import Any, List
+from typing import Any
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
-from tempo.serve.pipeline import PipelineModels
-from tempo.serve.pipeline import Pipeline
+from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.protocol import Protocol
 
 
