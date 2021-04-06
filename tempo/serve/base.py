@@ -64,8 +64,8 @@ class BaseModel:
 
         self.use_remote: bool = False
 
-    def set_remote(self):
-        self.use_remote = True
+    def set_remote(self, val: bool):
+        self.use_remote = val
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
