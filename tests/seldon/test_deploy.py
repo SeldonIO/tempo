@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from tempo.seldon.deploy import SeldonDeployAuthType, SeldonDeployRuntime
+from tempo.seldon.deploy import SeldonDeployAuthType, SeldonDeployConfig, SeldonDeployRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.serve.metadata import IngressOptions, KubernetesOptions, ModelFramework, RuntimeOptions
@@ -10,7 +10,9 @@ from tempo.serve.model import Model
 
 @pytest.mark.skip("needs deploy cluster")
 def test_deploy():
-    rt = SeldonDeployRuntime(
+    rt = SeldonDeployRuntime()
+
+    config = SeldonDeployConfig(
         host="https://34.78.44.92/seldon-deploy/api/v1alpha1",
         user="admin@seldon.io",
         password="12341234",
@@ -19,6 +21,8 @@ def test_deploy():
         verify_ssl=False,
         auth_type=SeldonDeployAuthType.oidc,
     )
+
+    rt.authenticate(settings=config)
 
     options = RuntimeOptions(
         runtime="tempo.seldon.SeldonKubernetesRuntime",

@@ -40,9 +40,9 @@ class Pipeline(BaseModel):
 
         self._models = models
 
-    def set_remote(self):
+    def set_remote(self, val: bool):
         for model in self._models:
-            model.get_tempo().use_remote = True
+            model.get_tempo().set_remote(val)
 
     def deploy_models(self, runtime: Runtime):
         for model in self._models:
