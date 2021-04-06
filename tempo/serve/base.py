@@ -120,6 +120,18 @@ class BaseModel:
 
         return load_func
 
+    def __getstate__(self) -> dict:
+        """
+        __getstate__ gets called by pickle before serialising an object to get
+        its internal representation.
+        We override __getstate__ to make sure that the model's internal context
+        is not pickled with the object.
+        """
+        state = self.__dict__.copy()
+        state["context"] = SimpleNamespace()
+
+        return state
+
     @classmethod
     def load(cls, folder: str) -> "BaseModel":
         file_path_pkl = os.path.join(folder, DefaultModelFilename)
