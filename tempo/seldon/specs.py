@@ -132,7 +132,7 @@ class KubernetesSpec:
             graph["implementation"] = model_implementation
 
         if self._details.model_details.platform == ModelFramework.TempoPipeline:
-            serviceAccountName =  self._details.runtime_options.k8s_options.serviceAccountName
+            serviceAccountName = self._details.runtime_options.k8s_options.serviceAccountName
             if serviceAccountName is None:
                 serviceAccountName = DefaultServiceAccountName
             graph["serviceAccountName"] = serviceAccountName
