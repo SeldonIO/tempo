@@ -8,7 +8,7 @@ install:
 .PHONY: install-dev
 install-dev: install
 	pip install -r requirements-dev.txt
-	pip install -r docs/requirements-docs.txt
+	pip install -r doc/requirements-docs.txt
 
 .PHONY: test
 test:
