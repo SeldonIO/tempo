@@ -4,8 +4,11 @@ This notebook will walk you through an end-to-end example deploying a Tempo pipe
 
 ## Prerequisites
 
-  * rclone and conda installed.
-  * Run this notebook within the `seldon-examples` conda environment. Details to create this can be found [here]().
+This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create from project root folder:
+
+```bash
+conda env create --name tempo-examples --file conda/tempo-examples.yaml
+```
 
 ## Architecture
 

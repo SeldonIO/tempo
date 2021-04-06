@@ -1,15 +1,15 @@
 # Outlier Detection with CIFAR10 using Alibi-Detect
 
-This e
+This examples show a Cifar10 prediction service with outlier detection. We ignore the prediction from our model if we suspect the input is an outlier.
 
 
 
 ## Prerequisites
 
-This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create with:
+This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create from project root folder:
 
 ```bash
-conda env create --name tempo-examples --file tempo-examples.yaml
+conda env create --name tempo-examples --file conda/tempo-examples.yaml
 ```
 
 
@@ -54,8 +54,10 @@ OUTLIER_FOLDER = os.getcwd()+"/artifacts/cifar10_outlier"
 MODEL_FOLDER = os.getcwd()+"/artifacts/cifar10_model"
 SVC_FOLDER = os.getcwd()+"/artifacts/svc"
 
+tf.get_logger().setLevel('INFO')
+
 import logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 ```
 
 
@@ -227,7 +229,6 @@ class OutlierModel(object):
     def outlier(self, payload: np.ndarray) -> dict:
         if not self.loaded:
             self.load()
-        print("Outlier called")
         od_preds = self.od.predict(payload,
                       outlier_type='instance',    # use 'feature' or 'instance' level
                       return_feature_score=True,  # scores used to determine outliers
@@ -344,6 +345,16 @@ docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(svc)
 docker_runtime.wait_ready(svc)
 ```
+
+Run first with our python code running locally and only calling out to the model externally
+
+
+```python
+show_image(X_test[0:1])
+svc(payload=X_test[0:1])
+```
+
+Run again completely remotely.
 
 
 ```python
