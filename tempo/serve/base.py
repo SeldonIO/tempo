@@ -73,7 +73,9 @@ class BaseModel:
         input_args = []
         output_args = []
 
-        if inputs is None and outputs is None:
+        if isinstance(inputs, ModelDataArgs) and isinstance(outputs, ModelDataArgs):
+            return inputs, outputs
+        elif inputs is None and outputs is None:
             if self._user_func is not None:
                 hints = get_type_hints(self._user_func)
                 for k, v in hints.items():
