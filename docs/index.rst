@@ -1,9 +1,7 @@
 
-Tempo Docs Home
-===============
+Tempo
+=====
 
-Documentation Index
--------------------
 
 .. toctree::
     :titlesonly:
@@ -21,14 +19,6 @@ Documentation Index
     Model Explanation using Alibi <examples/explainer/README.md>
     Outlier Detection using Alibi-Detect <examples/outlier/README.md>
     
-
-.. toctree::
-    :titlesonly:
-    :caption: Relevant Links:
-
-    MLServer Documentation <https://github.com/SeldonIO/mlserver>
-    Seldon Core Documentation <https://docs.seldon.io/projects/seldon-core/en/latest/>
-    KFServing Documentation <https://www.kubeflow.org/docs/components/serving/kfserving/>
 
 
 High Level Overview
