@@ -24,7 +24,7 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 
 Install [Docker](https://www.docker.com/) to run with the Docker runtime.
 
-## Kubernetes Runtime prequisites
+## Kubernetes Runtime Prequisites
 
 We provide Ansible playbooks to create reproducible Kubernetes clusters with Kind for the demos.
 
