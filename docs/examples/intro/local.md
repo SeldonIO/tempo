@@ -31,6 +31,13 @@ We will train:
   * A xgboost model
 
 
+```bash
+%%bash
+mkdir -p ./artifacts/sklearn
+mkdir -p ./artifacts/xgboost
+```
+
+
 ```python
 from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
@@ -65,6 +72,7 @@ import numpy as np
 from typing import Tuple
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 from tempo.serve.model import Model
+from tempo.serve.pipeline import PipelineModels
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
@@ -96,17 +104,19 @@ xgboost_model = Model(
         uri="s3://tempo/basic/xgboost"
 )
 
-@pipeline(name="classifier",
-          uri="s3://tempo/basic/pipeline",
-          local_folder=PIPELINE_ARTIFACTS_FOLDER,
-          models=[sklearn_model, xgboost_model])
+@pipeline(
+    name="classifier",
+    uri="s3://tempo/basic/pipeline",
+    local_folder=PIPELINE_ARTIFACTS_FOLDER,
+    models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model)
+)
 def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
-    res1 = sklearn_model(payload)
+    res1 = classifier.models.sklearn(payload)
 
     if res1[0][0] > 0.5:
-        return res1,"sklearn prediction"
+        return res1, "sklearn prediction"
     else:
-        return xgboost_model(payload),"xgboost prediction"
+        return classifier.models.xgboost(payload), "xgboost prediction"
 ```
 
 ## Deploying pipeline to Docker
@@ -184,9 +194,4 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 docker_runtime.undeploy(classifier)
-```
-
-
-```python
-
 ```
