@@ -21,6 +21,7 @@ from .remote import Remote
 from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from tempo.serve.state import BaseState, DistributedState, LocalState, StateDetails, StateType
+from tempo.utils import logger, tempo_settings
 
 
 class BaseModel:
