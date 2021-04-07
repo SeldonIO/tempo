@@ -4,11 +4,8 @@ This notebook will walk you through an end-to-end example deploying a Tempo pipe
 
 ## Prerequisites
 
-This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create from project root folder:
-
-```bash
-conda env create --name tempo-examples --file conda/tempo-examples.yaml
-```
+  * rclone and conda installed.
+  * Run this notebook within the `seldon-examples` conda environment. Details to create this can be found [here]().
 
 ## Architecture
 
@@ -32,6 +29,13 @@ We will train:
 
   * A sklearn logistic regression model
   * A xgboost model
+
+
+```bash
+%%bash
+mkdir -p ./artifacts/sklearn
+mkdir -p ./artifacts/xgboost
+```
 
 
 ```python
@@ -68,6 +72,7 @@ import numpy as np
 from typing import Tuple
 from tempo.serve.metadata import ModelFramework, KubernetesOptions, RuntimeOptions
 from tempo.serve.model import Model
+from tempo.serve.pipeline import PipelineModels
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
@@ -84,10 +89,11 @@ XGBOOST_FOLDER = os.getcwd()+"/artifacts/xgboost"
 PIPELINE_ARTIFACTS_FOLDER = os.getcwd()+"/artifacts/classifier"
 
 runtimeOptions=RuntimeOptions(  
-                              k8s_options=KubernetesOptions( 
-                                        namespace="production",
-                                        authSecretName="minio-secret")
-                              )
+    k8s_options=KubernetesOptions( 
+        namespace="production",
+        authSecretName="minio-secret"
+    )
+)
 
 sklearn_model = Model(
         name="test-iris-sklearn",
@@ -107,18 +113,20 @@ xgboost_model = Model(
         uri="s3://tempo/basic/xgboost"
 )
 
-@pipeline(name="classifier",
-          uri="s3://tempo/basic/pipeline",
-          local_folder=PIPELINE_ARTIFACTS_FOLDER,
-          runtime_options=runtimeOptions,
-          models=[sklearn_model, xgboost_model])
+@pipeline(
+    name="classifier",
+    uri="s3://tempo/basic/pipeline",
+    local_folder=PIPELINE_ARTIFACTS_FOLDER,
+    runtime_options=runtimeOptions,
+    models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model)
+ )
 def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
-    res1 = sklearn_model(payload)
+    res1 = classifier.models.sklearn(payload)
 
     if res1[0][0] > 0.5:
-        return res1,"sklearn prediction"
+        return res1, "sklearn prediction"
     else:
-        return xgboost_model(payload),"xgboost prediction"
+        return classifier.models.xgboost(payload), "xgboost prediction"
 ```
 
 ### Saving artifacts
@@ -131,6 +139,11 @@ import sys
 import os
 PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
+```
+
+
+```python
+!mkdir -p artifacts/classifier
 ```
 
 
@@ -267,9 +280,4 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 k8s_runtime.undeploy(classifier)
-```
-
-
-```python
-
 ```

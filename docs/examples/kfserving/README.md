@@ -35,6 +35,12 @@ We will train:
 
 
 ```python
+!mkdir -p artifacts/sklearn
+!mkdir -p artifacts/xgboost
+```
+
+
+```python
 from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
 import joblib
@@ -68,6 +74,7 @@ import numpy as np
 from typing import Tuple
 from tempo.serve.metadata import ModelFramework, KubernetesOptions, RuntimeOptions
 from tempo.serve.model import Model
+from tempo.serve.pipeline import PipelineModels
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
@@ -80,52 +87,56 @@ from tempo.serve.loader import upload, save
 import logging
 logging.basicConfig(level=logging.INFO)
 
-SKLEARN_FOLDER = os.getcwd()+"/artifacts/sklearn"
-XGBOOST_FOLDER = os.getcwd()+"/artifacts/xgboost"
-PIPELINE_ARTIFACTS_FOLDER = os.getcwd()+"/artifacts/classifier"
+
+SKLEARN_FOLDER = f"{os.getcwd()}/artifacts/sklearn"
+XGBOOST_FOLDER = f"{os.getcwd()}/artifacts/xgboost"
+PIPELINE_ARTIFACTS_FOLDER = f"{os.getcwd()}/artifacts/classifier"
 
 runtimeOptions=RuntimeOptions(  
-                              k8s_options=KubernetesOptions( 
-                                        defaultRuntime="tempo.kfserving.KFServingKubernetesRuntime",
-                                        namespace="production",
-                                        serviceAccountName="kf-tempo")
-                              )
+    k8s_options=KubernetesOptions( 
+        defaultRuntime="tempo.kfserving.KFServingKubernetesRuntime",
+        namespace="production",
+        serviceAccountName="kf-tempo"
+    )
+)
 
 
 sklearn_model = Model(
-        name="test-iris-sklearn",
-        platform=ModelFramework.SKLearn,
-        protocol=KFServingV2Protocol(),
-        runtime_options=runtimeOptions,
-        local_folder=SKLEARN_FOLDER,
-        uri="s3://tempo/basic/sklearn",
-        inputs=np.ndarray,
-        outputs=np.ndarray
+    name="test-iris-sklearn",
+    platform=ModelFramework.SKLearn,
+    protocol=KFServingV2Protocol(),
+    runtime_options=runtimeOptions,
+    local_folder=SKLEARN_FOLDER,
+    uri="s3://tempo/basic/sklearn",
+    inputs=np.ndarray,
+    outputs=np.ndarray
 )
 
 xgboost_model = Model(
-        name="test-iris-xgboost",
-        platform=ModelFramework.XGBoost,
-        protocol=KFServingV2Protocol(),
-        runtime_options=runtimeOptions,
-        local_folder=XGBOOST_FOLDER,
-        uri="s3://tempo/basic/xgboost",
-        inputs=np.ndarray,
-        outputs=np.ndarray    
+    name="test-iris-xgboost",
+    platform=ModelFramework.XGBoost,
+    protocol=KFServingV2Protocol(),
+    runtime_options=runtimeOptions,
+    local_folder=XGBOOST_FOLDER,
+    uri="s3://tempo/basic/xgboost",
+    inputs=np.ndarray,
+    outputs=np.ndarray    
 )
 
-@pipeline(name="classifier",
-          uri="s3://tempo/basic/pipeline",
-          local_folder=PIPELINE_ARTIFACTS_FOLDER,
-          runtime_options=runtimeOptions,
-          models=[sklearn_model, xgboost_model])
+@pipeline(
+    name="classifier",
+    uri="s3://tempo/basic/pipeline",
+    local_folder=PIPELINE_ARTIFACTS_FOLDER,
+    runtime_options=runtimeOptions,
+    models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model)
+)
 def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
-    res1 = sklearn_model(input=payload)
+    res1 = classifier.models.sklearn(input=payload)
     print(res1)
     if res1[0] == 1:
         return res1,"sklearn prediction"
     else:
-        return xgboost_model(input=payload),"xgboost prediction"
+        return classifier.models.xgboost(input=payload),"xgboost prediction"
 ```
 
 ### Saving artifacts
@@ -155,8 +166,7 @@ dependencies:
 
 
 ```python
-k8s_runtime = KFServingKubernetesRuntime()
-save(classifier, k8s_runtime, save_env=True)
+save(classifier, save_env=True)
 ```
 
 ## Deploying pipeline to K8s
@@ -272,6 +282,7 @@ upload(classifier)
 
 
 ```python
+k8s_runtime = KFServingKubernetesRuntime()
 k8s_runtime.deploy(classifier)
 k8s_runtime.wait_ready(classifier)
 ```
@@ -307,9 +318,4 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 k8s_runtime.undeploy(classifier)
-```
-
-
-```python
-
 ```

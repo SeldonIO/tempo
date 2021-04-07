@@ -1,11 +1,11 @@
 import inspect
-from typing import Any, List
+from typing import Any
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline
+from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.protocol import Protocol
 
 
@@ -14,7 +14,7 @@ def pipeline(
     protocol: Protocol = KFServingV2Protocol(),
     local_folder: str = None,
     uri: str = None,
-    models: List[Model] = None,
+    models: PipelineModels = None,
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
@@ -58,6 +58,14 @@ def pipeline(
                 return self.pipeline(*args, **kwargs)
 
             K.__call__ = __call__
+
+            @property
+            def models_property(self):
+                # This is so we do not store reference to `.models` as part of
+                # the K class - needed when saving limited copy of models for remote
+                return K.pipeline.models
+
+            K.models = models_property
 
             return K
         else:

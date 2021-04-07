@@ -4,11 +4,8 @@ This notebook will walk you through an end-to-end example deploying a Tempo pipe
 
 ## Prerequisites
 
-This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create from project root folder:
-
-```bash
-conda env create --name tempo-examples --file conda/tempo-examples.yaml
-```
+  * rclone and conda installed.
+  * Run this notebook within the `seldon-examples` conda environment. Details to create this can be found [here]().
 
 ## Architecture
 
@@ -107,19 +104,26 @@ xgboost_model = Model(
         uri="s3://tempo/basic/xgboost"
 )
 
-@pipeline(
-    name="classifier",
+@pipeline(name="classifier",
     uri="s3://tempo/basic/pipeline",
     local_folder=PIPELINE_ARTIFACTS_FOLDER,
     models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model)
 )
-def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
-    res1 = classifier.models.sklearn(payload)
+class Classifier:
+    
+    @predictmethod
+    def classifier(self, payload: np.ndarray) -> Tuple[np.ndarray,str]:
+        res1 = self.models.sklearn(payload)
 
-    if res1[0][0] > 0.5:
-        return res1, "sklearn prediction"
-    else:
-        return classifier.models.xgboost(payload), "xgboost prediction"
+        if res1[0][0] > 0.5:
+            return res1,"sklearn prediction"
+        else:
+            return self.models.xgboost(payload),"xgboost prediction"
+```
+
+
+```python
+classifier = Classifier()
 ```
 
 ## Deploying pipeline to Docker
@@ -136,25 +140,21 @@ We provide a conda yaml in out `local_folder` which tempo will use as the runtim
 
 
 ```python
-import sys
 import os
+import sys
+
 PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
 TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
 ```
 
 
 ```python
-!mkdir -p artifacts/classifier
-```
-
-
-```python
-%%writetemplate artifacts/classifier/conda.yaml
+%%writetemplate artifacts/conda.yaml
 name: tempo
 channels:
   - defaults
 dependencies:
-  - python={PYTHON_VERSION}
+  - python=3.7
   - pip:
     - mlops-tempo @ file://{TEMPO_DIR}
     - mlserver==0.3.1.dev7
@@ -162,6 +162,7 @@ dependencies:
 
 
 ```python
+docker_runtime = SeldonDockerRuntime()
 save(classifier, save_env=True)
 ```
 
@@ -169,7 +170,6 @@ save(classifier, save_env=True)
 
 
 ```python
-docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(classifier)
 docker_runtime.wait_ready(classifier)
 ```

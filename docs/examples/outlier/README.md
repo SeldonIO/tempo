@@ -35,6 +35,7 @@ import matplotlib.pyplot as plt
 
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
+from tempo.serve.pipeline import PipelineModels
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
 from tempo.serve.utils import pipeline, predictmethod, model
@@ -131,16 +132,23 @@ class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer',
 
 ```python
 %%writefile rclone.conf
-[gcs]
+[gs]
 type = google cloud storage
 anonymous = true
 ```
 
 
 ```python
+import os
+from tempo.conf import settings
+settings.rclone_cfg = os.getcwd() + "/rclone.conf"
+```
+
+
+```python
 load_pretrained = True
 if load_pretrained:  # load pre-trained detector
-    !rclone copy gs://seldon-models/tempo/cifar10/outlier/cifar10 ./artifacts/cifar10_outlier/cifar10
+    !rclone --config ./rclone.conf copy gs://seldon-models/tempo/cifar10/outlier/cifar10 ./artifacts/cifar10_outlier/cifar10
 else:  # define model, initialize, train and save outlier detector
 
     # define encoder and decoder networks
@@ -185,29 +193,31 @@ else:  # define model, initialize, train and save outlier detector
 
 ```python
 runtimeOptions=RuntimeOptions(  
-                              k8s_options=KubernetesOptions( 
-                                        namespace="production",
-                                        authSecretName="minio-secret")
-                              )
+    k8s_options=KubernetesOptions( 
+        namespace="production",
+        authSecretName="minio-secret"
+    )
+)
 
 
 cifar10_model = Model(
-        name="resnet32",
-        protocol=KFServingV1Protocol(),
-        runtime_options=runtimeOptions,
-        platform=ModelFramework.Tensorflow,
-        uri="gs://seldon-models/tfserving/cifar10/resnet32",
-        local_folder=MODEL_FOLDER,
-    )
+    name="resnet32",
+    protocol=KFServingV1Protocol(),
+    runtime_options=runtimeOptions,
+    platform=ModelFramework.Tensorflow,
+    uri="gs://seldon-models/tfserving/cifar10/resnet32",
+    local_folder=MODEL_FOLDER,
+)
+
 
 @model(
-        name="outlier",
-        platform=ModelFramework.TempoPipeline,
-        protocol=KFServingV2Protocol(),
-        runtime_options=runtimeOptions,
-        uri="s3://tempo/outlier/cifar10/outlier",
-        local_folder=OUTLIER_FOLDER,
-    )
+    name="outlier",
+    platform=ModelFramework.TempoPipeline,
+    protocol=KFServingV2Protocol(),
+    runtime_options=runtimeOptions,
+    uri="s3://tempo/outlier/cifar10/outlier",
+    local_folder=OUTLIER_FOLDER,
+)
 class OutlierModel(object):
     
     def __init__(self):
@@ -218,7 +228,8 @@ class OutlierModel(object):
             models_folder = "/mnt/models"
         else:
             models_folder = OUTLIER_FOLDER
-        self.od = load_detector(models_folder+"/cifar10")
+        print(f"Loading from {models_folder}")
+        self.od = load_detector(f"{models_folder}/cifar10")
         self.loaded = True
         
     def unload(self):
@@ -234,27 +245,33 @@ class OutlierModel(object):
                       return_feature_score=True,  # scores used to determine outliers
                       return_instance_score=True)
         
-        return json.loads(json.dumps(od_preds, cls=NumpyEncoder))
-    
-outlier = OutlierModel()
+        return json.loads(json.dumps(od_preds, cls=NumpyEncoder))   
+```
 
+
+```python
+outlier = OutlierModel()
+```
+
+
+```python
 @pipeline(
-        name="cifar10-service",
-        protocol=KFServingV2Protocol(),
-        runtime_options=runtimeOptions,
-        uri="s3://tempo/outlier/cifar10/svc",
-        local_folder=SVC_FOLDER,
-        models=[outlier, cifar10_model]
-    )
+    name="cifar10-service",
+    protocol=KFServingV2Protocol(),
+    runtime_options=runtimeOptions,
+    uri="s3://tempo/outlier/cifar10/svc",
+    local_folder=SVC_FOLDER,
+    models=PipelineModels(outlier=outlier, cifar10=cifar10_model)
+)
 class Cifar10(object):
         
     @predictmethod
     def predict(self, payload: np.ndarray) -> np.ndarray:
-        r = outlier(payload=payload)
+        r = self.models.outlier(payload=payload)
         if r["data"]["is_outlier"][0]:
             return np.array([])
         else:
-            return cifar10_model(payload)
+            return self.models.cifar10(payload)
 
         
 svc = Cifar10()
@@ -300,7 +317,10 @@ dependencies:
     - mlserver==0.3.1.dev7
 ```
 
-FIXME: remove alibi-detect from pip in below when isolated
+
+```python
+!mkdir -p artifacts/svc/
+```
 
 
 ```python
@@ -311,7 +331,6 @@ channels:
 dependencies:
   - python={PYTHON_VERSION}
   - pip:
-    - alibi-detect
     - dill
     - opencv-python-headless
     - mlops-tempo @ file://{TEMPO_DIR}
@@ -366,6 +385,11 @@ svc.remote(payload=X_test[0:1])
 ```python
 show_image(X_mask)
 svc.remote(payload=X_mask)
+```
+
+
+```python
+docker_runtime.undeploy(svc)
 ```
 
 ## Deploy to Kubernetes
@@ -424,7 +448,7 @@ MINIO_IP=MINIO_IP[0]
 
 ```python
 %%writetemplate rclone.conf
-[gcs]
+[gs]
 type = google cloud storage
 anonymous = true
 
@@ -480,9 +504,4 @@ svc.remote(payload=X_mask)
 
 ```python
 k8s_runtime.undeploy(svc)
-```
-
-
-```python
-
 ```

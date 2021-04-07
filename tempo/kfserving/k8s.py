@@ -64,7 +64,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
         headers = self.get_headers(model_spec)
         logger.debug("Headers are", headers)
         response_raw = requests.post(
-            endpoint, json=req, headers=headers, verify_ssl=model_spec.runtime_options.ingress_options.verify_ssl
+            endpoint, json=req, headers=headers, verify=model_spec.runtime_options.ingress_options.verify_ssl
         )
         if response_raw.status_code == 200:
             return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)

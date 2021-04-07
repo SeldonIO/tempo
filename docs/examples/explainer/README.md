@@ -21,6 +21,7 @@ def writetemplate(line, cell):
 ```python
 from tempo.serve.metadata import ModelFramework, KubernetesOptions, RuntimeOptions
 from tempo.serve.model import Model
+from tempo.serve.pipeline import PipelineModels
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.docker import SeldonDockerRuntime
 from tempo.kfserving.protocol import KFServingV2Protocol
@@ -37,8 +38,8 @@ import pprint
 import dill
 import json
 
-EXPLAINER_FOLDER = os.getcwd()+"/artifacts/income_explainer"
-MODEL_FOLDER = os.getcwd()+"/artifacts/income_model"
+EXPLAINER_FOLDER = f"{os.getcwd()}/artifacts/income_explainer"
+MODEL_FOLDER = f"{os.getcwd()}/artifacts/income_model"
 
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -123,29 +124,31 @@ with open(EXPLAINER_FOLDER+"/explainer.dill", 'wb') as f:
 
 
 ```python
-
 runtimeOptions=RuntimeOptions(  
-                              k8s_options=KubernetesOptions( 
-                                        namespace="production",
-                                        authSecretName="minio-secret")
-                              )
-
-
-sklearn_model = Model(
-        name="income-sklearn",
-        platform=ModelFramework.SKLearn,
-        protocol=SeldonProtocol(),
-        runtime_options=runtimeOptions,
-        local_folder=MODEL_FOLDER,
-        uri="gs://seldon-models/test/income/model"
+    k8s_options=KubernetesOptions( 
+        namespace="production",
+        authSecretName="minio-secret"
+    )
 )
 
 
-@pipeline(name="income-explainer",
-          uri="s3://tempo/explainer/pipeline",
-          local_folder=EXPLAINER_FOLDER,
-          runtime_options=runtimeOptions,
-          models=[sklearn_model])
+sklearn_model = Model(
+    name="income-sklearn",
+    platform=ModelFramework.SKLearn,
+    protocol=SeldonProtocol(),
+    runtime_options=runtimeOptions,
+    local_folder=MODEL_FOLDER,
+    uri="gs://seldon-models/test/income/model"
+)
+
+
+@pipeline(
+    name="income-explainer",
+    uri="s3://tempo/explainer/pipeline",
+    local_folder=EXPLAINER_FOLDER,
+    runtime_options=runtimeOptions,
+    models=PipelineModels(sklearn=sklearn_model)
+)
 class ExplainerPipeline(object):
 
     def __init__(self):
@@ -158,12 +161,12 @@ class ExplainerPipeline(object):
         self.ran_init = True
         
     def update_predict_fn(self, x):
-        if np.argmax(sklearn_model(x).shape) == 0:
-            self.explainer.predictor = sklearn_model
-            self.explainer.samplers[0].predictor = sklearn_model
+        if np.argmax(self.models.sklearn(x).shape) == 0:
+            self.explainer.predictor = self.models.sklearn
+            self.explainer.samplers[0].predictor = self.models.sklearn
         else:
-            self.explainer.predictor = ArgmaxTransformer(sklearn_model)
-            self.explainer.samplers[0].predictor = ArgmaxTransformer(sklearn_model)
+            self.explainer.predictor = ArgmaxTransformer(self.models.sklearn)
+            self.explainer.samplers[0].predictor = ArgmaxTransformer(self.models.sklearn)
 
     @predictmethod
     def explain(self, payload: np.ndarray, parameters: dict) -> str:
@@ -332,9 +335,4 @@ k8s_runtime.undeploy(explainer)
 ```python
 yaml = k8s_runtime.to_k8s_yaml(explainer)
 print (eval(pprint.pformat(yaml)))
-```
-
-
-```python
-
 ```

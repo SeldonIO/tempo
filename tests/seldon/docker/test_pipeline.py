@@ -21,7 +21,7 @@ def test_deploy_pipeline_docker(
     inference_pipeline: Pipeline,
     runtime: SeldonDockerRuntime,
 ):
-    for model in inference_pipeline._models:
+    for model in inference_pipeline.models.values():
         container = runtime._get_container(model.model_spec)
         assert container.status == "running"
 
@@ -88,6 +88,6 @@ def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, e
 def test_undeploy_pipeline_docker(inference_pipeline: Pipeline, runtime: SeldonDockerRuntime):
     runtime.undeploy(inference_pipeline)
 
-    for model in inference_pipeline._models:
+    for model in inference_pipeline.models.values():
         with pytest.raises(docker.errors.NotFound):
             runtime._get_container(model.model_spec)

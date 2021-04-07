@@ -10,6 +10,7 @@ from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
+from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import model
 
 TESTS_PATH = os.path.dirname(__file__)
@@ -85,16 +86,16 @@ def custom_model() -> Model:
 def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
-        models=[sklearn_model, xgboost_model],
+        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
         uri="gs://seldon-models/tempo/test_pipeline",
         local_folder=PIPELINE_LOCAL_DIR,
     )
     def _pipeline(payload: np.ndarray) -> np.ndarray:
-        res1 = sklearn_model(payload)
+        res1 = _pipeline.models.sklearn(payload)
         if res1[0][0] > 0.7:
             return res1
         else:
-            return xgboost_model(payload)
+            return _pipeline.models.xgboost(payload)
 
     return _pipeline
 
@@ -115,7 +116,7 @@ def cifar10_model() -> Model:
 def inference_pipeline_class(sklearn_model: Model, xgboost_model: Model):
     @pipeline(
         name="mypipeline",
-        models=[sklearn_model, xgboost_model],
+        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
         local_folder=PIPELINE_LOCAL_DIR,
     )
     class MyClass(object):
