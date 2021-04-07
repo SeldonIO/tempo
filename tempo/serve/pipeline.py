@@ -9,6 +9,7 @@ from tempo.serve.runtime import Runtime
 from tempo.serve.types import ModelDataType
 from tempo.serve.state import StateDetails
 
+
 class PipelineModels(SimpleNamespace):
     def keys(self):
         return self.__dict__.keys()
@@ -33,6 +34,7 @@ class PipelineModels(SimpleNamespace):
                 runtime_options=model.get_tempo().model_spec.runtime_options,
             )
         return PipelineModels(**output)
+
 
 class Pipeline(BaseModel):
     def __init__(

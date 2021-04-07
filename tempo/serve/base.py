@@ -20,7 +20,6 @@ from .protocol import Protocol
 from .remote import Remote
 from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
-from tempo.serve.state import StateDetails, StateType, LocalState, DistributedState
 from tempo.serve.state import BaseState, DistributedState, LocalState, StateDetails, StateType
 
 
