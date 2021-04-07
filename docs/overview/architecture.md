@@ -14,13 +14,13 @@ A Model is the core deployment artifact in tempo and describes the link to a sav
 
 A Model can be:
 
-  * An optimized prepackaged server running a model artifact created by the data scientist, e.g. a Tnesorflow model.
+  * An optimized prepackaged server running a model artifact created by the data scientist, e.g. a Tensorflow model.
   * Custom python code (defined via a class or function).
 
 
-A Pipeline is custom python code (defined via a class or function) which references other Tempo components as callabale functions.
+A Pipeline is custom python code (defined via a class or function) which references other Tempo components as callable functions.
 
-An example is shown below for the outlier demo. There we have a Pipeline which calls the outlier model and if the request is determined to be an outlier then the processing is halted otherwise the model is called.
+An example is shown below for the [outlier demo](../examples/outlier/README.md). There we have a Pipeline which calls the outlier model and if the request is determined to be an outlier then the processing is halted otherwise the model is called.
 
 ![outlier demo](outlier-demo.png)
 
