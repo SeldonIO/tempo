@@ -143,6 +143,11 @@ TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
 
 
 ```python
+!mkdir -p artifacts/classifier
+```
+
+
+```python
 %%writetemplate artifacts/classifier/conda.yaml
 name: tempo
 channels:
@@ -275,9 +280,4 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 k8s_runtime.undeploy(classifier)
-```
-
-
-```python
-
 ```
