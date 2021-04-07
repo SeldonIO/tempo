@@ -253,7 +253,6 @@ def model(
             setattr(K, "request", K.pipeline.request)
             setattr(K, "remote", K.pipeline.remote)
             setattr(K, "get_tempo", K.pipeline.get_tempo)
-            setattr(K, "state_details", K.pipeline.state_details)
             setattr(K, "_state", K.pipeline._state)
 
             orig_init = K.__init__
