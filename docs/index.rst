@@ -8,6 +8,7 @@ Tempo
     :caption: Documentation:
 
     Quickstart <overview/quickstart.md>
+    Architecture <overview/architecture.md>
 
 .. toctree::
     :titlesonly:
