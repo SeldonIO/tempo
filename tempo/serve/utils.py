@@ -1,7 +1,6 @@
 import inspect
-
-from typing import Any, Callable, Optional, Type
 from inspect import getmembers, isfunction
+from typing import Any, Callable, Optional, Type
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.metadata import ModelFramework, RuntimeOptions

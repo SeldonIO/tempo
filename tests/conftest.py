@@ -1,9 +1,9 @@
 import os
+from pathlib import Path
+
 import numpy as np
 import pytest
 import yaml
-
-from pathlib import Path
 
 from tempo import Model, ModelFramework, Pipeline, model, pipeline, predictmethod
 from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
@@ -86,9 +86,7 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(
-    sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str
-) -> Pipeline:
+def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
