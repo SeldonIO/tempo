@@ -56,9 +56,7 @@ def test_custom_model(v2_input, expected):
 #
 # Test lambda function
 #
-@pytest.mark.parametrize(
-    "input, expected", [(np.array([[0, 0, 0, 1]]), np.array([[0, 0, 1]]))]
-)
+@pytest.mark.parametrize("input, expected", [(np.array([[0, 0, 0, 1]]), np.array([[0, 0, 1]]))])
 def test_lambda(input, expected):
     model = Model(
         name="test-iris-sklearn",
@@ -160,9 +158,7 @@ def test_custom_multiheaded_model_tuple(v2_input, expected):
         name="multi-headed",
         platform=ModelFramework.Custom,
     )
-    def custom_multiheaded_model_tuple(
-        a: np.ndarray, b: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def custom_multiheaded_model_tuple(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         return a, b
 
     response = custom_multiheaded_model_tuple.request(v2_input)

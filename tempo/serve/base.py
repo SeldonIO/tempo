@@ -2,38 +2,27 @@ from __future__ import annotations
 
 import os
 import tempfile
-
 from pydoc import locate
-from typing import Any, Dict, Optional, Tuple
 from types import SimpleNamespace
+from typing import Any, Dict, Optional, Tuple
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
+from ..kfserving import KFServingV2Protocol
 from ..utils import logger
+from .args import infer_args, process_datatypes
 from .constants import (
     ENV_K8S_SERVICE_HOST,
     DefaultCondaFile,
     DefaultEnvFilename,
     DefaultModelFilename,
 )
-from .types import PredictMethodSignature, ModelDataType, LoadMethodSignature
-from .loader import (
-    load_custom,
-    save_custom,
-    save_environment,
-)
-from .metadata import (
-    ModelDataArgs,
-    ModelDetails,
-    ModelFramework,
-    RuntimeOptions,
-)
-
-from ..kfserving import KFServingV2Protocol
-from .args import infer_args, process_datatypes
+from .loader import load_custom, save_custom, save_environment
+from .metadata import ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
 from .remote import Remote
 from .runtime import ModelSpec, Runtime
+from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 
 
 class BaseModel:
