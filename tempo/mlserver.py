@@ -9,8 +9,8 @@ from .serve.metadata import RuntimeOptions
 from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.base import BaseModel
 from .serve.loader import load
-from .serve.utils import PredictMethodAttr
 from .serve.metadata import ModelFramework
+from .serve.utils import PredictMethodAttr
 
 
 def _is_class(model: BaseModel) -> bool:
