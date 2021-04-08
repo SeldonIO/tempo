@@ -21,7 +21,11 @@ def model_settings(custom_model: Model) -> ModelSettings:
 
 @pytest.fixture
 def inference_request() -> InferenceRequest:
-    return InferenceRequest(inputs=[RequestInput(name="input-0", shape=[4], data=[1, 2, 3, 4], datatype="FP32")])
+    return InferenceRequest(
+        inputs=[
+            RequestInput(name="input-0", shape=[4], data=[1, 2, 3, 4], datatype="FP32")
+        ]
+    )
 
 
 @pytest.fixture
@@ -47,7 +51,7 @@ async def test_predict(
     assert len(res.outputs) == 1
 
     pipeline_input = to_ndarray(inference_request.inputs[0])
-    custom_model.get_tempo().use_remote = (
+    custom_model.get_tempo().set_remote(
         False  # ensure direct call to class does not try to do remote
     )
     expected_output = custom_model(pipeline_input)

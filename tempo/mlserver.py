@@ -28,6 +28,8 @@ class InferenceRuntime(MLModel):
         model_uri = await get_model_uri(self._settings)
 
         model = load(model_uri)
+        # TODO: Why is use_remote set to True when saving the model?
+        model.set_remote(False)
         model.details.local_folder = model_uri
 
         if _is_class(model):
