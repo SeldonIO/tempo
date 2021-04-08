@@ -11,15 +11,17 @@ import rclone
 import yaml
 
 from tempo.conf import settings
-from tempo.serve.constants import DefaultModelFilename, DefaultRemoteFilename, MLServerEnvDeps
+from tempo.serve.constants import (
+    DefaultModelFilename,
+    DefaultRemoteFilename,
+    MLServerEnvDeps,
+)
 from tempo.utils import logger
 
 
 def save(tempo_artifact: Any, save_env=True):
     model = tempo_artifact.get_tempo()
-    model.set_remote(True)
     model.save(save_env=save_env)
-    model.set_remote(False)
 
 
 def save_custom(pipeline, file_path: str) -> str:
@@ -59,7 +61,9 @@ def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
     return env
 
 
-def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None):
+def save_environment(
+    conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None
+):
     if env_name:
         _pack_environment(env_name, conda_pack_file_path)
     else:
@@ -89,7 +93,9 @@ def _has_required_deps(env: dict) -> bool:
     for dep in MLServerEnvDeps:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
-        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
+        r = re.compile(
+            fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
+        )
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:
             return False
@@ -110,7 +116,9 @@ def _add_required_deps(env: dict) -> dict:
     for dep in MLServerEnvDeps:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
-        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
+        r = re.compile(
+            fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
+        )
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:
             pip_deps["pip"].extend(MLServerEnvDeps)

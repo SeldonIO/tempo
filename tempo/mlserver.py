@@ -10,6 +10,7 @@ from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.base import BaseModel
 from .serve.loader import load
 from .serve.utils import PredictMethodAttr
+from .serve.metadata import ModelFramework
 
 
 def _is_class(model: BaseModel) -> bool:
@@ -28,9 +29,11 @@ class InferenceRuntime(MLModel):
         model_uri = await get_model_uri(self._settings)
 
         model = load(model_uri)
-        # TODO: Why is use_remote set to True when saving the model?
-        model.set_remote(False)
         model.details.local_folder = model_uri
+
+        if model.details.platform == ModelFramework.TempoPipeline:
+            # If pipeline, call children models remotely
+            model.set_remote(True)
 
         if _is_class(model):
             # TODO: Call __init__()
