@@ -4,11 +4,8 @@ This notebook will walk you through an end-to-end example deploying a Tempo pipe
 
 ## Prerequisites
 
-This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create from project root folder:
-
-```bash
-conda env create --name tempo-examples --file conda/tempo-examples.yaml
-```
+  * rclone and conda installed.
+  * Run this notebook within the `seldon-examples` conda environment. Details to create this can be found [here]().
 
 ## Architecture
 
@@ -202,4 +199,9 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 docker_runtime.undeploy(classifier)
+```
+
+
+```python
+
 ```
