@@ -331,21 +331,17 @@ channels:
 dependencies:
   - python={PYTHON_VERSION}
   - pip:
-    - dill
-    - opencv-python-headless
     - mlops-tempo @ file://{TEMPO_DIR}
     - mlserver==0.3.1.dev7
 ```
 
 
 ```python
-outlier = OutlierModel()
 save(outlier, save_env=True)
 ```
 
 
 ```python
-svc = Cifar10()
 save(svc, save_env=True)
 ```
 
@@ -504,4 +500,9 @@ svc.remote(payload=X_mask)
 
 ```python
 k8s_runtime.undeploy(svc)
+```
+
+
+```python
+
 ```
