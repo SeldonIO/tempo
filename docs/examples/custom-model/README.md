@@ -5,34 +5,22 @@ In particular, we will walk you through how to write custom logic to run inferen
 
 Note that we've picked `numpyro` for this example simply because it's not supported out of the box, but it should be possible to adapt this example easily to any other custom model.
 
-## Environment
+## Prerequisites
 
-The first step will be to describe our required environment through a `conda.yaml` file, following Conda's syntax.
-This will make sure that our dependencies are defined explicitly, so that they can be **shared between our training and inference environments**.
+This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create from project root folder:
+
+```bash
+conda env create --name tempo-examples --file conda/tempo-examples.yaml
+```
 
 
 ```python
-%%writefile ./artifacts/conda.yaml
-name: tempo-numpyro
-channels:
-  - defaults
-dependencies:
-  - pip=21.0.1
-  - python=3.7.9
-  - pandas=1.0.1
-  - pip:
-    # TODO: Change once changes are upstream
-    # - mlops-tempo
-    - /home/agm/Seldon/tempo
-    - numpyro==0.6.0
-    - mlserver==0.3.1.dev7
-```
+from IPython.core.magic import register_line_cell_magic
 
-Note that this environment will need to be created before running this notebook.
-This can be done by running:
-
-```bash
-$ conda env create --name tempo-numpyro --file ./artifacts/conda.yaml
+@register_line_cell_magic
+def writetemplate(line, cell):
+    with open(line, 'w') as f:
+        f.write(cell.format(**globals()))
 ```
 
 ## Training
@@ -191,15 +179,41 @@ For this example, we will deploy the model using the Docker runtime.
 
 
 ```python
+import sys
+import os
+PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
+```
+
+
+```python
+%%writetemplate ./artifacts/conda.yaml
+name: tempo-numpyro
+channels:
+  - defaults
+dependencies:
+  - pip=21.0.1
+  - python=3.7.9
+  - pandas=1.0.1
+  - pip:
+    - mlops-tempo @ file://{TEMPO_DIR}
+    - numpyro==0.6.0
+    - mlserver==0.3.1.dev7
+```
+
+
+```python
+from tempo.serve.loader import save
+save(numpyro_divorce, save_env=True)
+```
+
+
+```python
 from tempo.seldon import SeldonDockerRuntime
-from tempo.kfserving import KFServingV2Protocol
 
-docker_runtime = SeldonDockerRuntime(protocol=KFServingV2Protocol())
-
-numpyro_divorce.set_runtime(docker_runtime)
-numpyro_divorce.save()
-numpyro_divorce.deploy()
-numpyro_divorce.wait_ready()
+docker_runtime = SeldonDockerRuntime()
+docker_runtime.deploy(numpyro_divorce)
+docker_runtime.wait_ready(numpyro_divorce)
 ```
 
 We can now test our model deployed in Docker as:
@@ -211,5 +225,5 @@ numpyro_divorce.remote(marriage=marriage, age=age)
 
 
 ```python
-
+docker_runtime.undeploy(numpyro_divorce)
 ```
