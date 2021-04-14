@@ -20,7 +20,8 @@ from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, Mode
 from tempo.serve.protocol import Protocol
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.utils import logger, tempo_settings
+from tempo.utils import logger
+from tempo.conf import settings
 
 
 class BaseModel:
@@ -182,7 +183,7 @@ class BaseModel:
     def _create_remote(self) -> Remote:
         cls_path = self.model_spec.runtime_options.runtime
         if cls_path is None:
-            if tempo_settings.use_kubernetes() or os.getenv(ENV_K8S_SERVICE_HOST):
+            if settings.use_kubernetes or os.getenv(ENV_K8S_SERVICE_HOST):
                 cls_path = self.model_spec.runtime_options.k8s_options.defaultRuntime
             else:
                 cls_path = self.model_spec.runtime_options.docker_options.defaultRuntime

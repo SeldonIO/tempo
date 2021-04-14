@@ -16,15 +16,3 @@ def _get_env():
 logger = _get_logger()
 
 
-class TempoSettings:
-    def __init__(self):
-        self.kubernetes = False
-
-    def remote_kubernetes(self, val: bool):
-        self.kubernetes = val
-
-    def use_kubernetes(self):
-        return self.kubernetes
-
-
-tempo_settings = TempoSettings()

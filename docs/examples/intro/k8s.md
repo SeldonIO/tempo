@@ -231,6 +231,7 @@ endpoint = http://{MINIO_IP}:9000
 import os
 from tempo.conf import settings
 settings.rclone_cfg = os.getcwd() + "/rclone.conf"
+settings.use_kubernetes = True
 ```
 
 
@@ -253,12 +254,6 @@ k8s_runtime.wait_ready(classifier)
 
 Lastly, we can now send requests to our deployed pipeline.
 For this, we will leverage the `remote()` method, which will interact without our deployed pipeline (as opposed to executing our pipeline's code locally).
-
-
-```python
-from tempo.utils import tempo_settings
-tempo_settings.remote_kubernetes(True)
-```
 
 
 ```python
