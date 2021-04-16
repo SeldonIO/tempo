@@ -81,6 +81,11 @@ class Pipeline(BaseModel):
         for model in self.models.values():
             model.get_tempo().set_remote(val)
 
+    def set_runtime_options_override(self, runtime_options: RuntimeOptions):
+        for model in self.models.values():
+            model.get_tempo().set_runtime_options_override(runtime_options)
+        super().set_runtime_options_override(runtime_options)
+
     def deploy_models(self, runtime: Runtime):
         for model in self.models.values():
             model.get_tempo().deploy(runtime)

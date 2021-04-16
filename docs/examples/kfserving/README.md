@@ -104,23 +104,17 @@ runtimeOptions=RuntimeOptions(
 sklearn_model = Model(
     name="test-iris-sklearn",
     platform=ModelFramework.SKLearn,
-    protocol=KFServingV2Protocol(),
     runtime_options=runtimeOptions,
     local_folder=SKLEARN_FOLDER,
     uri="s3://tempo/basic/sklearn",
-    inputs=np.ndarray,
-    outputs=np.ndarray
 )
 
 xgboost_model = Model(
     name="test-iris-xgboost",
     platform=ModelFramework.XGBoost,
-    protocol=KFServingV2Protocol(),
     runtime_options=runtimeOptions,
     local_folder=XGBOOST_FOLDER,
-    uri="s3://tempo/basic/xgboost",
-    inputs=np.ndarray,
-    outputs=np.ndarray    
+    uri="s3://tempo/basic/xgboost",  
 )
 
 @pipeline(
@@ -269,6 +263,7 @@ endpoint = http://{MINIO_IP}:9000
 import os
 from tempo.conf import settings
 settings.rclone_cfg = os.getcwd() + "/rclone.conf"
+settings.use_kubernetes = True
 ```
 
 
@@ -294,12 +289,6 @@ For this, we will leverage the `remote()` method, which will interact without ou
 
 
 ```python
-from tempo.utils import tempo_settings
-tempo_settings.remote_kubernetes(True)
-```
-
-
-```python
 classifier(payload=np.array([[1, 2, 3, 4]]))
 ```
 
@@ -318,4 +307,9 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 k8s_runtime.undeploy(classifier)
+```
+
+
+```python
+
 ```

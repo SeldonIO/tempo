@@ -2,7 +2,8 @@ import json
 
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
-from tempo.serve.metadata import ModelDetails, ModelFramework
+from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
+from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions
 from tempo.serve.runtime import ModelSpec
 
 DefaultHTTPPort = "9000"
@@ -14,10 +15,10 @@ DefaultServiceAccountName = "tempo-pipeline"
 
 def get_container_spec(model_details: ModelSpec) -> dict:
     if model_details.model_details.platform == ModelFramework.TempoPipeline:
-        return _V2ContainerFactory.get_container_spec(model_details.model_details)
+        return _V2ContainerFactory.get_container_spec(model_details.model_details, model_details.runtime_options)
 
     if isinstance(model_details.protocol, KFServingV2Protocol):
-        return _V2ContainerFactory.get_container_spec(model_details.model_details)
+        return _V2ContainerFactory.get_container_spec(model_details.model_details, model_details.runtime_options)
 
     return _V1ContainerFactory.get_container_spec(model_details.model_details)
 
@@ -63,7 +64,7 @@ class _V2ContainerFactory:
     }
 
     @classmethod
-    def get_container_spec(cls, model_details: ModelDetails) -> dict:
+    def get_container_spec(cls, model_details: ModelDetails, runtime_options: RuntimeOptions) -> dict:
         mlserver_runtime = cls.MLServerRuntimes[model_details.platform]
 
         env = {
@@ -72,6 +73,7 @@ class _V2ContainerFactory:
             "MLSERVER_MODEL_IMPLEMENTATION": mlserver_runtime,
             "MLSERVER_MODEL_NAME": model_details.name,
             "MLSERVER_MODEL_URI": DefaultModelsPath,
+            ENV_TEMPO_RUNTIME_OPTIONS: json.dumps(runtime_options.dict()),
         }
 
         return {

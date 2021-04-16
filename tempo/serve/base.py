@@ -6,6 +6,9 @@ from os import path
 from pydoc import locate
 from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
 
+import numpy as np
+
+from tempo.conf import settings
 from tempo.errors import UndefinedCustomImplementation
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.constants import (
@@ -20,7 +23,7 @@ from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, Mode
 from tempo.serve.protocol import Protocol
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.utils import logger, tempo_settings
+from tempo.utils import logger
 
 
 class BaseModel:
@@ -63,9 +66,13 @@ class BaseModel:
         self.model_spec = ModelSpec(model_details=self.details, protocol=self.protocol, runtime_options=runtime_options)
 
         self.use_remote: bool = False
+        self.runtime_options_override: Optional[RuntimeOptions] = None
 
     def set_remote(self, val: bool):
         self.use_remote = val
+
+    def set_runtime_options_override(self, runtime_options: RuntimeOptions):
+        self.runtime_options_override = runtime_options
 
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
@@ -90,6 +97,9 @@ class BaseModel:
                             output_args.append(ModelDataArg(ty=v))
                     else:
                         input_args.append(ModelDataArg(name=k, ty=v))
+            else:
+                input_args.append(ModelDataArg(ty=np.ndarray))
+                output_args.append(ModelDataArg(ty=np.ndarray))
         else:
             if isinstance(outputs, dict):
                 for k, v in outputs.items():
@@ -179,42 +189,50 @@ class BaseModel:
 
         return response_converted
 
-    def _create_remote(self) -> Remote:
-        cls_path = self.model_spec.runtime_options.runtime
+    def _get_model_spec(self) -> ModelSpec:
+        if self.runtime_options_override:
+            return ModelSpec(
+                model_details=self.details, protocol=self.protocol, runtime_options=self.runtime_options_override
+            )
+        else:
+            return self.model_spec
+
+    def _create_remote(self, model_spec: ModelSpec) -> Remote:
+        cls_path = model_spec.runtime_options.runtime
         if cls_path is None:
-            if tempo_settings.use_kubernetes() or os.getenv(ENV_K8S_SERVICE_HOST):
-                cls_path = self.model_spec.runtime_options.k8s_options.defaultRuntime
+            if settings.use_kubernetes or os.getenv(ENV_K8S_SERVICE_HOST):
+                cls_path = model_spec.runtime_options.k8s_options.defaultRuntime
             else:
-                cls_path = self.model_spec.runtime_options.docker_options.defaultRuntime
+                cls_path = model_spec.runtime_options.docker_options.defaultRuntime
         logger.debug("Using remote class %s", cls_path)
         cls: Any = locate(cls_path)
         return cls()
 
     def remote(self, *args, **kwargs):
-        remoter = self._create_remote()
-        return remoter.remote(self.model_spec, *args, **kwargs)
+        remoter = self._create_remote(self._get_model_spec())
+        return remoter.remote(self._get_model_spec(), *args, **kwargs)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
-        return runtime.wait_ready_spec(self.model_spec, timeout_secs=timeout_secs)
+        return runtime.wait_ready_spec(self._get_model_spec(), timeout_secs=timeout_secs)
 
     def get_endpoint(self, runtime: Runtime):
-        return runtime.get_endpoint_spec(self.model_spec)
+        return runtime.get_endpoint_spec(self._get_model_spec())
 
     def to_k8s_yaml(self, runtime: Runtime) -> str:
         """
         Get k8s yaml
         """
 
-        return runtime.to_k8s_yaml_spec(self.model_spec)
+        return runtime.to_k8s_yaml_spec(self._get_model_spec())
 
     def deploy(self, runtime: Runtime):
         # self.set_runtime(runtime)
-        runtime.deploy_spec(self.model_spec)
+        runtime.deploy_spec(self._get_model_spec())
 
     def undeploy(self, runtime: Runtime):
         # self.unset_runtime()
         logger.info("Undeploying %s", self.details.name)
-        runtime.undeploy_spec(self.model_spec)
+        runtime.undeploy_spec(self._get_model_spec())
 
     def get_tempo(self) -> BaseModel:
         return self

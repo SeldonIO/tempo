@@ -8,6 +8,8 @@ dependencies:
       - opencv-python-headless
       - conda-pack
       - jupyter
+      - jupyter_contrib_nbextensions
+      - jupyter_nbextensions_configurator
       - mlops-tempo
       - alibi
       - alibi-detect==0.5.1
@@ -16,3 +18,5 @@ dependencies:
       - xgboost
       - ansible
       - openshift
+      - pytest==6.2.0
+      - pytest-asyncio==0.14.0

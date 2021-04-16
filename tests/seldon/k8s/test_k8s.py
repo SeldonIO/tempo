@@ -3,8 +3,15 @@ import pytest
 from kubernetes import client
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline
+
+
+def test_create_k8s_runtime():
+    rto = RuntimeOptions()
+    rt = SeldonKubernetesRuntime(rto)
+    assert rt.runtime_options.runtime == "tempo.seldon.SeldonKubernetesRuntime"
 
 
 @pytest.mark.skip(reason="needs k8s cluster")

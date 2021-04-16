@@ -1,0 +1,76 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: classifier
+  namespace: default
+spec:
+  predictors:
+  - componentSpecs:
+    - spec:
+        containers:
+        - args: []
+          env:
+          - name: MLSERVER_HTTP_PORT
+            value: '9000'
+          - name: MLSERVER_GRPC_PORT
+            value: '9500'
+          - name: MLSERVER_MODEL_IMPLEMENTATION
+            value: tempo.mlserver.InferenceRuntime
+          - name: MLSERVER_MODEL_NAME
+            value: classifier
+          - name: MLSERVER_MODEL_URI
+            value: /mnt/models
+          - name: TEMPO_RUNTIME_OPTIONS
+            value: '{"runtime": null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+              "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null,
+              "authSecretName": null, "serviceAccountName": null, "defaultRuntime":
+              "tempo.seldon.SeldonKubernetesRuntime", "namespace": "default"}, "ingress_options":
+              {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
+              true}}'
+          image: seldonio/mlserver:0.3.1.dev7
+          name: classifier
+    graph:
+      implementation: TRITON_SERVER
+      modelUri: s3://tempo/basic/pipeline
+      name: classifier
+      serviceAccountName: tempo-pipeline
+      type: MODEL
+    name: default
+    replicas: 1
+  protocol: kfserving
+
+---
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: test-iris-sklearn
+  namespace: default
+spec:
+  predictors:
+  - graph:
+      implementation: SKLEARN_SERVER
+      modelUri: s3://tempo/basic/sklearn
+      name: test-iris-sklearn
+      type: MODEL
+    name: default
+    replicas: 1
+  protocol: kfserving
+
+---
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: test-iris-xgboost
+  namespace: default
+spec:
+  predictors:
+  - graph:
+      implementation: XGBOOST_SERVER
+      modelUri: s3://tempo/basic/xgboost
+      name: test-iris-xgboost
+      type: MODEL
+    name: default
+    replicas: 1
+  protocol: kfserving
+
+---

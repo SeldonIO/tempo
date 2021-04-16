@@ -1,7 +1,7 @@
 import os
 import socket
 import time
-from typing import Any, Tuple
+from typing import Any, Optional, Tuple
 
 import docker
 import requests
@@ -10,6 +10,7 @@ from docker.errors import NotFound
 from docker.models.containers import Container
 
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
+from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
 
@@ -17,6 +18,11 @@ DefaultNetworkName = "tempo"
 
 
 class SeldonDockerRuntime(Runtime, Remote):
+    def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
+        if runtime_options:
+            runtime_options.runtime = "tempo.seldon.SeldonDockerRuntime"
+        super().__init__(runtime_options)
+
     def _get_host_ip_port(self, model_details: ModelSpec) -> Tuple[str, str]:
         container = self._get_container(model_details)
         port_index = self._get_port_index()

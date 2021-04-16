@@ -296,6 +296,7 @@ endpoint = http://{MINIO_IP}:9000
 import os
 from tempo.conf import settings
 settings.rclone_cfg = os.getcwd() + "/rclone.conf"
+settings.use_kubernetes = True
 ```
 
 
@@ -310,12 +311,6 @@ upload(explainer)
 k8s_runtime = SeldonKubernetesRuntime()
 k8s_runtime.deploy(explainer)
 k8s_runtime.wait_ready(explainer)
-```
-
-
-```python
-from tempo.utils import tempo_settings
-tempo_settings.remote_kubernetes(True)
 ```
 
 
@@ -335,4 +330,9 @@ k8s_runtime.undeploy(explainer)
 ```python
 yaml = k8s_runtime.to_k8s_yaml(explainer)
 print (eval(pprint.pformat(yaml)))
+```
+
+
+```python
+
 ```

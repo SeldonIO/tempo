@@ -7,11 +7,12 @@ import pytest
 from tempo import Model, Pipeline
 from tempo.seldon import SeldonDockerRuntime
 from tempo.serve.loader import save
+from tempo.serve.metadata import RuntimeOptions
 
 
 @pytest.fixture
 def runtime() -> SeldonDockerRuntime:
-    return SeldonDockerRuntime()
+    return SeldonDockerRuntime(RuntimeOptions())
 
 
 @pytest.fixture
