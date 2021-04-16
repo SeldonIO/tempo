@@ -50,4 +50,4 @@ ansible-playbook ansible/playbooks/kfserving.yaml
 
 ## Next Step
 
-Create the `tempo-examples` conda environment and try the [introductory example](../examples/introduction/README.html)
+Create the `tempo-examples` conda environment and try the [introductory example](../examples/intro/README.html)
