@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 from typing import Any, Optional
 
-import attr
 from pydantic import BaseModel
 
 from tempo.serve.metadata import ModelDetails, RuntimeOptions

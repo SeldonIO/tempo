@@ -1,4 +1,3 @@
-import base64
 import json
 
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
