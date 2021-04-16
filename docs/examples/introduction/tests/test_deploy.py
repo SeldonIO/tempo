@@ -1,11 +1,5 @@
-import os
-import sys
-
 import numpy as np
 from src.deploy import SKLearnTag, XGBoostTag, get_tempo_artifacts
-
-myPath = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, myPath + "/../")
 
 
 def test_sklearn_model_used():

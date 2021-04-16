@@ -19,6 +19,8 @@ DefaultNetworkName = "tempo"
 
 class SeldonDockerRuntime(Runtime, Remote):
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
+        if runtime_options:
+            runtime_options.runtime = "tempo.seldon.SeldonDockerRuntime"
         super().__init__(runtime_options)
 
     def _get_host_ip_port(self, model_details: ModelSpec) -> Tuple[str, str]:

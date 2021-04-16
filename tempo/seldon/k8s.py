@@ -18,6 +18,8 @@ from tempo.utils import logger
 
 class SeldonKubernetesRuntime(Runtime, Remote):
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
+        if runtime_options:
+            runtime_options.runtime = "tempo.seldon.SeldonKubernetesRuntime"
         super().__init__(runtime_options)
 
     def create_k8s_client(self):

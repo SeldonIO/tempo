@@ -35,6 +35,8 @@ Implementations = {
 
 class KFServingKubernetesRuntime(Runtime, Remote):
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
+        if runtime_options:
+            runtime_options.runtime = "tempo.kfserving.KFServingKubernetesRuntime"
         super().__init__(runtime_options)
 
     def _inside_cluster(self):
