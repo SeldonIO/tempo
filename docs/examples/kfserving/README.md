@@ -104,23 +104,17 @@ runtimeOptions=RuntimeOptions(
 sklearn_model = Model(
     name="test-iris-sklearn",
     platform=ModelFramework.SKLearn,
-    protocol=KFServingV2Protocol(),
     runtime_options=runtimeOptions,
     local_folder=SKLEARN_FOLDER,
     uri="s3://tempo/basic/sklearn",
-    inputs=np.ndarray,
-    outputs=np.ndarray
 )
 
 xgboost_model = Model(
     name="test-iris-xgboost",
     platform=ModelFramework.XGBoost,
-    protocol=KFServingV2Protocol(),
     runtime_options=runtimeOptions,
     local_folder=XGBOOST_FOLDER,
-    uri="s3://tempo/basic/xgboost",
-    inputs=np.ndarray,
-    outputs=np.ndarray    
+    uri="s3://tempo/basic/xgboost",  
 )
 
 @pipeline(
@@ -313,4 +307,9 @@ classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
 
 ```python
 k8s_runtime.undeploy(classifier)
+```
+
+
+```python
+
 ```

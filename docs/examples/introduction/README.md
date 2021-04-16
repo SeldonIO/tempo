@@ -44,35 +44,39 @@ ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
 
 
 ```python
-# %load src/models
+# %load src/train.py
+from typing import Tuple
+
+import joblib
+import numpy as np
 from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
-import joblib
 from xgboost import XGBClassifier
-import numpy as np
 
 SKLearnFolder = "sklearn"
 XGBoostFolder = "xgboost"
 
 
-def load_iris() -> (np.ndarray, np.ndarray):
+def load_iris() -> Tuple[np.ndarray, np.ndarray]:
     iris = datasets.load_iris()
     X = iris.data  # we only take the first two features.
     y = iris.target
-    return (X,y)
+    return (X, y)
+
 
 def train_sklearn(X: np.ndarray, y: np.ndarray, artifacts_folder: str):
     logreg = LogisticRegression(C=1e5)
     logreg.fit(X, y)
     logreg.predict_proba(X[0:1])
-    with open(f"{artifacts_folder}/{SKLearnFolder}/model.joblib","wb") as f:
+    with open(f"{artifacts_folder}/{SKLearnFolder}/model.joblib", "wb") as f:
         joblib.dump(logreg, f)
 
 
-def train_xgboost(X: np.ndarray, y:np.ndarray, artifacts_folder: str):
+def train_xgboost(X: np.ndarray, y: np.ndarray, artifacts_folder: str):
     clf = XGBClassifier()
     clf.fit(X, y)
     clf.save_model(f"{artifacts_folder}/{XGBoostFolder}/model.bst")
+
 ```
 
 
@@ -99,8 +103,7 @@ classifier, sklearn_model, xgboost_model = get_tempo_artifacts(ARTIFACTS_FOLDER)
 from typing import Tuple
 
 import numpy as np
-from tempo.seldon.protocol import SeldonProtocol
-from tempo.serve.metadata import ModelFramework, RuntimeOptions, KubernetesOptions
+from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline
@@ -113,18 +116,10 @@ XGBoostTag = "xgboost prediction"
 
 
 def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
-    runtimeOptions = RuntimeOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
 
     sklearn_model = Model(
         name="test-iris-sklearn",
         platform=ModelFramework.SKLearn,
-        protocol=SeldonProtocol(),
-        runtime_options=runtimeOptions,
         local_folder=f"{artifacts_folder}/{SKLearnFolder}",
         uri="s3://tempo/basic/sklearn",
     )
@@ -132,8 +127,6 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
     xgboost_model = Model(
         name="test-iris-xgboost",
         platform=ModelFramework.XGBoost,
-        protocol=SeldonProtocol(),
-        runtime_options=runtimeOptions,
         local_folder=f"{artifacts_folder}/{XGBoostFolder}",
         uri="s3://tempo/basic/xgboost",
     )
@@ -142,16 +135,15 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
         name="classifier",
         uri="s3://tempo/basic/pipeline",
         local_folder=f"{artifacts_folder}/{PipelineFolder}",
-        runtime_options=runtimeOptions,
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
     )
     def classifier(payload: np.ndarray) -> Tuple[np.ndarray, str]:
-        res1 = classifier.models.sklearn(payload)
+        res1 = classifier.models.sklearn(input=payload)
 
-        if res1[0][0] > 0.5:
+        if res1[0] == 1:
             return res1, SKLearnTag
         else:
-            return classifier.models.xgboost(payload), XGBoostTag
+            return classifier.models.xgboost(input=payload), XGBoostTag
 
     return classifier, sklearn_model, xgboost_model
 
@@ -164,23 +156,26 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
 
 ```python
 # %load tests/test_deploy.py
+import sys, os
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + '/../')
 import numpy as np
 
 from src.deploy import SKLearnTag, XGBoostTag, get_tempo_artifacts
 
 
 def test_sklearn_model_used():
-    classifier = get_tempo_artifacts("")
-    classifier.models.sklearn = lambda x: np.array([[0.6]])
+    classifier,_,_ = get_tempo_artifacts("")
+    classifier.models.sklearn = lambda input: np.array([[1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))
-    assert res[0][0] == 0.6
+    assert res[0][0] == 1
     assert tag == SKLearnTag
 
 
 def test_xgboost_model_used():
-    classifier = get_tempo_artifacts("")
-    classifier.models.sklearn = lambda x: np.array([[0.2]])
-    classifier.models.xgboost = lambda x: np.array([[0.1]])
+    classifier,_,_ = get_tempo_artifacts("")
+    classifier.models.sklearn = lambda input: np.array([[0.2]])
+    classifier.models.xgboost = lambda input: np.array([[0.1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))
     assert res[0][0] == 0.1
     assert tag == XGBoostTag
@@ -204,7 +199,7 @@ def test_xgboost_model_used():
 
 ```python
 from tempo.serve.loader import save
-save(classifier, save_env=True)
+save(classifier)
 ```
 
 ## Test Locally on Docker
@@ -221,17 +216,13 @@ docker_runtime.wait_ready(classifier)
 
 
 ```python
-classifier(payload=np.array([[1, 2, 3, 4]]))
+classifier(np.array([[1, 2, 3, 4]]))
 ```
 
 
 ```python
-classifier.remote(payload=np.array([[1, 2, 3, 4]]))
-```
-
-
-```python
-classifier.remote(payload=np.array([[5.964,4.006,2.081,1.031]]))
+print(classifier.remote(np.array([[0, 0, 0,0]])))
+print(classifier.remote(np.array([[5.964,4.006,2.081,1.031]])))
 ```
 
 
@@ -273,8 +264,19 @@ upload(classifier)
 
 
 ```python
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+runtime_options = RuntimeOptions(
+        k8s_options=KubernetesOptions(
+            namespace="production",
+            authSecretName="minio-secret"
+        )
+    )
+```
+
+
+```python
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime()
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(classifier)
 k8s_runtime.wait_ready(classifier)
 ```
@@ -283,7 +285,8 @@ k8s_runtime.wait_ready(classifier)
 ```python
 from tempo.conf import settings
 settings.use_kubernetes = True
-classifier.remote(payload=np.array([[1, 2, 3, 4]]))
+print(classifier.remote(payload=np.array([[0, 0, 0, 0]])))
+print(classifier.remote(payload=np.array([[1, 2, 3, 4]])))
 ```
 
 
