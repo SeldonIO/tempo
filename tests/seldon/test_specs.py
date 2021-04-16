@@ -51,7 +51,7 @@ def test_kubernetes_spec_pipeline():
     model_spec = ModelSpec(model_details=details, protocol=protocol, runtime_options=runtime_options)
     k8s_object = KubernetesSpec(model_spec)
 
-    container_spec = _V2ContainerFactory.get_container_spec(details)
+    container_spec = _V2ContainerFactory.get_container_spec(details, runtime_options)
     container_env = [{"name": name, "value": value} for name, value in container_spec["environment"].items()]
 
     expected = {

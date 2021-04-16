@@ -19,3 +19,5 @@ MLServerEnvDeps = ["mlserver==0.3.1.dev7"]
 DefaultCondaFile = "conda.yaml"
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
+
+ENV_TEMPO_RUNTIME_OPTIONS = "TEMPO_RUNTIME_OPTIONS"

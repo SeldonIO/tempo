@@ -1,6 +1,6 @@
 import os
 import time
-from typing import Any
+from typing import Any, Optional
 
 import requests
 import yaml
@@ -13,9 +13,14 @@ from tempo.serve.constants import ENV_K8S_SERVICE_HOST
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
+from tempo.serve.metadata import RuntimeOptions
 
 
 class SeldonKubernetesRuntime(Runtime, Remote):
+
+    def __init__(self, runtime_options: Optional[RuntimeOptions]=None):
+        super().__init__(runtime_options)
+
     def create_k8s_client(self):
         inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
         if inside_cluster:
