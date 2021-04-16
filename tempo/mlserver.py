@@ -1,11 +1,12 @@
-import os
 import json
+import os
+
 from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri
 
-from tempo.serve.loader import load
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
+from tempo.serve.loader import load
 from tempo.serve.metadata import RuntimeOptions
 
 

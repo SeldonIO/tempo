@@ -10,15 +10,14 @@ from kubernetes.client.rest import ApiException
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.constants import ENV_K8S_SERVICE_HOST
+from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
-from tempo.serve.metadata import RuntimeOptions
 
 
 class SeldonKubernetesRuntime(Runtime, Remote):
-
-    def __init__(self, runtime_options: Optional[RuntimeOptions]=None):
+    def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
         super().__init__(runtime_options)
 
     def create_k8s_client(self):

@@ -1,7 +1,8 @@
-import inspect
-from typing import Any
-import json
 import base64
+import inspect
+import json
+from typing import Any
+
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
@@ -13,8 +14,10 @@ from tempo.serve.protocol import Protocol
 def b64_encode_runtime_options(runtime_options: RuntimeOptions):
     return str(base64.b64encode(json.dumps(runtime_options.dict()).encode("utf8")), "utf-8")
 
+
 def b64_decode_runtime_options(val: str):
     return RuntimeOptions(**json.loads(base64.b64decode(val.encode("utf-8")).decode("utf-8")))
+
 
 def pipeline(
     name: str,

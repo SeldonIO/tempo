@@ -1,7 +1,7 @@
+import json
 import os
 import time
 from typing import Any, Dict, Optional
-import json
 
 import requests
 import yaml
@@ -12,10 +12,10 @@ from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
+from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from tempo.utils import logger
 
 DefaultHTTPPort = "8080"
@@ -34,7 +34,6 @@ Implementations = {
 
 
 class KFServingKubernetesRuntime(Runtime, Remote):
-
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
         super().__init__(runtime_options)
 
@@ -205,8 +204,8 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                                     },
                                     {
                                         "name": ENV_TEMPO_RUNTIME_OPTIONS,
-                                        "value": json.dumps(model_spec.runtime_options.dict())
-                                    }
+                                        "value": json.dumps(model_spec.runtime_options.dict()),
+                                    },
                                 ],
                             },
                         ],

@@ -5,8 +5,10 @@ import tempfile
 from os import path
 from pydoc import locate
 from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
+
 import numpy as np
 
+from tempo.conf import settings
 from tempo.errors import UndefinedCustomImplementation
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.constants import (
@@ -22,7 +24,6 @@ from tempo.serve.protocol import Protocol
 from tempo.serve.remote import Remote
 from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
-from tempo.conf import settings
 
 
 class BaseModel:
@@ -70,7 +71,7 @@ class BaseModel:
     def set_remote(self, val: bool):
         self.use_remote = val
 
-    def set_runtime_options_override(self,runtime_options: RuntimeOptions):
+    def set_runtime_options_override(self, runtime_options: RuntimeOptions):
         self.runtime_options_override = runtime_options
 
     def _get_args(
@@ -190,7 +191,9 @@ class BaseModel:
 
     def _get_model_spec(self) -> ModelSpec:
         if self.runtime_options_override:
-            return ModelSpec(model_details=self.details, protocol=self.protocol, runtime_options=self.runtime_options_override)
+            return ModelSpec(
+                model_details=self.details, protocol=self.protocol, runtime_options=self.runtime_options_override
+            )
         else:
             return self.model_spec
 

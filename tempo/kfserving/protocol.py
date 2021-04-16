@@ -76,7 +76,7 @@ class KFServingV2Protocol(Protocol):
         return f"/v2/models/{model_details.name}/ready"
 
     def to_protocol_request(self, *args, **kwargs) -> Dict:
-        #if len(args) > 0:
+        # if len(args) > 0:
         #    raise ValueError("KFserving V2 protocol only supports named arguments")
 
         inputs = []
@@ -84,9 +84,9 @@ class KFServingV2Protocol(Protocol):
             for idx, raw in enumerate(args):
                 raw_type = type(raw)
                 if raw_type == np.ndarray:
-                    inputs.append(KFServingV2Protocol.create_v2_from_np(raw, "input-"+str(idx)))
+                    inputs.append(KFServingV2Protocol.create_v2_from_np(raw, "input-" + str(idx)))
                 else:
-                    inputs.append(KFServingV2Protocol.create_v2_from_any(raw, "input-"+str(idx)))
+                    inputs.append(KFServingV2Protocol.create_v2_from_any(raw, "input-" + str(idx)))
         else:
             for (name, raw) in kwargs.items():
                 raw_type = type(raw)

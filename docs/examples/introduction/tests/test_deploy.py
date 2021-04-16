@@ -1,13 +1,14 @@
-import sys, os
-myPath = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, myPath + '/../')
-import numpy as np
+import os
+import sys
 
+myPath = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, myPath + "/../")
+import numpy as np
 from src.deploy import SKLearnTag, XGBoostTag, get_tempo_artifacts
 
 
 def test_sklearn_model_used():
-    classifier,_,_ = get_tempo_artifacts("")
+    classifier, _, _ = get_tempo_artifacts("")
     classifier.models.sklearn = lambda input: np.array([[1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))
     assert res[0][0] == 1
@@ -15,7 +16,7 @@ def test_sklearn_model_used():
 
 
 def test_xgboost_model_used():
-    classifier,_,_ = get_tempo_artifacts("")
+    classifier, _, _ = get_tempo_artifacts("")
     classifier.models.sklearn = lambda input: np.array([[0.2]])
     classifier.models.xgboost = lambda input: np.array([[0.1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))

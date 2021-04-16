@@ -1,5 +1,6 @@
-import json
 import base64
+import json
+
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
@@ -73,7 +74,7 @@ class _V2ContainerFactory:
             "MLSERVER_MODEL_IMPLEMENTATION": mlserver_runtime,
             "MLSERVER_MODEL_NAME": model_details.name,
             "MLSERVER_MODEL_URI": DefaultModelsPath,
-            ENV_TEMPO_RUNTIME_OPTIONS: json.dumps(runtime_options.dict())
+            ENV_TEMPO_RUNTIME_OPTIONS: json.dumps(runtime_options.dict()),
         }
 
         return {

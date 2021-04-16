@@ -1,19 +1,19 @@
 from typing import Tuple
 
 import numpy as np
+from src.train import SKLearnFolder, XGBoostFolder
+
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline
-
-from src.train import SKLearnFolder, XGBoostFolder
 
 PipelineFolder = "classifier"
 SKLearnTag = "sklearn prediction"
 XGBoostTag = "xgboost prediction"
 
 
-def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
+def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
 
     sklearn_model = Model(
         name="test-iris-sklearn",

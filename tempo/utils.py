@@ -14,5 +14,3 @@ def _get_env():
 
 
 logger = _get_logger()
-
-

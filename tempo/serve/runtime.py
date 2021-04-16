@@ -21,7 +21,6 @@ class ModelSpec(BaseModel):
 
 
 class Deployer(object):
-
     def __init__(self, runtime_options: Optional[RuntimeOptions]):
         self.runtime_options = runtime_options
 
