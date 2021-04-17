@@ -1,4 +1,4 @@
-# Tempo Introduction
+# Deploy to KFserving
 
 ![architecture](architecture.png)
 
@@ -10,6 +10,8 @@ In this introduction we will:
   * [Run unit tests](#Unit-Tests)
   * [Save python environment for our classifier](#Save-Classifier-Environment)
   * [Test Locally on Docker](#Test-Locally-on-Docker)
+  * [Production on Kubernetes via Tempo](#Production-Option-1-(Deploy-to-Kubernetes-with-Tempo))
+  * [Prodiuction on Kuebrnetes via GitOps](#Production-Option-2-(Gitops))
 
 ## Prerequisites
 
@@ -34,9 +36,9 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 
 ```python
 import os
-from src import train_sklearn, train_xgboost, load_iris
 from tempo.utils import logger
 import logging
+import numpy as np
 logger.setLevel(logging.ERROR)
 logging.basicConfig(level=logging.ERROR)
 ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
@@ -81,42 +83,35 @@ def train_xgboost(X: np.ndarray, y: np.ndarray, artifacts_folder: str):
 
 
 ```python
-X,y = load_iris()
-train_sklearn(X, y, ARTIFACTS_FOLDER)
-train_xgboost(X, y, ARTIFACTS_FOLDER)
+from src.data import IrisData
+from src.train import train_lr, train_xgb
+data = IrisData()
+
+train_lr(ARTIFACTS_FOLDER, data)
+train_xgb(ARTIFACTS_FOLDER, data)
 ```
 
 ## Create Tempo Artifacts
 
- * Here we create the Tempo models and orchestration Pipeline for our final service using our models.
- * For illustration the final service will call the sklearn model and based on the result will decide to return that prediction or call the xgboost model and return that prediction instead.
 
 
 ```python
-from src import get_tempo_artifacts
+from src.tempo import get_tempo_artifacts
 classifier, sklearn_model, xgboost_model = get_tempo_artifacts(ARTIFACTS_FOLDER)
 ```
 
 
 ```python
 # %load src/tempo.py
-from typing import Tuple
-
 import numpy as np
+from typing import Tuple
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline, PipelineModels
+from tempo.serve.pipeline import PipelineModels, Pipeline
 from tempo.serve.utils import pipeline
+from src.constants import SKLearnFolder, XGBFolder
 
-from src.train import SKLearnFolder, XGBoostFolder
-
-PipelineFolder = "classifier"
-SKLearnTag = "sklearn prediction"
-XGBoostTag = "xgboost prediction"
-
-
-def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
-
+def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
     sklearn_model = Model(
         name="test-iris-sklearn",
         platform=ModelFramework.SKLearn,
@@ -127,25 +122,27 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
     xgboost_model = Model(
         name="test-iris-xgboost",
         platform=ModelFramework.XGBoost,
-        local_folder=f"{artifacts_folder}/{XGBoostFolder}",
+        local_folder=f"{artifacts_folder}/{XGBFolder}",
         uri="s3://tempo/basic/xgboost",
     )
 
     @pipeline(
         name="classifier",
         uri="s3://tempo/basic/pipeline",
-        local_folder=f"{artifacts_folder}/{PipelineFolder}",
-        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
+        local_folder=f"{artifacts_folder}/classifier",
+        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model)
     )
     def classifier(payload: np.ndarray) -> Tuple[np.ndarray, str]:
         res1 = classifier.models.sklearn(input=payload)
-
+        print(res1)
         if res1[0] == 1:
-            return res1, SKLearnTag
+            return res1, "sklearn prediction"
         else:
-            return classifier.models.xgboost(input=payload), XGBoostTag
+            return classifier.models.xgboost(input=payload), "xgboost prediction"
 
-    return classifier, sklearn_model, xgboost_model
+
+
+
 
 ```
 
@@ -156,16 +153,14 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
 
 ```python
 # %load tests/test_deploy.py
-import sys, os
-myPath = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, myPath + '/../')
+import os
+import sys
+
 import numpy as np
-
-from src.tempo import SKLearnTag, XGBoostTag, get_tempo_artifacts
-
+from src.deploy import SKLearnTag, XGBoostTag, get_tempo_artifacts
 
 def test_sklearn_model_used():
-    classifier,_,_ = get_tempo_artifacts("")
+    classifier, _, _ = get_tempo_artifacts("")
     classifier.models.sklearn = lambda input: np.array([[1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))
     assert res[0][0] == 1
@@ -173,7 +168,7 @@ def test_sklearn_model_used():
 
 
 def test_xgboost_model_used():
-    classifier,_,_ = get_tempo_artifacts("")
+    classifier, _, _ = get_tempo_artifacts("")
     classifier.models.sklearn = lambda input: np.array([[0.2]])
     classifier.models.xgboost = lambda input: np.array([[0.1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))
@@ -184,7 +179,7 @@ def test_xgboost_model_used():
 
 
 ```python
-!pytest
+!python -m pytest tests/
 ```
 
 ## Save Classifier Environment
@@ -244,6 +239,11 @@ docker_runtime.undeploy(classifier)
 
 
 ```python
+!kubectl create ns production
+```
+
+
+```python
 !kubectl apply -f k8s/rbac -n production
 ```
 
@@ -265,26 +265,25 @@ upload(classifier)
 
 ```python
 from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options = RuntimeOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
+runtime_options=RuntimeOptions(  
+    k8s_options=KubernetesOptions( 
+        defaultRuntime="tempo.kfserving.KFServingKubernetesRuntime",
+        namespace="production",
+        serviceAccountName="kf-tempo"
     )
+)
 ```
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+from tempo.kfserving.k8s import KFServingKubernetesRuntime
+k8s_runtime = KFServingKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(classifier)
 k8s_runtime.wait_ready(classifier)
 ```
 
 
 ```python
-from tempo.conf import settings
-settings.use_kubernetes = True
 print(classifier.remote(payload=np.array([[0, 0, 0, 0]])))
 print(classifier.remote(payload=np.array([[1, 2, 3, 4]])))
 ```
@@ -301,8 +300,8 @@ k8s_runtime.undeploy(classifier)
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime()
+from tempo.kfserving.k8s import KFServingKubernetesRuntime
+k8s_runtime = KFServingKubernetesRuntime(runtime_options)
 yaml_str = k8s_runtime.to_k8s_yaml(classifier)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
