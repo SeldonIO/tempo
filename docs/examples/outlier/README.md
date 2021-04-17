@@ -301,7 +301,7 @@ docker_runtime.undeploy(svc)
 
  * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
  
- ### Prerequisites
+### Prerequisites
  
  Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
  

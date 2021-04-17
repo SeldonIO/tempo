@@ -100,7 +100,7 @@ from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline
 
-from .train import SKLearnFolder, XGBoostFolder
+from src.train import SKLearnFolder, XGBoostFolder
 
 PipelineFolder = "classifier"
 SKLearnTag = "sklearn prediction"
@@ -222,7 +222,7 @@ docker_runtime.undeploy(classifier)
 
  * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
  
- ### Prerequisites
+### Prerequisites
  
  Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
  
