@@ -7,7 +7,7 @@ from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline
 
-from .train import SKLearnFolder, XGBoostFolder
+from src.train import SKLearnFolder, XGBoostFolder
 
 PipelineFolder = "classifier"
 SKLearnTag = "sklearn prediction"

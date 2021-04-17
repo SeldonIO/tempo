@@ -1,6 +1,3 @@
-minio-secret.yaml
-rclone.conf
-**/conda.yaml
 **/environment.tar.gz
 **/model.pickle
 **/remote.pickle
