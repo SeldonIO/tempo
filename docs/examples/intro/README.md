@@ -249,9 +249,9 @@ docker_runtime.undeploy(classifier)
 
 
 ```python
-from tempo.examples.minio import set_minio_rclone
+from tempo.examples.minio import create_minio_rclone
 import os
-set_minio_rclone(os.getcwd()+"/rclone.conf")
+create_minio_rclone(os.getcwd()+"/rclone.conf")
 ```
 
 

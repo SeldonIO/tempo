@@ -1,0 +1,2 @@
+SKLearnFolder = "sklearn"
+XGBFolder = "xgboost"
