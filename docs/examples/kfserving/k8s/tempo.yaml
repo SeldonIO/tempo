@@ -1,0 +1,59 @@
+apiVersion: serving.kubeflow.org/v1beta1
+kind: InferenceService
+metadata:
+  name: classifier
+  namespace: production
+spec:
+  predictor:
+    containers:
+    - env:
+      - name: STORAGE_URI
+        value: s3://tempo/basic/pipeline
+      - name: MLSERVER_HTTP_PORT
+        value: '8080'
+      - name: MLSERVER_GRPC_PORT
+        value: '9000'
+      - name: MLSERVER_MODEL_IMPLEMENTATION
+        value: tempo.mlserver.InferenceRuntime
+      - name: MLSERVER_MODEL_NAME
+        value: classifier
+      - name: MLSERVER_MODEL_URI
+        value: /mnt/models
+      - name: TEMPO_RUNTIME_OPTIONS
+        value: '{"runtime": "tempo.kfserving.KFServingKubernetesRuntime", "docker_options":
+          {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas":
+          1, "minReplicas": null, "maxReplicas": null, "authSecretName": null, "serviceAccountName":
+          "kf-tempo", "defaultRuntime": "tempo.kfserving.KFServingKubernetesRuntime",
+          "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+          "ssl": false, "verify_ssl": true}}'
+      image: seldonio/mlserver:0.3.1.dev7
+      name: mlserver
+    serviceAccountName: kf-tempo
+
+---
+apiVersion: serving.kubeflow.org/v1beta1
+kind: InferenceService
+metadata:
+  name: test-iris-sklearn
+  namespace: production
+spec:
+  predictor:
+    serviceAccountName: kf-tempo
+    sklearn:
+      protocolVersion: v2
+      storageUri: s3://tempo/basic/sklearn
+
+---
+apiVersion: serving.kubeflow.org/v1beta1
+kind: InferenceService
+metadata:
+  name: test-iris-xgboost
+  namespace: production
+spec:
+  predictor:
+    serviceAccountName: kf-tempo
+    xgboost:
+      protocolVersion: v2
+      storageUri: s3://tempo/basic/xgboost
+
+---

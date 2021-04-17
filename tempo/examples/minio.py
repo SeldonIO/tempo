@@ -13,7 +13,7 @@ endpoint = http://{MINIO_IP}:9000
 """
 
 
-def set_minio_rclone(path: str):
+def create_minio_rclone(path: str):
     config.load_kube_config()
     api_instance = client.CoreV1Api()
     res = api_instance.list_namespaced_service("minio-system", field_selector="metadata.name=minio")

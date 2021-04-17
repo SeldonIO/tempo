@@ -1,0 +1,61 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: income-explainer
+  namespace: production
+spec:
+  predictors:
+  - componentSpecs:
+    - spec:
+        containers:
+        - args: []
+          env:
+          - name: MLSERVER_HTTP_PORT
+            value: '9000'
+          - name: MLSERVER_GRPC_PORT
+            value: '9500'
+          - name: MLSERVER_MODEL_IMPLEMENTATION
+            value: tempo.mlserver.InferenceRuntime
+          - name: MLSERVER_MODEL_NAME
+            value: income-explainer
+          - name: MLSERVER_MODEL_URI
+            value: /mnt/models
+          - name: TEMPO_RUNTIME_OPTIONS
+            value: '{"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
+              {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options":
+              {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+              "minio-secret", "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+              "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+              "ssl": false, "verify_ssl": true}}'
+          image: seldonio/mlserver:0.3.1.dev7
+          name: income-explainer
+    graph:
+      envSecretRefName: minio-secret
+      implementation: TRITON_SERVER
+      modelUri: s3://tempo/explainer/pipeline
+      name: income-explainer
+      serviceAccountName: tempo-pipeline
+      type: MODEL
+    name: default
+    replicas: 1
+  protocol: kfserving
+
+---
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  name: income-sklearn
+  namespace: production
+spec:
+  predictors:
+  - graph:
+      envSecretRefName: minio-secret
+      implementation: SKLEARN_SERVER
+      modelUri: gs://seldon-models/test/income/model
+      name: income-sklearn
+      type: MODEL
+    name: default
+    replicas: 1
+  protocol: kfserving
+
+---

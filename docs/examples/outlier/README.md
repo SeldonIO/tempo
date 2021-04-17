@@ -1,8 +1,17 @@
-# Outlier Detection with CIFAR10 using Alibi-Detect
+# Outlier Example
 
-This examples show a Cifar10 prediction service with outlier detection. We ignore the prediction from our model if we suspect the input is an outlier.
+![architecture](architecture.png)
 
+In this example we will:
 
+  * [Describe the project structure](#Project-Structure)
+  * [Train some models](#Train-Models)
+  * [Create Tempo artifacts](#Create-Tempo-Artifacts)
+  * [Run unit tests](#Unit-Tests)
+  * [Save python environment for our classifier](#Save-Classifier-Environment)
+  * [Test Locally on Docker](#Test-Locally-on-Docker)
+  * [Production on Kubernetes via Tempo](#Production-Option-1-(Deploy-to-Kubernetes-with-Tempo))
+  * [Prodiuction on Kuebrnetes via GitOps](#Production-Option-2-(Gitops))
 
 ## Prerequisites
 
@@ -12,375 +21,275 @@ This notebooks needs to be run in the `tempo-examples` conda environment defined
 conda env create --name tempo-examples --file conda/tempo-examples.yaml
 ```
 
-
-```python
-!cat ../../../conda/tempo-examples.yaml
-```
+## Project Structure
 
 
 ```python
-from IPython.core.magic import register_line_cell_magic
-
-@register_line_cell_magic
-def writetemplate(line, cell):
-    with open(line, 'w') as f:
-        f.write(cell.format(**globals()))
+!tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
+## Train Models
 
-```python
-import cloudpickle
-import tensorflow as tf
-import matplotlib.pyplot as plt
-
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
-from tempo.serve.model import Model
-from tempo.serve.pipeline import PipelineModels
-from tempo.seldon.docker import SeldonDockerRuntime
-from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
-from tempo.serve.utils import pipeline, predictmethod, model
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.kfserving.k8s import KFServingKubernetesRuntime
-from tempo.serve.metadata import ModelFramework, KubernetesOptions
-from tempo.serve.loader import save, upload, download
-from alibi.utils.wrappers import ArgmaxTransformer
-from typing import Any
-
-import numpy as np
-import os 
-import pprint
-import json
-
-OUTLIER_FOLDER = os.getcwd()+"/artifacts/cifar10_outlier"
-MODEL_FOLDER = os.getcwd()+"/artifacts/cifar10_model"
-SVC_FOLDER = os.getcwd()+"/artifacts/svc"
-
-tf.get_logger().setLevel('INFO')
-
-import logging
-logging.basicConfig(level=logging.ERROR)
-```
-
-
-```python
-import logging
-import matplotlib.pyplot as plt
-import numpy as np
-import tensorflow as tf
-tf.keras.backend.clear_session()
-from tensorflow.keras.layers import Conv2D, Conv2DTranspose, Dense, Layer, Reshape, InputLayer
-from tqdm import tqdm
-
-from alibi_detect.models.losses import elbo
-from alibi_detect.od import OutlierVAE
-from alibi_detect.utils.fetching import fetch_detector
-from alibi_detect.utils.perturbation import apply_mask
-from alibi_detect.utils.saving import load_detector
-from alibi_detect.utils.visualize import plot_instance_score, plot_feature_outlier_image
-```
-
-
-```python
-class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):  # pylint: disable=arguments-differ,method-hidden
-        if isinstance(
-            obj,
-            (
-                np.int_,
-                np.intc,
-                np.intp,
-                np.int8,
-                np.int16,
-                np.int32,
-                np.int64,
-                np.uint8,
-                np.uint16,
-                np.uint32,
-                np.uint64,
-            ),
-        ):
-            return int(obj)
-        elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
-            return float(obj)
-        elif isinstance(obj, (np.ndarray,)):
-            return obj.tolist()
-        return json.JSONEncoder.default(self, obj)
-
-```
-
-
-```python
-def show_image(X):
-    plt.imshow(X.reshape(32, 32, 3))
-    plt.axis('off')
-    plt.show()
-```
-
-
-```python
-train, test = tf.keras.datasets.cifar10.load_data()
-X_train, y_train = train
-X_test, y_test = test
-
-X_train = X_train.astype('float32') / 255
-X_test = X_test.astype('float32') / 255
-print(X_train.shape, y_train.shape, X_test.shape, y_test.shape)
-class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer',
-               'dog', 'frog', 'horse', 'ship', 'truck']
-```
-
-
-```python
-%%writefile rclone.conf
-[gs]
-type = google cloud storage
-anonymous = true
-```
+ * This section is where as a data scientist you do your work of training models and creating artfacts.
+ * For this example we train sklearn and xgboost classification models for the iris dataset.
 
 
 ```python
 import os
-from tempo.conf import settings
-settings.rclone_cfg = os.getcwd() + "/rclone.conf"
+from tempo.utils import logger
+import logging
+import numpy as np
+logger.setLevel(logging.ERROR)
+logging.basicConfig(level=logging.ERROR)
+ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
 ```
+
+
+```python
+from src.data import Cifar10
+data = Cifar10()
+```
+
+Download pretrained Resnet32 Tensorflow model for CIFAR10
+
+
+```python
+!rclone --config ./rclone-gcs.conf copy gs://seldon-models/tfserving/cifar10/resnet32 ./artifacts/model
+```
+
+Download or train an outlier detector on CIFAR10 data
 
 
 ```python
 load_pretrained = True
 if load_pretrained:  # load pre-trained detector
-    !rclone --config ./rclone.conf copy gs://seldon-models/tempo/cifar10/outlier/cifar10 ./artifacts/cifar10_outlier/cifar10
-else:  # define model, initialize, train and save outlier detector
-
-    # define encoder and decoder networks
-    latent_dim = 1024
-    encoder_net = tf.keras.Sequential(
-      [
-          InputLayer(input_shape=(32, 32, 3)),
-          Conv2D(64, 4, strides=2, padding='same', activation=tf.nn.relu),
-          Conv2D(128, 4, strides=2, padding='same', activation=tf.nn.relu),
-          Conv2D(512, 4, strides=2, padding='same', activation=tf.nn.relu)
-      ]
-    )
-
-    decoder_net = tf.keras.Sequential(
-      [
-          InputLayer(input_shape=(latent_dim,)),
-          Dense(4*4*128),
-          Reshape(target_shape=(4, 4, 128)),
-          Conv2DTranspose(256, 4, strides=2, padding='same', activation=tf.nn.relu),
-          Conv2DTranspose(64, 4, strides=2, padding='same', activation=tf.nn.relu),
-          Conv2DTranspose(3, 4, strides=2, padding='same', activation='sigmoid')
-      ]
-    )
-
-    # initialize outlier detector
-    od = OutlierVAE(
-        threshold=.015,  # threshold for outlier score
-        encoder_net=encoder_net,  # can also pass VAE model instead
-        decoder_net=decoder_net,  # of separate encoder and decoder
-        latent_dim=latent_dim
-    )
-
-    # train
-    od.fit(X_train, epochs=50, verbose=False)
-
-    # save the trained outlier detector
-    save_detector(od, filepath)
+    !rclone --config ./rclone-gcs.conf copy gs://seldon-models/tempo/cifar10/outlier/cifar10 ./artifacts/outlier/cifar10
+else:
+    from src.outlier import train_outlier_detector
+    train_outlier_detector(data, ARTIFACTS_FOLDER)
 ```
 
 ## Create Tempo Artifacts
 
 
-```python
-runtimeOptions=RuntimeOptions(  
-    k8s_options=KubernetesOptions( 
-        namespace="production",
-        authSecretName="minio-secret"
-    )
-)
-
-
-cifar10_model = Model(
-    name="resnet32",
-    protocol=KFServingV1Protocol(),
-    runtime_options=runtimeOptions,
-    platform=ModelFramework.Tensorflow,
-    uri="gs://seldon-models/tfserving/cifar10/resnet32",
-    local_folder=MODEL_FOLDER,
-)
-
-
-@model(
-    name="outlier",
-    platform=ModelFramework.TempoPipeline,
-    protocol=KFServingV2Protocol(),
-    runtime_options=runtimeOptions,
-    uri="s3://tempo/outlier/cifar10/outlier",
-    local_folder=OUTLIER_FOLDER,
-)
-class OutlierModel(object):
-    
-    def __init__(self):
-        self.loaded = False
-        
-    def load(self):
-        if "MLSERVER_MODELS_DIR" in os.environ:
-            models_folder = "/mnt/models"
-        else:
-            models_folder = OUTLIER_FOLDER
-        print(f"Loading from {models_folder}")
-        self.od = load_detector(f"{models_folder}/cifar10")
-        self.loaded = True
-        
-    def unload(self):
-        self.od = None
-        self.loaded = False
-        
-    @predictmethod
-    def outlier(self, payload: np.ndarray) -> dict:
-        if not self.loaded:
-            self.load()
-        od_preds = self.od.predict(payload,
-                      outlier_type='instance',    # use 'feature' or 'instance' level
-                      return_feature_score=True,  # scores used to determine outliers
-                      return_instance_score=True)
-        
-        return json.loads(json.dumps(od_preds, cls=NumpyEncoder))   
-```
-
 
 ```python
+from src.tempo import create_outlier_cls, create_model, create_svc_cls
+cifar10_model = create_model(ARTIFACTS_FOLDER)
+OutlierModel = create_outlier_cls(ARTIFACTS_FOLDER)
 outlier = OutlierModel()
+Cifar10Svc = create_svc_cls(outlier, cifar10_model, ARTIFACTS_FOLDER)
+svc = Cifar10Svc()
 ```
 
 
 ```python
-@pipeline(
-    name="cifar10-service",
-    protocol=KFServingV2Protocol(),
-    runtime_options=runtimeOptions,
-    uri="s3://tempo/outlier/cifar10/svc",
-    local_folder=SVC_FOLDER,
-    models=PipelineModels(outlier=outlier, cifar10=cifar10_model)
-)
-class Cifar10(object):
-        
-    @predictmethod
-    def predict(self, payload: np.ndarray) -> np.ndarray:
-        r = self.models.outlier(payload=payload)
-        if r["data"]["is_outlier"][0]:
-            return np.array([])
-        else:
-            return self.models.cifar10(payload)
+# %load src/tempo.py
 
-        
-svc = Cifar10()
-```
-
-
-```python
-idx = 1
-X = X_train[idx:idx+1]
-np.random.seed(0) 
-X_mask, mask = apply_mask(X.reshape(1, 32, 32, 3),
-                                  mask_size=(10,10),
-                                  n_masks=1,
-                                  channels=[0,1,2],
-                                  mask_type='normal',
-                                  noise_distr=(0,1),
-                                  clip_rng=(0,1))
-```
-
-## Saving Artifacts
-
-
-```python
-import sys
+from tempo.serve.model import Model
+from tempo.kfserving.protocol import KFServingV2Protocol, KFServingV1Protocol
+from tempo.serve.utils import pipeline, predictmethod, model
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.pipeline import PipelineModels
+from src.constants import MODEL_FOLDER, OUTLIER_FOLDER
+import numpy as np
 import os
-PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
+import json
+
+
+
+
+def create_outlier_cls(artifacts_folder: str):
+    @model(
+        name="outlier",
+        platform=ModelFramework.TempoPipeline,
+        protocol=KFServingV2Protocol(),
+        uri="s3://tempo/outlier/cifar10/outlier",
+        local_folder=f"{artifacts_folder}/{OUTLIER_FOLDER}",
+    )
+    class OutlierModel(object):
+
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):  # pylint: disable=arguments-differ,method-hidden
+                if isinstance(
+                        obj,
+                        (
+                                np.int_,
+                                np.intc,
+                                np.intp,
+                                np.int8,
+                                np.int16,
+                                np.int32,
+                                np.int64,
+                                np.uint8,
+                                np.uint16,
+                                np.uint32,
+                                np.uint64,
+                        ),
+                ):
+                    return int(obj)
+                elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
+                    return float(obj)
+                elif isinstance(obj, (np.ndarray,)):
+                    return obj.tolist()
+                return json.JSONEncoder.default(self, obj)
+
+        def __init__(self):
+            self.loaded = False
+
+        def load(self):
+            from alibi_detect.utils.saving import load_detector
+            if "MLSERVER_MODELS_DIR" in os.environ:
+                models_folder = "/mnt/models"
+            else:
+                models_folder = f"{artifacts_folder}/{OUTLIER_FOLDER}"
+            print(f"Loading from {models_folder}")
+            self.od = load_detector(f"{models_folder}/cifar10")
+            self.loaded = True
+
+        def unload(self):
+            self.od = None
+            self.loaded = False
+
+        @predictmethod
+        def outlier(self, payload: np.ndarray) -> dict:
+            if not self.loaded:
+                self.load()
+            od_preds = self.od.predict(payload,
+                                       outlier_type='instance',  # use 'feature' or 'instance' level
+                                       return_feature_score=True,
+                                       # scores used to determine outliers
+                                       return_instance_score=True)
+
+            return json.loads(json.dumps(od_preds, cls=OutlierModel.NumpyEncoder))
+    return OutlierModel
+
+def create_model(arifacts_folder: str):
+
+    cifar10_model = Model(
+        name="resnet32",
+        protocol=KFServingV1Protocol(),
+        platform=ModelFramework.Tensorflow,
+        uri="gs://seldon-models/tfserving/cifar10/resnet32",
+        local_folder=f"{arifacts_folder}/{MODEL_FOLDER}",
+    )
+
+    return cifar10_model
+
+def create_svc_cls(outlier, model, arifacts_folder: str):
+
+    @pipeline(
+        name="cifar10-service",
+        protocol=KFServingV2Protocol(),
+        uri="s3://tempo/outlier/cifar10/svc",
+        local_folder=f"{arifacts_folder}/svc",
+        models=PipelineModels(outlier=outlier, cifar10=model)
+    )
+    class Cifar10Svc(object):
+
+        @predictmethod
+        def predict(self, payload: np.ndarray) -> np.ndarray:
+            r = self.models.outlier(payload=payload)
+            if r["data"]["is_outlier"][0]:
+                return np.array([])
+            else:
+                return self.models.cifar10(payload)
+
+    return Cifar10Svc
+
+```
+
+## Unit Tests
+
+ * Here we run our unit tests to ensure the orchestration works before running on the actual models.
+
+
+```python
+# %load tests/test_tempo.py
+from src.tempo import create_outlier_cls, create_model, create_svc_cls
+import numpy as np
+
+
+def test_svc_outlier():
+    model = create_model("")
+    OutlierModel = create_outlier_cls("")
+    outlier = OutlierModel()
+    Cifar10Svc = create_svc_cls(outlier, model, "")
+    svc = Cifar10Svc()
+    svc.models.outlier = lambda payload: {"data":{"is_outlier":[1]}}
+    svc.models.cifar10 = lambda input: np.array([[0.2]])
+    res = svc(np.array([1]))
+    assert res.shape[0] == 0
+
+
+def test_svc_inlier():
+    model = create_model("")
+    OutlierModel = create_outlier_cls("")
+    outlier = OutlierModel()
+    Cifar10Svc = create_svc_cls(outlier, model, "")
+    svc = Cifar10Svc()
+    svc.models.outlier = lambda payload: {"data":{"is_outlier":[0]}}
+    svc.models.cifar10 = lambda input: np.array([[0.2]])
+    res = svc(np.array([1]))
+    assert res.shape[0] == 1
 ```
 
 
 ```python
-%%writetemplate artifacts/cifar10_outlier/conda.yaml
-name: tempo
-channels:
-  - defaults
-dependencies:
-  - python={PYTHON_VERSION}
-  - pip:
-    - alibi-detect
-    - dill
-    - opencv-python-headless
-    - mlops-tempo @ file://{TEMPO_DIR}
-    - mlserver==0.3.1.dev7
+!python -m pytest tests/
+```
+
+## Save Outlier and Svc Environments
+
+
+
+```python
+!cat artifacts/outlier/conda.yaml
 ```
 
 
 ```python
-!mkdir -p artifacts/svc/
+!cat artifacts/svc/conda.yaml
 ```
 
 
 ```python
-%%writetemplate artifacts/svc/conda.yaml
-name: tempo
-channels:
-  - defaults
-dependencies:
-  - python={PYTHON_VERSION}
-  - pip:
-    - mlops-tempo @ file://{TEMPO_DIR}
-    - mlserver==0.3.1.dev7
+from tempo.serve.loader import save
+save(outlier)
+save(svc)
 ```
+
+## Test Locally on Docker
+
+Here we test our models using production images but running locally on Docker. This allows us to ensure the final production deployed model will behave as expected when deployed.
 
 
 ```python
-save(outlier, save_env=True)
-```
-
-
-```python
-save(svc, save_env=True)
-```
-
-## Test on docker with local pipelines
-
-
-```python
-download(cifar10_model)
-```
-
-## Test Svc on docker
-
-
-```python
+from tempo.seldon.docker import SeldonDockerRuntime
 docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(svc)
 docker_runtime.wait_ready(svc)
 ```
 
-Run first with our python code running locally and only calling out to the model externally
-
 
 ```python
-show_image(X_test[0:1])
-svc(payload=X_test[0:1])
-```
-
-Run again completely remotely.
-
-
-```python
-show_image(X_test[0:1])
-svc.remote(payload=X_test[0:1])
+from src.utils import show_image
+show_image(data.X_test[0:1])
+svc(payload=data.X_test[0:1])
 ```
 
 
 ```python
-show_image(X_mask)
-svc.remote(payload=X_mask)
+show_image(data.X_test[0:1])
+svc.remote(payload=data.X_test[0:1])
+```
+
+
+```python
+from src.utils import create_cifar10_outlier
+outlier_img = create_cifar10_outlier(data)
+show_image(outlier_img)
+svc.remote(payload=outlier_img)
 ```
 
 
@@ -388,113 +297,94 @@ svc.remote(payload=X_mask)
 docker_runtime.undeploy(svc)
 ```
 
-## Deploy to Kubernetes
+## Production Option 1 (Deploy to Kubernetes with Tempo)
 
-To create a Kubernetes cluster in Kind with all the required install use the ansible playbook defined  below.
-Create with
+ * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
+ 
+### Prerequisites
+ 
+ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
+ 
+ ```
+ ansible-playbook ansible/playbooks/default.yaml
+ ```
 
-```bash
-ansible-playbook ansible/playbooks/default.yaml
+
+```python
+!kubectl apply -f k8s/rbac -n production
 ```
 
 
 ```python
-!cat ../../../ansible/playbooks/default.yaml
-```
-
-
-```python
-!kubectl create namespace production
-```
-
-
-```python
-!kubectl apply -f ../../../k8s/tempo-pipeline-rbac.yaml -n production
-```
-
-
-```python
-%%writefile minio-secret.yaml
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-secret
-type: Opaque
-stringData:
-  AWS_ACCESS_KEY_ID: minioadmin
-  AWS_SECRET_ACCESS_KEY: minioadmin
-  AWS_ENDPOINT_URL: http://minio.minio-system.svc.cluster.local:9000
-  USE_SSL: "false"
-```
-
-
-```python
-!kubectl apply -f minio-secret.yaml -n production
-```
-
-### Uploading artifacts
-
-
-```python
-MINIO_IP=!kubectl get svc minio -n minio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-MINIO_IP=MINIO_IP[0]
-```
-
-
-```python
-%%writetemplate rclone.conf
-[gs]
-type = google cloud storage
-anonymous = true
-
-[s3]
-type = s3
-provider = minio
-env_auth = false
-access_key_id = minioadmin
-secret_access_key = minioadmin
-endpoint = http://{MINIO_IP}:9000
-```
-
-
-```python
+from tempo.examples.minio import create_minio_rclone
 import os
-from tempo.conf import settings
-settings.rclone_cfg = os.getcwd() + "/rclone.conf"
-settings.use_kubernetes = True
+create_minio_rclone(os.getcwd()+"/rclone-minio.conf")
 ```
 
 
 ```python
+from tempo.serve.loader import upload
+upload(cifar10_model)
 upload(outlier)
 upload(svc)
 ```
 
-## Deploy to Kubernetes with Seldon
+
+```python
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+runtime_options = RuntimeOptions(
+        k8s_options=KubernetesOptions(
+            namespace="production",
+            authSecretName="minio-secret"
+        )
+    )
+```
 
 
 ```python
-k8s_runtime = SeldonKubernetesRuntime()
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(svc)
 k8s_runtime.wait_ready(svc)
 ```
 
 
 ```python
-show_image(X_test[0:1])
-svc.remote(payload=X_test[0:1])
+from src.utils import show_image
+show_image(data.X_test[0:1])
+svc.remote(payload=data.X_test[0:1])
 ```
 
 
 ```python
-show_image(X_mask)
-svc.remote(payload=X_mask)
+from src.utils import create_cifar10_outlier
+outlier_img = create_cifar10_outlier(data)
+show_image(outlier_img)
+svc.remote(payload=outlier_img)
 ```
 
 
 ```python
 k8s_runtime.undeploy(svc)
+```
+
+## Production Option 2 (Gitops)
+
+ * We create yaml to provide to our DevOps team to deploy to a production cluster
+ * We add Kustomize patches to modify the base Kubernetes yaml created by Tempo
+
+
+```python
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+yaml_str = k8s_runtime.to_k8s_yaml(svc)
+with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
+    f.write(yaml_str)
+```
+
+
+```python
+!kustomize build k8s
 ```
 
 

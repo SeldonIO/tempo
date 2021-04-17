@@ -1,219 +1,162 @@
-# Explanations Demo with Income Classifier and Alibi
+# Model Explainer Example
 
-## Conda env create
+![architecture](architecture.png)
 
-We create a conda environment for the runtime of our explainer from the `./artifacts/income_explainer/conda.yaml`
-**This only needs to be done once**.
+In this example we will:
 
+  * [Describe the project structure](#Project-Structure)
+  * [Train some models](#Train-Models)
+  * [Create Tempo artifacts](#Create-Tempo-Artifacts)
+  * [Run unit tests](#Unit-Tests)
+  * [Save python environment for our classifier](#Save-Classifier-Environment)
+  * [Test Locally on Docker](#Test-Locally-on-Docker)
+  * [Production on Kubernetes via Tempo](#Production-Option-1-(Deploy-to-Kubernetes-with-Tempo))
+  * [Prodiuction on Kuebrnetes via GitOps](#Production-Option-2-(Gitops))
 
-```python
-from IPython.core.magic import register_line_cell_magic
+## Prerequisites
 
-@register_line_cell_magic
-def writetemplate(line, cell):
-    with open(line, 'w') as f:
-        f.write(cell.format(**globals()))
+This notebooks needs to be run in the `tempo-examples` conda environment defined below. Create from project root folder:
+
+```bash
+conda env create --name tempo-examples --file conda/tempo-examples.yaml
 ```
 
-## Setup and download Data
+## Project Structure
 
 
 ```python
-from tempo.serve.metadata import ModelFramework, KubernetesOptions, RuntimeOptions
-from tempo.serve.model import Model
-from tempo.serve.pipeline import PipelineModels
-from tempo.seldon.protocol import SeldonProtocol
-from tempo.seldon.docker import SeldonDockerRuntime
-from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.utils import pipeline, predictmethod
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.serve.metadata import ModelFramework, KubernetesOptions
-from alibi.utils.wrappers import ArgmaxTransformer
-from tempo.serve.loader import save, upload
-from typing import Any
+!tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
+```
 
-import numpy as np
-import os 
-import pprint
-import dill
-import json
+## Train Models
 
-EXPLAINER_FOLDER = f"{os.getcwd()}/artifacts/income_explainer"
-MODEL_FOLDER = f"{os.getcwd()}/artifacts/income_model"
+ * This section is where as a data scientist you do your work of training models and creating artfacts.
+ * For this example we train sklearn and xgboost classification models for the iris dataset.
 
+
+```python
+import os
+from tempo.utils import logger
 import logging
-logging.basicConfig(level=logging.INFO)
-```
-
-
-```python
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from alibi.explainers import AnchorTabular
-from alibi.datasets import fetch_adult
-
-adult = fetch_adult()
-data = adult.data
-target = adult.target
-feature_names = adult.feature_names
-category_map = adult.category_map
+import json
+logger.setLevel(logging.ERROR)
+logging.basicConfig(level=logging.ERROR)
+ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
 ```
 
 
 ```python
-np.random.seed(0)
-data_perm = np.random.permutation(np.c_[data, target])
-data = data_perm[:,:-1]
-target = data_perm[:,-1]
-idx = 30000
-X_train,Y_train = data[:idx,:], target[:idx]
-X_test, Y_test = data[idx+1:,:], target[idx+1:]
-```
-
-## Build SKLearn Model and Alibi Anchors Tabular Explainer
-
-
-```python
-ordinal_features = [x for x in range(len(feature_names)) if x not in list(category_map.keys())]
-ordinal_transformer = Pipeline(steps=[('imputer', SimpleImputer(strategy='median')),
-                                      ('scaler', StandardScaler())])
-categorical_features = list(category_map.keys())
-categorical_transformer = Pipeline(steps=[('imputer', SimpleImputer(strategy='median')),
-                                          ('onehot', OneHotEncoder(handle_unknown='ignore'))])
-preprocessor = ColumnTransformer(transformers=[('num', ordinal_transformer, ordinal_features),
-                                               ('cat', categorical_transformer, categorical_features)])
-clf = RandomForestClassifier(n_estimators=50)
-model=Pipeline(steps=[("preprocess",preprocessor),("model",clf)])
-model.fit(X_train,Y_train)
-
-
-print('Train accuracy: ', accuracy_score(Y_train, model.predict(X_train)))
-print('Test accuracy: ', accuracy_score(Y_test, model.predict(X_test)))
+from src.data import AdultData
+data = AdultData()
 ```
 
 
 ```python
-from alibi.explainers import AnchorTabular
-predict_fn = lambda x: model.predict(x)
-explainer = AnchorTabular(predict_fn, feature_names, categorical_names=category_map, seed=1)
-explainer.fit(X_train, disc_perc=[25, 50, 75])
+from src.model import train_model
+adult_model = train_model(ARTIFACTS_FOLDER, data)
 ```
 
 
 ```python
-explanation = explainer.explain(X_test[0], threshold=0.95)
-print('Anchor: %s' % (' AND '.join(explanation.anchor)))
-print('Precision: %.2f' % explanation.precision)
-print('Coverage: %.2f' % explanation.coverage)
-```
-
-
-```python
-from joblib import dump
-dump(model, MODEL_FOLDER+"/model.joblib") 
-with open(EXPLAINER_FOLDER+"/explainer.dill", 'wb') as f:
-    dill.dump(explainer,f)
+from src.explainer import train_explainer
+train_explainer(ARTIFACTS_FOLDER, data, adult_model)
 ```
 
 ## Create Tempo Artifacts
 
 
+
 ```python
-runtimeOptions=RuntimeOptions(  
-    k8s_options=KubernetesOptions( 
-        namespace="production",
-        authSecretName="minio-secret"
-    )
-)
-
-
-sklearn_model = Model(
-    name="income-sklearn",
-    platform=ModelFramework.SKLearn,
-    protocol=SeldonProtocol(),
-    runtime_options=runtimeOptions,
-    local_folder=MODEL_FOLDER,
-    uri="gs://seldon-models/test/income/model"
-)
-
-
-@pipeline(
-    name="income-explainer",
-    uri="s3://tempo/explainer/pipeline",
-    local_folder=EXPLAINER_FOLDER,
-    runtime_options=runtimeOptions,
-    models=PipelineModels(sklearn=sklearn_model)
-)
-class ExplainerPipeline(object):
-
-    def __init__(self):
-        if "MLSERVER_MODELS_DIR" in os.environ:
-            models_folder = ""
-        else:
-            models_folder = EXPLAINER_FOLDER
-        with open(models_folder+"/explainer.dill", "rb") as f:
-            self.explainer = dill.load(f)
-        self.ran_init = True
-        
-    def update_predict_fn(self, x):
-        if np.argmax(self.models.sklearn(x).shape) == 0:
-            self.explainer.predictor = self.models.sklearn
-            self.explainer.samplers[0].predictor = self.models.sklearn
-        else:
-            self.explainer.predictor = ArgmaxTransformer(self.models.sklearn)
-            self.explainer.samplers[0].predictor = ArgmaxTransformer(self.models.sklearn)
-
-    @predictmethod
-    def explain(self, payload: np.ndarray, parameters: dict) -> str:
-        print("Explain called with ", parameters)
-        if not self.ran_init:
-            print("Loading explainer")
-            self.__init__()
-        self.update_predict_fn(payload)
-        explanation = self.explainer.explain(payload, **parameters)
-        return explanation.to_json()
+from src.tempo import create_tempo_artifacts
+adult_model, explainer = create_tempo_artifacts(ARTIFACTS_FOLDER)
 ```
 
-### Saving Artifacts
-
 
 ```python
-import sys
+# %load src/tempo.py
 import os
-PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
+from typing import Any, Tuple
+
+import dill
+import numpy as np
+from alibi.utils.wrappers import ArgmaxTransformer
+from src.constants import EXPLAINER_FOLDER, MODEL_FOLDER
+
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
+from tempo.serve.pipeline import PipelineModels
+from tempo.serve.utils import pipeline, predictmethod
+
+
+def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
+    sklearn_model = Model(
+        name="income-sklearn",
+        platform=ModelFramework.SKLearn,
+        local_folder=f"{artifacts_folder}/{MODEL_FOLDER}",
+        uri="gs://seldon-models/test/income/model",
+    )
+
+    @pipeline(
+        name="income-explainer",
+        uri="s3://tempo/explainer/pipeline",
+        local_folder=f"{artifacts_folder}/{EXPLAINER_FOLDER}",
+        models=PipelineModels(sklearn=sklearn_model),
+    )
+    class ExplainerPipeline(object):
+        def __init__(self):
+            if "MLSERVER_MODELS_DIR" in os.environ:
+                models_folder = ""
+            else:
+                models_folder = f"{artifacts_folder}/{EXPLAINER_FOLDER}"
+            with open(models_folder + "/explainer.dill", "rb") as f:
+                self.explainer = dill.load(f)
+            self.ran_init = True
+
+        def update_predict_fn(self, x):
+            if np.argmax(self.models.sklearn(x).shape) == 0:
+                self.explainer.predictor = self.models.sklearn
+                self.explainer.samplers[0].predictor = self.models.sklearn
+            else:
+                self.explainer.predictor = ArgmaxTransformer(self.models.sklearn)
+                self.explainer.samplers[0].predictor = ArgmaxTransformer(self.models.sklearn)
+
+        @predictmethod
+        def explain(self, payload: np.ndarray, parameters: dict) -> str:
+            print("Explain called with ", parameters)
+            if not self.ran_init:
+                print("Loading explainer")
+                self.__init__()
+            self.update_predict_fn(payload)
+            explanation = self.explainer.explain(payload, **parameters)
+            return explanation.to_json()
+
+    explainer = ExplainerPipeline()
+    return sklearn_model, explainer
+
+```
+
+## Save Outlier and Svc Environments
+
+
+
+```python
+!cat artifacts/explainer/conda.yaml
 ```
 
 
 ```python
-%%writetemplate artifacts/income_explainer/conda.yaml
-name: tempo
-channels:
-  - defaults
-dependencies:
-  - python={PYTHON_VERSION}
-  - pip:
-    - alibi
-    - dill
-    - mlops-tempo @ file://{TEMPO_DIR}
-    - mlserver==0.3.1.dev7
+from tempo.serve.loader import save
+save(explainer)
 ```
+
+## Test Locally on Docker
+
+Here we test our models using production images but running locally on Docker. This allows us to ensure the final production deployed model will behave as expected when deployed.
 
 
 ```python
-explainer = ExplainerPipeline()
-save(explainer, save_env=True)
-```
-
-### Deploy explainer to docker
-
-
-```python
+from tempo.seldon.docker import SeldonDockerRuntime
 docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(explainer)
 docker_runtime.wait_ready(explainer)
@@ -221,13 +164,13 @@ docker_runtime.wait_ready(explainer)
 
 
 ```python
-r = json.loads(explainer(payload=X_test[0:1], parameters={"threshold":0.99}))
+r = json.loads(explainer(payload=data.X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-r = json.loads(explainer.remote(payload=X_test[0:1], parameters={"threshold":0.99}))
+r = json.loads(explainer.remote(payload=data.X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
 
@@ -236,86 +179,59 @@ print(r["data"]["anchor"])
 docker_runtime.undeploy(explainer)
 ```
 
-## Deploy to production on Kubernetes
+## Production Option 1 (Deploy to Kubernetes with Tempo)
 
-### Setup Namespace with Minio Secret
+ * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
+ 
+### Prerequisites
+ 
+ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
+ 
+ ```
+ ansible-playbook ansible/playbooks/default.yaml
+ ```
 
 
 ```python
-!kubectl create namespace production
+!kubectl apply -f k8s/rbac -n production
 ```
 
 
 ```python
-!kubectl apply -f ../../../k8s/tempo-pipeline-rbac.yaml -n production
-```
-
-
-```python
-%%writefile minio-secret.yaml
-
-apiVersion: v1
-kind: Secret
-metadata:
-  name: minio-secret
-type: Opaque
-stringData:
-  AWS_ACCESS_KEY_ID: minioadmin
-  AWS_SECRET_ACCESS_KEY: minioadmin
-  AWS_ENDPOINT_URL: http://minio.minio-system.svc.cluster.local:9000
-  USE_SSL: "false"
-```
-
-
-```python
-!kubectl apply -f minio-secret.yaml -n production
-```
-
-### Uploading artifacts
-
-
-```python
-MINIO_IP=!kubectl get svc minio -n minio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
-MINIO_IP=MINIO_IP[0]
-```
-
-
-```python
-%%writetemplate rclone.conf
-[s3]
-type = s3
-provider = minio
-env_auth = false
-access_key_id = minioadmin
-secret_access_key = minioadmin
-endpoint = http://{MINIO_IP}:9000
-```
-
-
-```python
+from tempo.examples.minio import create_minio_rclone
 import os
-from tempo.conf import settings
-settings.rclone_cfg = os.getcwd() + "/rclone.conf"
-settings.use_kubernetes = True
+create_minio_rclone(os.getcwd()+"/rclone-minio.conf")
 ```
 
 
 ```python
+from tempo.serve.loader import upload
+upload(adult_model)
 upload(explainer)
 ```
 
-### Deploy
+
+```python
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+runtime_options = RuntimeOptions(
+        k8s_options=KubernetesOptions(
+            namespace="production",
+            authSecretName="minio-secret"
+        )
+    )
+```
 
 
 ```python
-k8s_runtime = SeldonKubernetesRuntime()
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(explainer)
 k8s_runtime.wait_ready(explainer)
 ```
 
 
 ```python
-r = json.loads(explainer.remote(payload=X_test[0:1], parameters={"threshold":0.95}))
+r = json.loads(explainer.remote(payload=data.X_test[0:1], parameters={"threshold":0.95}))
 print(r["data"]["anchor"])
 ```
 
@@ -324,15 +240,21 @@ print(r["data"]["anchor"])
 k8s_runtime.undeploy(explainer)
 ```
 
-## Prepare for Gitops
+## Production Option 2 (Gitops)
+
+ * We create yaml to provide to our DevOps team to deploy to a production cluster
+ * We add Kustomize patches to modify the base Kubernetes yaml created by Tempo
 
 
 ```python
-yaml = k8s_runtime.to_k8s_yaml(explainer)
-print (eval(pprint.pformat(yaml)))
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+yaml_str = k8s_runtime.to_k8s_yaml(explainer)
+with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
+    f.write(yaml_str)
 ```
 
 
 ```python
-
+!kustomize build k8s
 ```

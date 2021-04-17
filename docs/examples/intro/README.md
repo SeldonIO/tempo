@@ -34,9 +34,9 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 
 ```python
 import os
-from src import train_sklearn, train_xgboost, load_iris
 from tempo.utils import logger
 import logging
+import numpy as np
 logger.setLevel(logging.ERROR)
 logging.basicConfig(level=logging.ERROR)
 ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
@@ -45,45 +45,36 @@ ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
 
 ```python
 # %load src/train.py
-from typing import Tuple
-
 import joblib
-import numpy as np
-from sklearn import datasets
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
+from src.data import IrisData
 
 SKLearnFolder = "sklearn"
 XGBoostFolder = "xgboost"
 
 
-def load_iris() -> Tuple[np.ndarray, np.ndarray]:
-    iris = datasets.load_iris()
-    X = iris.data  # we only take the first two features.
-    y = iris.target
-    return (X, y)
-
-
-def train_sklearn(X: np.ndarray, y: np.ndarray, artifacts_folder: str):
+def train_sklearn(data: IrisData, artifacts_folder: str):
     logreg = LogisticRegression(C=1e5)
-    logreg.fit(X, y)
-    logreg.predict_proba(X[0:1])
+    logreg.fit(data.X, data.y)
     with open(f"{artifacts_folder}/{SKLearnFolder}/model.joblib", "wb") as f:
         joblib.dump(logreg, f)
 
 
-def train_xgboost(X: np.ndarray, y: np.ndarray, artifacts_folder: str):
+def train_xgboost(data: IrisData, artifacts_folder: str):
     clf = XGBClassifier()
-    clf.fit(X, y)
+    clf.fit(data.X, data.y)
     clf.save_model(f"{artifacts_folder}/{XGBoostFolder}/model.bst")
 
 ```
 
 
 ```python
-X,y = load_iris()
-train_sklearn(X, y, ARTIFACTS_FOLDER)
-train_xgboost(X, y, ARTIFACTS_FOLDER)
+from src.data import IrisData
+from src.train import train_sklearn, train_xgboost
+data = IrisData()
+train_sklearn(data, ARTIFACTS_FOLDER)
+train_xgboost(data, ARTIFACTS_FOLDER)
 ```
 
 ## Create Tempo Artifacts
@@ -93,16 +84,17 @@ train_xgboost(X, y, ARTIFACTS_FOLDER)
 
 
 ```python
-from src import get_tempo_artifacts
+from src.tempo import get_tempo_artifacts
 classifier, sklearn_model, xgboost_model = get_tempo_artifacts(ARTIFACTS_FOLDER)
 ```
 
 
 ```python
-# %load src/deploy.py
+# %load src/tempo.py
 from typing import Tuple
 
 import numpy as np
+
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
@@ -115,7 +107,7 @@ SKLearnTag = "sklearn prediction"
 XGBoostTag = "xgboost prediction"
 
 
-def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
+def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
 
     sklearn_model = Model(
         name="test-iris-sklearn",
@@ -155,17 +147,13 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline,Model,Model]:
 
 
 ```python
-# %load tests/test_deploy.py
-import sys, os
-myPath = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, myPath + '/../')
+# %load tests/test_tempo.py
 import numpy as np
-
-from src.deploy import SKLearnTag, XGBoostTag, get_tempo_artifacts
+from src.tempo import SKLearnTag, XGBoostTag, get_tempo_artifacts
 
 
 def test_sklearn_model_used():
-    classifier,_,_ = get_tempo_artifacts("")
+    classifier, _, _ = get_tempo_artifacts("")
     classifier.models.sklearn = lambda input: np.array([[1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))
     assert res[0][0] == 1
@@ -173,7 +161,7 @@ def test_sklearn_model_used():
 
 
 def test_xgboost_model_used():
-    classifier,_,_ = get_tempo_artifacts("")
+    classifier, _, _ = get_tempo_artifacts("")
     classifier.models.sklearn = lambda input: np.array([[0.2]])
     classifier.models.xgboost = lambda input: np.array([[0.1]])
     res, tag = classifier(np.array([[1, 2, 3, 4]]))
@@ -184,7 +172,7 @@ def test_xgboost_model_used():
 
 
 ```python
-!pytest
+!python -m pytest tests/
 ```
 
 ## Save Classifier Environment
@@ -234,7 +222,7 @@ docker_runtime.undeploy(classifier)
 
  * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
  
- ### Prerequisites
+### Prerequisites
  
  Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
  
@@ -249,9 +237,9 @@ docker_runtime.undeploy(classifier)
 
 
 ```python
-from tempo.examples.minio import set_minio_rclone
+from tempo.examples.minio import create_minio_rclone
 import os
-set_minio_rclone(os.getcwd()+"/rclone.conf")
+create_minio_rclone(os.getcwd()+"/rclone.conf")
 ```
 
 
@@ -283,8 +271,6 @@ k8s_runtime.wait_ready(classifier)
 
 
 ```python
-from tempo.conf import settings
-settings.use_kubernetes = True
 print(classifier.remote(payload=np.array([[0, 0, 0, 0]])))
 print(classifier.remote(payload=np.array([[1, 2, 3, 4]])))
 ```
@@ -302,6 +288,13 @@ k8s_runtime.undeploy(classifier)
 
 ```python
 from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+runtime_options = RuntimeOptions(
+        k8s_options=KubernetesOptions(
+            namespace="production",
+            authSecretName="minio-secret"
+        )
+    )
 k8s_runtime = SeldonKubernetesRuntime()
 yaml_str = k8s_runtime.to_k8s_yaml(classifier)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
