@@ -21,6 +21,31 @@ class Model(BaseModel):
         conda_env: str = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
     ):
+        """
+
+        Parameters
+        ----------
+        name
+         Name of the pipeline. Needs to be Kubernetes compliant.
+        protocol
+         :class:`tempo.serve.protocol.Protocol`. Defaults to KFserving V2.
+        local_folder
+         Location of local artifacts.
+        uri
+         Location of remote artifacts.
+        models
+         A list of models defined as PipelineModels.
+        inputs
+         The input types.
+        outputs
+         The output types.
+        conda_env
+         The conda environment name to use. If not specified will look for conda.yaml in
+         local_folder or generate from current running environment.
+        runtime_options
+         The runtime options. Can be left empty and set when creating a runtime.
+
+        """
         super().__init__(
             name,
             # TODO: Should we unify names?
