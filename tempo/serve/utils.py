@@ -1,6 +1,4 @@
-import base64
 import inspect
-import json
 from typing import Any
 
 from tempo.kfserving.protocol import KFServingV2Protocol
@@ -9,14 +7,6 @@ from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.protocol import Protocol
-
-
-def b64_encode_runtime_options(runtime_options: RuntimeOptions):
-    return str(base64.b64encode(json.dumps(runtime_options.dict()).encode("utf8")), "utf-8")
-
-
-def b64_decode_runtime_options(val: str):
-    return RuntimeOptions(**json.loads(base64.b64decode(val.encode("utf-8")).decode("utf-8")))
 
 
 def pipeline(
@@ -30,6 +20,37 @@ def pipeline(
     conda_env: str = None,
     runtime_options: RuntimeOptions = RuntimeOptions(),
 ):
+    """
+    A decorator for a class or function to make it a Tempo Pipeline.
+
+    Parameters
+    ----------
+    name
+     Name of the pipeline. Needs to be Kubernetes compliant.
+    protocol
+     :class:`tempo.serve.protocol.Protocol`. Defaults to KFserving V2.
+    local_folder
+     Location of local artifacts.
+    uri
+     Location of remote artifacts.
+    models
+     A list of models defined as PipelineModels.
+    inputs
+     The input types.
+    outputs
+     The output types.
+    conda_env
+     The conda environment name to use. If not specified will look for conda.yaml in local_folder
+     or generate from current running environment.
+    runtime_options
+     The runtime options. Can be left empty and set when creating a runtime.
+
+    Returns
+    -------
+    A decorated class or function.
+
+    """
+
     def _pipeline(f):
         if inspect.isclass(f):
             K = f
@@ -111,6 +132,36 @@ def model(
     protocol: Protocol = KFServingV2Protocol(),
     runtime_options: RuntimeOptions = RuntimeOptions(),
 ):
+    """
+
+    Parameters
+    ----------
+    name
+     Name of the model. Needs to be Kubernetes compliant.
+    protocol
+     :class:`tempo.serve.protocol.Protocol`. Defaults to KFserving V2.
+    local_folder
+     Location of local artifacts.
+    uri
+     Location of remote artifacts.
+    inputs
+     The input types.
+    outputs
+     The output types.
+    conda_env
+     The conda environment name to use. If not specified will look for conda.yaml in local_folder
+     or generate from current running environment.
+    runtime_options
+     The runtime options. Can be left empty and set when creating a runtime.
+    platform
+     The :class:`tempo.serve.metadata.ModelFramework`
+
+    Returns
+    -------
+    A decorated function or class as a Tempo Model.
+
+    """
+
     def _model(f):
         if inspect.isclass(f):
             K = f

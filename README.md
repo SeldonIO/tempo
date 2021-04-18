@@ -9,6 +9,8 @@
 
 *Enable data scientists to see a productionised machine learning model within moments, not months. Easy to work with locally and also in kubernetes, whatever your preferred data science tools*
 
+[Documentation](https://tempo.readthedocs.io/en/latest/)
+
 ## Highlights
 
 Tempo provides a unified interface to multiple MLOps projects that enable data scientists to deploy and productionise machine learning systems.
@@ -50,44 +52,51 @@ Below we see two `Model`s (sklearn and xgboost) with a function decorated `pipel
 
 
 ```python
-sklearn_model = Model(
+def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
+
+    sklearn_model = Model(
         name="test-iris-sklearn",
         platform=ModelFramework.SKLearn,
-        protocol=SeldonProtocol(),
-        local_folder=SKLEARN_FOLDER,
-        uri="s3://tempo/basic/sklearn"
-)
+        local_folder=f"{artifacts_folder}/{SKLearnFolder}",
+        uri="s3://tempo/basic/sklearn",
+    )
 
-xgboost_model = Model(
+    xgboost_model = Model(
         name="test-iris-xgboost",
         platform=ModelFramework.XGBoost,
-        protocol=SeldonProtocol(),
-        local_folder=XGBOOST_FOLDER,
-        uri="s3://tempo/basic/xgboost"
-)
+        local_folder=f"{artifacts_folder}/{XGBoostFolder}",
+        uri="s3://tempo/basic/xgboost",
+    )
 
-@pipeline(name="classifier",
-          uri="s3://tempo/basic/pipeline",
-          local_folder=PIPELINE_ARTIFACTS_FOLDER,
-          models=[sklearn_model, xgboost_model])
-def classifier(payload: np.ndarray) -> Tuple[np.ndarray,str]:
-    res1 = sklearn_model(payload)
+    @pipeline(
+        name="classifier",
+        uri="s3://tempo/basic/pipeline",
+        local_folder=f"{artifacts_folder}/{PipelineFolder}",
+        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
+    )
+    def classifier(payload: np.ndarray) -> Tuple[np.ndarray, str]:
+        res1 = classifier.models.sklearn(input=payload)
 
-    if res1[0][0] > 0.5:
-        return res1,"sklearn prediction"
-    else:
-        return xgboost_model(payload),"xgboost prediction"
+        if res1[0] == 1:
+            return res1, SKLearnTag
+        else:
+            return classifier.models.xgboost(input=payload), XGBoostTag
+
+    return classifier, sklearn_model, xgboost_model
+
 ```
 
 Save the pipeline code.
 
 ```
-save(classifier, save_env=True)
+from tempo.serve.loader import save
+save(classifier)
 ```
 
 Deploy to docker.
 
 ```
+from tempo.seldon.docker import SeldonDockerRuntime
 docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(classifier)
 docker_runtime.wait_ready(classifier)
@@ -102,9 +111,18 @@ classifier.remote(payload=np.array([[1, 2, 3, 4]]))
 Deploy to Kubernetes for production.
 
 ```
-k8s_runtime = SeldonKubernetesRuntime()
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+runtime_options = RuntimeOptions(
+        k8s_options=KubernetesOptions(
+            namespace="production",
+            authSecretName="minio-secret"
+        )
+    )
+
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(classifier)
 k8s_runtime.wait_ready(classifier)
 ```
 
-This is an extract from the two intridyctory examples for [local](https://tempo.readthedocs.io/en/latest/examples/intro/local.html) and [Kubernetes](https://tempo.readthedocs.io/en/latest/examples/intro/k8s.html) demos.
+This is an extract from the [introduction](https://tempo.readthedocs.io/en/latest/examples/intro/README.html) demo.

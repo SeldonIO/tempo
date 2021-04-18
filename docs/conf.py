@@ -38,6 +38,8 @@ extensions = [
     "sphinx.ext.githubpages",
     # Converts markdown to rst
     "m2r2",
+    "sphinx.ext.napoleon",
+    "sphinxcontrib.apidoc",  # automatically generate API docs, see https://github.com/rtfd/readthedocs.org/issues/1139
 ]
 source_suffix = [".rst", ".md"]
 
@@ -48,6 +50,53 @@ templates_path = ["_templates"]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+
+# apidoc settings
+apidoc_module_dir = "../tempo"
+apidoc_output_dir = "api"
+apidoc_excluded_paths = ["**/*test*"]
+apidoc_module_first = True
+apidoc_separate_modules = True
+apidoc_extra_args = ["-d 6"]
+
+# mock imports
+autodoc_mock_imports = [
+    "pandas",
+    "sklearn",
+    "skimage",
+    "requests",
+    "cv2",
+    "bs4",
+    "keras",
+    "seaborn",
+    "PIL",
+    "tensorflow",
+    "spacy",
+    "numpy",
+    "tensorflow_probability",
+    "scipy",
+    "matplotlib",
+    "creme",
+    "cloudpickle",
+    "fbprophet",
+    "dask",
+    "transformers",
+]
+
+
+# Napoleon settings
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+napoleon_include_init_with_doc = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = False
+napoleon_use_admonition_for_notes = False
+napoleon_use_admonition_for_references = False
+napoleon_use_ivar = False
+napoleon_use_param = True
+napoleon_use_rtype = False
+
 
 # -- Options for HTML output -------------------------------------------------
 
