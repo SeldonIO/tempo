@@ -5,11 +5,10 @@ from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri
 
-from .serve.metadata import RuntimeOptions
-from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.base import BaseModel
+from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
-from .serve.metadata import ModelFramework
+from .serve.metadata import ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
 
 
