@@ -2,9 +2,9 @@ from typing import Any, Callable
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.base import BaseModel
-from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.protocol import Protocol
+from tempo.serve.types import ModelDataType
 
 
 class Model(BaseModel):

@@ -2,35 +2,32 @@ from __future__ import annotations
 
 import os
 import tempfile
-from os import path
 from pydoc import locate
-from typing import Any, Callable, Dict, Optional, Tuple, get_type_hints
+from types import SimpleNamespace
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
-from tempo.conf import settings
-from tempo.errors import UndefinedCustomImplementation
-from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.constants import (
-    ENV_K8S_SERVICE_HOST,
-    DefaultCondaFile,
-    DefaultEnvFilename,
-    DefaultModelFilename,
-    ModelDataType,
-)
-from tempo.serve.loader import load_custom, save_custom, save_environment
-from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
-from tempo.serve.protocol import Protocol
-from tempo.serve.remote import Remote
-from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.utils import logger
+from ..conf import settings
+from ..errors import UndefinedCustomImplementation
+from ..kfserving import KFServingV2Protocol
+from ..utils import logger
+from .args import infer_args, process_datatypes
+from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
+from .loader import load_custom, save_custom, save_environment
+from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from .protocol import Protocol
+from .remote import Remote
+from .runtime import ModelSpec, Runtime
+from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 
 
 class BaseModel:
     def __init__(
         self,
         name: str,
-        user_func: Callable[..., Any] = None,
+        user_func: PredictMethodSignature = None,
+        load_func: LoadMethodSignature = None,
         local_folder: str = None,
         uri: str = None,
         platform: ModelFramework = None,
@@ -44,6 +41,7 @@ class BaseModel:
             protocol = KFServingV2Protocol()
         self._name = name
         self._user_func = user_func
+        self._load_func = load_func
         self.conda_env_name = conda_env
 
         if uri is None:
@@ -61,12 +59,19 @@ class BaseModel:
             outputs=output_args,
         )
 
-        self.cls = None
         self.protocol = protocol
-        self.model_spec = ModelSpec(model_details=self.details, protocol=self.protocol, runtime_options=runtime_options)
+        self.model_spec = ModelSpec(
+            model_details=self.details,
+            protocol=self.protocol,
+            runtime_options=runtime_options,
+        )
 
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
+
+        # context represents internal context shared (optionally) between different
+        # methods of the model (e.g. predict, loader, etc.)
+        self.context = SimpleNamespace()
 
     def set_remote(self, val: bool):
         self.use_remote = val
@@ -77,49 +82,18 @@ class BaseModel:
     def _get_args(
         self, inputs: ModelDataType = None, outputs: ModelDataType = None
     ) -> Tuple[ModelDataArgs, ModelDataArgs]:
-        input_args = []
-        output_args = []
-
         if isinstance(inputs, ModelDataArgs) and isinstance(outputs, ModelDataArgs):
             return inputs, outputs
-        elif inputs is None and outputs is None:
-            if self._user_func is not None:
-                hints = get_type_hints(self._user_func)
-                for k, v in hints.items():
-                    if k == "return":
-                        if hasattr(v, "__args__"):
-                            # NOTE: If `__args__` are present, assume this as a
-                            # `typing.Generic`, like `Tuple`
-                            targs = v.__args__
-                            for targ in targs:
-                                output_args.append(ModelDataArg(ty=targ))
-                        else:
-                            output_args.append(ModelDataArg(ty=v))
-                    else:
-                        input_args.append(ModelDataArg(name=k, ty=v))
-            else:
-                input_args.append(ModelDataArg(ty=np.ndarray))
-                output_args.append(ModelDataArg(ty=np.ndarray))
-        else:
-            if isinstance(outputs, dict):
-                for k, v in outputs.items():
-                    output_args.append(ModelDataArg(name=k, ty=v))
-            elif isinstance(outputs, tuple):
-                for ty in list(outputs):
-                    output_args.append(ModelDataArg(ty=ty))
-            else:
-                output_args.append(ModelDataArg(ty=outputs))
 
-            if isinstance(inputs, dict):
-                for k, v in inputs.items():
-                    input_args.append(ModelDataArg(name=k, ty=v))
-            elif isinstance(inputs, tuple):
-                for ty in list(inputs):
-                    input_args.append(ModelDataArg(ty=ty))
-            else:
-                input_args.append(ModelDataArg(ty=inputs))
+        if inputs or outputs:
+            return process_datatypes(inputs, outputs)
 
-        return ModelDataArgs(args=input_args), ModelDataArgs(args=output_args)
+        if self._user_func is not None:
+            return infer_args(self._user_func)
+
+        default_input_args = ModelDataArgs(args=[ModelDataArg(ty=np.ndarray)])
+        default_output_args = ModelDataArgs(args=[ModelDataArg(ty=np.ndarray)])
+        return default_input_args, default_output_args
 
     def _get_local_folder(self, local_folder: str = None) -> Optional[str]:
         if not local_folder:
@@ -128,8 +102,23 @@ class BaseModel:
 
         return local_folder
 
-    def set_cls(self, cls):
-        self.cls = cls
+    def loadmethod(self, load_func: LoadMethodSignature) -> LoadMethodSignature:
+        self._load_func = load_func
+        self._load_func()
+
+        return load_func
+
+    def __getstate__(self) -> dict:
+        """
+        __getstate__ gets called by pickle before serialising an object to get
+        its internal representation.
+        We override __getstate__ to make sure that the model's internal context
+        is not pickled with the object.
+        """
+        state = self.__dict__.copy()
+        state["context"] = SimpleNamespace()
+
+        return state
 
     @classmethod
     def load(cls, folder: str) -> "BaseModel":
@@ -143,13 +132,19 @@ class BaseModel:
             return
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+        # TODO: Is it necessary to change the `deployed` flag here?
+        #  if not self.deployed:
+        #  self.deployed = True
+        #  save_custom(self, file_path_pkl)
+        #  self.deployed = False
+        #  else:
         logger.info("Saving tempo model to %s", file_path_pkl)
         save_custom(self, file_path_pkl)
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            conda_env_file_path = path.join(self.details.local_folder, DefaultCondaFile)
-            if not path.exists(conda_env_file_path):
+            conda_env_file_path = os.path.join(self.details.local_folder, DefaultCondaFile)
+            if not os.path.exists(conda_env_file_path):
                 conda_env_file_path = None
 
             save_environment(
@@ -165,20 +160,11 @@ class BaseModel:
 
         req_converted = self.protocol.from_protocol_request(req, self.details.inputs)
         if type(req_converted) == dict:
-            if self.cls is not None:
-                response = self._user_func(self.cls, **req_converted)
-            else:
-                response = self._user_func(**req_converted)
+            response = self(**req_converted)
         elif type(req_converted) == list or type(req_converted) == tuple:
-            if self.cls is not None:
-                response = self._user_func(self.cls, *req_converted)
-            else:
-                response = self._user_func(*req_converted)
+            response = self(*req_converted)
         else:
-            if self.cls is not None:
-                response = self._user_func(self.cls, req_converted)
-            else:
-                response = self._user_func(req_converted)
+            response = self(req_converted)
 
         if type(response) == dict:
             response_converted = self.protocol.to_protocol_response(self.details, **response)
@@ -192,7 +178,9 @@ class BaseModel:
     def _get_model_spec(self) -> ModelSpec:
         if self.runtime_options_override:
             return ModelSpec(
-                model_details=self.details, protocol=self.protocol, runtime_options=self.runtime_options_override
+                model_details=self.details,
+                protocol=self.protocol,
+                runtime_options=self.runtime_options_override,
             )
         else:
             return self.model_spec
@@ -238,13 +226,10 @@ class BaseModel:
         return self
 
     def __call__(self, *args, **kwargs) -> Any:
-        if not self._user_func:
+        if self._user_func is None:
             return self.remote(*args, **kwargs)
-        else:
-            if self.use_remote:
-                return self.remote(*args, **kwargs)
-            else:
-                if self.cls is not None:
-                    return self._user_func(self.cls, *args, **kwargs)
-                else:
-                    return self._user_func(*args, **kwargs)
+
+        if self.use_remote:
+            return self.remote(*args, **kwargs)
+
+        return self._user_func(*args, **kwargs)

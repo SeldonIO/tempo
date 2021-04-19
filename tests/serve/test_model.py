@@ -231,3 +231,16 @@ def test_class_func_class():
     assert r == "hello"
     r = x("hello")
     assert r == "hello"
+
+
+def test_custom_loadmethod(custom_model):
+    pred = custom_model(payload=np.array([1, 2, 3]))
+    assert pred == np.array([6])
+
+
+def test_model_save(custom_model: Model):
+    custom_model.save(save_env=False)
+    loaded = Model.load(custom_model.details.local_folder)
+
+    assert len(custom_model.context.__dict__) > 0
+    assert len(loaded.context.__dict__) == 0
