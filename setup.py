@@ -48,7 +48,7 @@ setup(
         "packaging",
         "requests",
         "pydantic",
-        "cloudpickle",
+        "dill",
         "python-rclone",
         "seldon-deploy-sdk",
         "conda-pack",
