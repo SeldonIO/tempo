@@ -12,6 +12,7 @@ Submodules
 .. toctree::
    :maxdepth: 6
 
+   tempo.serve.args
    tempo.serve.base
    tempo.serve.constants
    tempo.serve.ingress
@@ -22,4 +23,5 @@ Submodules
    tempo.serve.protocol
    tempo.serve.remote
    tempo.serve.runtime
+   tempo.serve.types
    tempo.serve.utils

@@ -141,5 +141,5 @@ html_sidebars = {"**": ["logo-text.html", "globaltoc.html", "localtoc.html", "se
 html_static_path = ["_static"]
 
 html_css_files = [
-    "assets/custom.css",
+    "css/custom.css",
 ]
