@@ -3,7 +3,7 @@ import os
 import pytest
 
 from tempo.serve.constants import DefaultEnvFilename, MLServerEnvDeps
-from tempo.serve.loader import (
+from tempo.serve.loader.env import (
     _add_required_deps,
     _create_and_pack_environment,
     _get_env,
