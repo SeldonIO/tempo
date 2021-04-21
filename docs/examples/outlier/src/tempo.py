@@ -2,6 +2,7 @@ import json
 import os
 
 import numpy as np
+from alibi_detect.base import NumpyEncoder
 from src.constants import MODEL_FOLDER, OUTLIER_FOLDER
 
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
@@ -9,7 +10,6 @@ from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import model, pipeline, predictmethod
-from alibi_detect.base import NumpyEncoder
 
 
 def create_outlier_cls(artifacts_folder: str):
@@ -21,7 +21,6 @@ def create_outlier_cls(artifacts_folder: str):
         local_folder=f"{artifacts_folder}/{OUTLIER_FOLDER}",
     )
     class OutlierModel(object):
-
         def __init__(self):
             self.loaded = False
 
