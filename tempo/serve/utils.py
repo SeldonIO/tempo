@@ -1,12 +1,35 @@
 import inspect
-from typing import Any
+from inspect import getmembers, isfunction
+from typing import Any, Callable, Optional, Type
 
 from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.constants import ModelDataType
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.protocol import Protocol
+from tempo.serve.types import ModelDataType
+
+PredictMethodAttr = "_tempo_predict"
+LoadMethodAttr = "_tempo_load"
+
+
+def _bind(instance, func):
+    """
+    Bind the function *func* to *instance*, with either provided name *as_name*
+    or the existing name of *func*. The provided *func* should accept the
+    instance as the first argument, i.e. "self".
+
+    From https://stackoverflow.com/a/1015405/5015573
+    """
+    return func.__get__(instance, instance.__class__)
+
+
+def _get_predict_method(K: Type) -> Optional[Callable]:
+    for _, func in getmembers(K, isfunction):
+        if hasattr(func, PredictMethodAttr):
+            return func
+
+    return None
 
 
 def pipeline(
@@ -54,12 +77,8 @@ def pipeline(
     def _pipeline(f):
         if inspect.isclass(f):
             K = f
-            func = None
+            predict_method = _get_predict_method(K)
 
-            for a in dir(K):
-                if not a.startswith("__") and callable(getattr(K, a)) and hasattr(getattr(K, a), "predict"):
-                    func = getattr(K, a)
-                    break
             K.pipeline = Pipeline(
                 name,
                 local_folder=local_folder,
@@ -67,7 +86,7 @@ def pipeline(
                 models=models,
                 inputs=inputs,
                 outputs=outputs,
-                pipeline_func=func,
+                pipeline_func=predict_method,
                 conda_env=conda_env,
                 protocol=protocol,
                 runtime_options=runtime_options,
@@ -80,7 +99,8 @@ def pipeline(
 
             # Make copy of original __init__, so we can call it without recursion
             def __init__(self, *args, **kws):
-                K.pipeline.set_cls(self)
+                # We bind _user_func so that `self` is passed implicitly
+                K.pipeline._user_func = _bind(self, K.pipeline._user_func)
                 orig_init(self, *args, **kws)  # Call the original __init__
 
             K.__init__ = __init__  # Set the class' __init__ to the new one
@@ -117,7 +137,7 @@ def pipeline(
 
 
 def predictmethod(f):
-    f.predict = True
+    setattr(f, PredictMethodAttr, True)
     return f
 
 
@@ -165,12 +185,7 @@ def model(
     def _model(f):
         if inspect.isclass(f):
             K = f
-            func = None
-
-            for a in dir(K):
-                if not a.startswith("__") and callable(getattr(K, a)) and hasattr(getattr(K, a), "predict"):
-                    func = getattr(K, a)
-                    break
+            predict_method = _get_predict_method(K)
 
             K.pipeline = Model(
                 name,
@@ -180,7 +195,7 @@ def model(
                 platform=platform,
                 inputs=inputs,
                 outputs=outputs,
-                model_func=func,
+                model_func=predict_method,
                 conda_env=conda_env,
                 runtime_options=runtime_options,
             )
@@ -193,7 +208,8 @@ def model(
 
             # Make copy of original __init__, so we can call it without recursion
             def __init__(self, *args, **kws):
-                K.pipeline.set_cls(self)
+                # We bind _user_func so that `self` is passed implicitly
+                K.pipeline._user_func = _bind(self, K.pipeline._user_func)
                 orig_init(self, *args, **kws)  # Call the original __init__
 
             K.__init__ = __init__  # Set the class' __init__ to the new one

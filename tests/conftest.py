@@ -5,13 +5,12 @@ import numpy as np
 import pytest
 import yaml
 
-from tempo import Model, ModelFramework, Pipeline, pipeline, predictmethod
-from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
-from tempo.seldon.protocol import SeldonProtocol
+from tempo import Model, ModelFramework, Pipeline, model, pipeline, predictmethod
+from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
+from tempo.seldon import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
 from tempo.serve.pipeline import PipelineModels
-from tempo.serve.utils import model
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -77,7 +76,11 @@ def custom_model() -> Model:
         platform=ModelFramework.Custom,
     )
     def _custom_model(payload: np.ndarray) -> np.ndarray:
-        return payload.sum(keepdims=True)
+        return _custom_model.context.model(payload)
+
+    @_custom_model.loadmethod
+    def _load():
+        _custom_model.context.model = lambda a: a.sum(keepdims=True)
 
     return _custom_model
 

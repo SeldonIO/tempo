@@ -11,11 +11,11 @@ from tempo.serve.loader import save
 @pytest.fixture
 def model_settings(custom_model: Model) -> ModelSettings:
     save(custom_model, save_env=False)
-    pipeline_uri = custom_model.details.local_folder
+    model_uri = custom_model.details.local_folder
 
     return ModelSettings(
         name="sum-model",
-        parameters=ModelParameters(uri=pipeline_uri),
+        parameters=ModelParameters(uri=model_uri),
     )
 
 
@@ -25,29 +25,29 @@ def inference_request() -> InferenceRequest:
 
 
 @pytest.fixture
-async def model(model_settings: ModelSettings) -> InferenceRuntime:
-    model = InferenceRuntime(model_settings)
-    await model.load()
+async def mlserver_runtime(model_settings: ModelSettings) -> InferenceRuntime:
+    _runtime = InferenceRuntime(model_settings)
+    await _runtime.load()
 
-    return model
+    return _runtime
 
 
-def test_load(model: InferenceRuntime):
-    assert model.ready
-    assert isinstance(model._pipeline, Model)
+def test_load(mlserver_runtime: InferenceRuntime):
+    assert mlserver_runtime.ready
+    assert isinstance(mlserver_runtime._model, Model)
 
 
 async def test_predict(
-    model: InferenceRuntime,
+    mlserver_runtime: InferenceRuntime,
     inference_request: InferenceRequest,
     custom_model: Model,
 ):
-    res = await model.predict(inference_request)
+    res = await mlserver_runtime.predict(inference_request)
 
     assert len(res.outputs) == 1
 
     pipeline_input = to_ndarray(inference_request.inputs[0])
-    custom_model.get_tempo().use_remote = False  # ensure direct call to class does not try to do remote
+    custom_model.get_tempo().set_remote(False)  # ensure direct call to class does not try to do remote
     expected_output = custom_model(pipeline_input)
 
     pipeline_output = res.outputs[0].data

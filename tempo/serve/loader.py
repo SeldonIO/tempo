@@ -17,9 +17,7 @@ from tempo.utils import logger
 
 def save(tempo_artifact: Any, save_env=True):
     model = tempo_artifact.get_tempo()
-    model.set_remote(True)
     model.save(save_env=save_env)
-    model.set_remote(False)
 
 
 def save_custom(pipeline, file_path: str) -> str:
