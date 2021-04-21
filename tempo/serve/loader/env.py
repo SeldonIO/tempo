@@ -1,14 +1,14 @@
 import re
 import uuid
-import conda_pack
-import yaml
-
 from subprocess import run
 from tempfile import NamedTemporaryFile
 from typing import Optional
 
-from ..constants import MLServerEnvDeps
+import conda_pack
+import yaml
+
 from ...utils import logger
+from ..constants import MLServerEnvDeps
 
 
 def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
@@ -25,9 +25,7 @@ def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
     return env
 
 
-def save_environment(
-    conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None
-):
+def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None):
     if env_name:
         _pack_environment(env_name, conda_pack_file_path)
     else:
@@ -57,9 +55,7 @@ def _has_required_deps(env: dict) -> bool:
     for dep in MLServerEnvDeps:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
-        r = re.compile(
-            fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
-        )
+        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:
             return False
@@ -80,9 +76,7 @@ def _add_required_deps(env: dict) -> dict:
     for dep in MLServerEnvDeps:
         parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
         module = parts[0]
-        r = re.compile(
-            fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))"
-        )
+        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
         newlist = list(filter(r.match, pip_deps["pip"]))
         if len(newlist) == 0:
             pip_deps["pip"].extend(MLServerEnvDeps)
