@@ -23,6 +23,7 @@ def _fixed_create_function(
     Patched version from:
         https://github.com/uqfoundation/dill/issues/219#issuecomment-522068603
     Original source code can be found at:
+        https://github.com/uqfoundation/dill/blob/846b888ef957dc1991464b562df425aa35142cb8/dill/_dill.py#L594-L603
 
     """
     # same as FunctionType, but enable passing __dict__ to new function,
