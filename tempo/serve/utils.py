@@ -1,3 +1,5 @@
+import copy
+
 from inspect import getmembers, isclass, isfunction
 from typing import Any, Callable, Optional, Type
 
@@ -11,6 +13,11 @@ from .base import BaseModel
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"
+
+
+def predictmethod(f):
+    setattr(f, PredictMethodAttr, True)
+    return f
 
 
 def _bind(instance, func):
@@ -43,15 +50,23 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
 
     # Make copy of original __init__, so we can call it without recursion
     def __init__(self, *args, **kws):
+        # On __init__, copy pipeline object and update _user_func.
+        # Class-level attributes mutate to instance-level attributes when
+        # overriden.
+        # Therefore, this won't modify the class-level model / pipeline object.
+        class_model = getattr(K, field_name)
+        instance_model = copy.copy(class_model)
+        setattr(self, field_name, instance_model)
+
         # We bind _user_func so that `self` is passed implicitly
-        model = getattr(K, field_name)
-        model._user_func = _bind(self, model._user_func)
+        instance_model._user_func = _bind(self, instance_model._user_func)
+
         orig_init(self, *args, **kws)  # Call the original __init__
 
     K.__init__ = __init__  # Set the class' __init__ to the new one
 
     def __call__(self, *args, **kwargs) -> Any:
-        model = getattr(K, field_name)
+        model = getattr(self, field_name)
         return model(*args, **kwargs)
 
     K.__call__ = __call__  # type: ignore
@@ -135,11 +150,6 @@ def pipeline(
         return pipeline
 
     return _pipeline
-
-
-def predictmethod(f):
-    setattr(f, PredictMethodAttr, True)
-    return f
 
 
 def model(
