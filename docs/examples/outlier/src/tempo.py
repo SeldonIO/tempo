@@ -9,6 +9,7 @@ from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import model, pipeline, predictmethod
+from alibi_detect.base import NumpyEncoder
 
 
 def create_outlier_cls(artifacts_folder: str):
@@ -20,30 +21,6 @@ def create_outlier_cls(artifacts_folder: str):
         local_folder=f"{artifacts_folder}/{OUTLIER_FOLDER}",
     )
     class OutlierModel(object):
-        class NumpyEncoder(json.JSONEncoder):
-            def default(self, obj):  # pylint: disable=arguments-differ,method-hidden
-                if isinstance(
-                    obj,
-                    (
-                        np.int_,
-                        np.intc,
-                        np.intp,
-                        np.int8,
-                        np.int16,
-                        np.int32,
-                        np.int64,
-                        np.uint8,
-                        np.uint16,
-                        np.uint32,
-                        np.uint64,
-                    ),
-                ):
-                    return int(obj)
-                elif isinstance(obj, (np.float_, np.float16, np.float32, np.float64)):
-                    return float(obj)
-                elif isinstance(obj, (np.ndarray,)):
-                    return obj.tolist()
-                return json.JSONEncoder.default(self, obj)
 
         def __init__(self):
             self.loaded = False
@@ -75,7 +52,7 @@ def create_outlier_cls(artifacts_folder: str):
                 return_instance_score=True,
             )
 
-            return json.loads(json.dumps(od_preds, cls=OutlierModel.NumpyEncoder))
+            return json.loads(json.dumps(od_preds, cls=NumpyEncoder))
 
     return OutlierModel
 
