@@ -26,7 +26,7 @@ def save(tempo_artifact: Any, save_env=True):
 
 def save_custom(pipeline, file_path: str) -> str:
     with open(file_path, "wb") as file:
-        dill.dump(pipeline, file)
+        dill.dump(pipeline, file, recurse=True)
 
     return file_path
 
