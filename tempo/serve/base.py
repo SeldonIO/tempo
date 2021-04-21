@@ -13,9 +13,20 @@ from ..errors import UndefinedCustomImplementation
 from ..kfserving import KFServingV2Protocol
 from ..utils import logger
 from .args import infer_args, process_datatypes
-from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
+from .constants import (
+    ENV_K8S_SERVICE_HOST,
+    DefaultCondaFile,
+    DefaultEnvFilename,
+    DefaultModelFilename,
+)
 from .loader import load_custom, save_custom, save_environment
-from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from .metadata import (
+    ModelDataArg,
+    ModelDataArgs,
+    ModelDetails,
+    ModelFramework,
+    RuntimeOptions,
+)
 from .protocol import Protocol
 from .remote import Remote
 from .runtime import ModelSpec, Runtime
@@ -132,18 +143,14 @@ class BaseModel:
             return
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
-        # TODO: Is it necessary to change the `deployed` flag here?
-        #  if not self.deployed:
-        #  self.deployed = True
-        #  save_custom(self, file_path_pkl)
-        #  self.deployed = False
-        #  else:
         logger.info("Saving tempo model to %s", file_path_pkl)
         save_custom(self, file_path_pkl)
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            conda_env_file_path = os.path.join(self.details.local_folder, DefaultCondaFile)
+            conda_env_file_path = os.path.join(
+                self.details.local_folder, DefaultCondaFile
+            )
             if not os.path.exists(conda_env_file_path):
                 conda_env_file_path = None
 
@@ -167,11 +174,17 @@ class BaseModel:
             response = self(req_converted)
 
         if type(response) == dict:
-            response_converted = self.protocol.to_protocol_response(self.details, **response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, **response
+            )
         elif type(response) == list or type(response) == tuple:
-            response_converted = self.protocol.to_protocol_response(self.details, *response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, *response
+            )
         else:
-            response_converted = self.protocol.to_protocol_response(self.details, response)
+            response_converted = self.protocol.to_protocol_response(
+                self.details, response
+            )
 
         return response_converted
 
@@ -201,7 +214,9 @@ class BaseModel:
         return remoter.remote(self._get_model_spec(), *args, **kwargs)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
-        return runtime.wait_ready_spec(self._get_model_spec(), timeout_secs=timeout_secs)
+        return runtime.wait_ready_spec(
+            self._get_model_spec(), timeout_secs=timeout_secs
+        )
 
     def get_endpoint(self, runtime: Runtime):
         return runtime.get_endpoint_spec(self._get_model_spec())
