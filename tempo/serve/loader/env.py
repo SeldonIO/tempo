@@ -7,8 +7,8 @@ from subprocess import run
 from tempfile import NamedTemporaryFile
 from typing import Optional
 
-from ..serve.constants import MLServerEnvDeps
-from ..utils import logger
+from ..constants import MLServerEnvDeps
+from ...utils import logger
 
 
 def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:

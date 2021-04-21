@@ -3,7 +3,7 @@ import os
 
 from typing import Any
 
-from ..serve.constants import DefaultModelFilename, DefaultRemoteFilename
+from ..constants import DefaultModelFilename, DefaultRemoteFilename
 
 
 def save(tempo_artifact: Any, save_env=True):
