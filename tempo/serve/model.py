@@ -33,8 +33,8 @@ class Model(BaseModel):
          Location of local artifacts.
         uri
          Location of remote artifacts.
-        models
-         A list of models defined as PipelineModels.
+        platform
+         The :class:`tempo.serve.metadata.ModelFramework`
         inputs
          The input types.
         outputs
