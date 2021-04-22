@@ -10,6 +10,8 @@ from mlserver.utils import to_ndarray
 from tempo.serve.base import BaseModel
 from tempo.mlserver import InferenceRuntime
 
+from .test_mlserver_cases import case_wrapped_class
+
 
 @pytest.fixture
 def inference_request() -> InferenceRequest:
@@ -56,3 +58,19 @@ async def test_predict(
     pipeline_output = res.outputs[0].data
 
     assert expected_output.tolist() == pipeline_output
+
+
+async def test_load_wrapped_class(
+    inference_pipeline_class, inference_request: InferenceRequest
+):
+    pipeline_input = to_ndarray(inference_request.inputs[0])
+
+    inference_pipeline_class(pipeline_input)
+    assert inference_pipeline_class.counter == 1
+
+    model_settings = case_wrapped_class(inference_pipeline_class)
+    runtime = InferenceRuntime(model_settings)
+    await runtime.load()
+
+    assert inference_pipeline_class.counter == 1
+    assert runtime._model._user_func.__self__.counter == 0  # type: ignore
