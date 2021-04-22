@@ -72,7 +72,6 @@ class BaseModel:
         else:
             self._state = LocalState()
 
-        self.cls = None
         self.protocol = protocol
         self.model_spec = ModelSpec(
             model_details=self.details,
