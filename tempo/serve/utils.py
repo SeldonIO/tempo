@@ -43,9 +43,7 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
     setattr(K, field_name, model)
     model._K = K
 
-    setattr(K, "request", model.request)
-    setattr(K, "remote", model.remote)
-    setattr(K, "get_tempo", model.get_tempo)
+    _bind_tempo_interface(K, model)
 
     orig_init = K.__init__
 
@@ -62,6 +60,9 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
         # We bind _user_func so that `self` is passed implicitly
         instance_model._user_func = _bind(self, instance_model._user_func)
 
+        # Bind back Tempo interface to make sure it points to instance referece
+        _bind_tempo_interface(self, instance_model)
+
         orig_init(self, *args, **kws)  # Call the original __init__
 
     K.__init__ = __init__  # Set the class' __init__ to the new one
@@ -73,6 +74,14 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
     K.__call__ = __call__  # type: ignore
 
     return K
+
+
+def _bind_tempo_interface(artifact: Any, model: BaseModel) -> Any:
+    setattr(artifact, "request", model.request)
+    setattr(artifact, "remote", model.remote)
+    setattr(artifact, "get_tempo", model.get_tempo)
+
+    return artifact
 
 
 def pipeline(

@@ -19,7 +19,7 @@ def case_wrapped_class_instance(inference_pipeline_class) -> ModelSettings:
     model_uri = inference_pipeline_class.pipeline.details.local_folder
 
     return ModelSettings(
-        name="class-instance",
+        name="wrapped-class-instance",
         parameters=ModelParameters(uri=model_uri),
     )
 
@@ -28,9 +28,9 @@ def case_wrapped_class(inference_pipeline_class) -> ModelSettings:
     MyClass = inference_pipeline_class.__class__
 
     save(MyClass, save_env=False)
-    model_uri = MyClass.details.local_folder
+    model_uri = MyClass.pipeline.details.local_folder
 
     return ModelSettings(
-        name="class",
+        name="wrapped-class",
         parameters=ModelParameters(uri=model_uri),
     )
