@@ -16,6 +16,12 @@ def test_bind_init(inference_pipeline_class):
     assert user_func == inference_pipeline_class.p
 
 
+def test_K_reference(inference_pipeline_class):
+    MyClass = inference_pipeline_class.__class__
+
+    assert inference_pipeline_class.pipeline._K == MyClass
+
+
 def test_multiple_instances(inference_pipeline_class):
     MyClass = inference_pipeline_class.__class__
     inference_pipeline_class_2 = MyClass()

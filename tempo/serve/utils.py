@@ -41,6 +41,7 @@ def _get_predict_method(K: Type) -> Optional[Callable]:
 
 def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
     setattr(K, field_name, model)
+    model._K = K
 
     setattr(K, "request", model.request)
     setattr(K, "remote", model.remote)

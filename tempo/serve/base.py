@@ -4,7 +4,7 @@ import os
 import tempfile
 from pydoc import locate
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Type, Tuple
 
 import numpy as np
 
@@ -79,6 +79,9 @@ class BaseModel:
 
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
+
+        # K holds the wrapped class (if any)
+        self._K: Optional[Type] = None
 
         # context represents internal context shared (optionally) between different
         # methods of the model (e.g. predict, loader, etc.)
