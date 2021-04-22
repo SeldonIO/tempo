@@ -1,15 +1,14 @@
 import copy
-
 from inspect import getmembers, isclass, isfunction
 from typing import Any, Callable, Optional, Type
 
 from ..kfserving.protocol import KFServingV2Protocol
+from .base import BaseModel
 from .metadata import ModelFramework, RuntimeOptions
 from .model import Model
 from .pipeline import Pipeline, PipelineModels
 from .protocol import Protocol
 from .types import ModelDataType
-from .base import BaseModel
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"
