@@ -5,7 +5,6 @@ from tempo.serve.base import BaseModel
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.protocol import Protocol
 from tempo.serve.types import ModelDataType
-from tempo.serve.constants import ModelDataType
 from tempo.serve.state import StateDetails
 
 
