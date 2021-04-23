@@ -36,7 +36,7 @@ class Deployer(object):
     def get_endpoint(self, model: Any):
         t = model.get_tempo()
         t.set_runtime_options_override(self.runtime_options)
-        t.get_endpoint(self)
+        return t.get_endpoint(self)
 
     def wait_ready(self, model: Any, timeout_secs=None):
         t = model.get_tempo()
