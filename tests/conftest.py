@@ -25,6 +25,24 @@ def pytest_collection_modifyitems(items):
         item.add_marker("asyncio")
 
 
+@pipeline(
+    name="mypipeline",
+    models=PipelineModels(),
+    local_folder=PIPELINE_LOCAL_DIR,
+)
+class MyClass(object):
+    def __init__(self):
+        self.counter = 0
+
+    @predictmethod
+    def p(self, payload: np.ndarray) -> np.ndarray:
+        self.counter += 1
+        return payload.sum(keepdims=True)
+
+    def get_counter(self):
+        return self.counter
+
+
 @pytest.fixture
 def pipeline_conda_yaml() -> str:
     condaPath = PIPELINE_LOCAL_DIR + "/conda.yaml"
@@ -52,7 +70,9 @@ def sklearn_model() -> Model:
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
         protocol=SeldonProtocol(),
-        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace="production", replicas=1)),
+        runtime_options=RuntimeOptions(
+            k8s_options=KubernetesOptions(namespace="production", replicas=1)
+        ),
     )
 
 
@@ -86,7 +106,9 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
+def inference_pipeline(
+    sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str
+) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
@@ -117,22 +139,12 @@ def cifar10_model() -> Model:
 
 @pytest.fixture
 def inference_pipeline_class(sklearn_model: Model, xgboost_model: Model):
-    @pipeline(
-        name="mypipeline",
-        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
-        local_folder=PIPELINE_LOCAL_DIR,
+    # Override MyClass models with fixture-specific ones
+    # TODO: Change once this issue is fixed:
+    # https://github.com/uqfoundation/dill/issues/56
+    MyClass.pipeline.models = PipelineModels(  # type: ignore
+        sklearn=sklearn_model, xgboost=xgboost_model
     )
-    class MyClass(object):
-        def __init__(self):
-            self.counter = 0
-
-        @predictmethod
-        def p(self, payload: np.ndarray) -> np.ndarray:
-            self.counter += 1
-            return payload.sum(keepdims=True)
-
-        def get_counter(self):
-            return self.counter
 
     myc = MyClass()
     return myc
