@@ -25,24 +25,6 @@ def pytest_collection_modifyitems(items):
         item.add_marker("asyncio")
 
 
-@pipeline(
-    name="mypipeline",
-    models=PipelineModels(),
-    local_folder=PIPELINE_LOCAL_DIR,
-)
-class MyClass(object):
-    def __init__(self):
-        self.counter = 0
-
-    @predictmethod
-    def p(self, payload: np.ndarray) -> np.ndarray:
-        self.counter += 1
-        return payload.sum(keepdims=True)
-
-    def get_counter(self):
-        return self.counter
-
-
 @pytest.fixture
 def pipeline_conda_yaml() -> str:
     condaPath = PIPELINE_LOCAL_DIR + "/conda.yaml"
@@ -139,12 +121,22 @@ def cifar10_model() -> Model:
 
 @pytest.fixture
 def inference_pipeline_class(sklearn_model: Model, xgboost_model: Model):
-    # Override MyClass models with fixture-specific ones
-    # TODO: Change once this issue is fixed:
-    # https://github.com/uqfoundation/dill/issues/56
-    MyClass.pipeline.models = PipelineModels(  # type: ignore
-        sklearn=sklearn_model, xgboost=xgboost_model
+    @pipeline(
+        name="mypipeline",
+        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
+        local_folder=PIPELINE_LOCAL_DIR,
     )
+    class MyClass(object):
+        def __init__(self):
+            self.counter = 0
+
+        @predictmethod
+        def p(self, payload: np.ndarray) -> np.ndarray:
+            self.counter += 1
+            return payload.sum(keepdims=True)
+
+        def get_counter(self):
+            return self.counter
 
     myc = MyClass()
     return myc
