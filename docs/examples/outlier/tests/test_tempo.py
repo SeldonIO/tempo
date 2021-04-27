@@ -3,10 +3,10 @@ from src.tempo import create_model, create_outlier_cls, create_svc_cls
 
 
 def test_svc_outlier():
-    model = create_model("")
-    OutlierModel = create_outlier_cls("")
+    model = create_model()
+    OutlierModel = create_outlier_cls()
     outlier = OutlierModel()
-    Cifar10Svc = create_svc_cls(outlier, model, "")
+    Cifar10Svc = create_svc_cls(outlier, model)
     svc = Cifar10Svc()
     svc.models.outlier = lambda payload: {"data": {"is_outlier": [1]}}
     svc.models.cifar10 = lambda input: np.array([[0.2]])
@@ -15,10 +15,10 @@ def test_svc_outlier():
 
 
 def test_svc_inlier():
-    model = create_model("")
-    OutlierModel = create_outlier_cls("")
+    model = create_model()
+    OutlierModel = create_outlier_cls()
     outlier = OutlierModel()
-    Cifar10Svc = create_svc_cls(outlier, model, "")
+    Cifar10Svc = create_svc_cls(outlier, model)
     svc = Cifar10Svc()
     svc.models.outlier = lambda payload: {"data": {"is_outlier": [0]}}
     svc.models.cifar10 = lambda input: np.array([[0.2]])
