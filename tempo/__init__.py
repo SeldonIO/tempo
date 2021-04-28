@@ -1,8 +1,8 @@
+from .serve.loader import save, upload
 from .serve.metadata import ModelFramework
 from .serve.model import Model
 from .serve.pipeline import Pipeline
 from .serve.utils import model, pipeline, predictmethod
-from .serve.loader import save, upload
 from .version import __version__
 
 __all__ = [

@@ -1,16 +1,15 @@
 import os
+from typing import Any, Tuple
+
 import dill
 import numpy as np
-
-from typing import Any, Tuple
 from alibi.utils.wrappers import ArgmaxTransformer
+from src.constants import ARTIFACTS_FOLDER, EXPLAINER_FOLDER, MODEL_FOLDER
 
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import pipeline, predictmethod
-
-from src.constants import ARTIFACTS_FOLDER, EXPLAINER_FOLDER, MODEL_FOLDER
 
 
 def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
@@ -42,9 +41,7 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
                 self.explainer.samplers[0].predictor = self.models.sklearn
             else:
                 self.explainer.predictor = ArgmaxTransformer(self.models.sklearn)
-                self.explainer.samplers[0].predictor = ArgmaxTransformer(
-                    self.models.sklearn
-                )
+                self.explainer.samplers[0].predictor = ArgmaxTransformer(self.models.sklearn)
 
         @predictmethod
         def explain(self, payload: np.ndarray, parameters: dict) -> str:
