@@ -12,8 +12,12 @@ from .serve.metadata import ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
 
 
-def _is_class(model: BaseModel) -> bool:
-    return hasattr(model._user_func, PredictMethodAttr)
+def _needs_init(model: BaseModel):
+    is_class = model._K is not None
+    has_annotation = hasattr(model._user_func, PredictMethodAttr)
+    is_bound = hasattr(model._user_func, "__self__")
+
+    return is_class and has_annotation and not is_bound
 
 
 class InferenceRuntime(MLModel):
@@ -34,9 +38,11 @@ class InferenceRuntime(MLModel):
             # If pipeline, call children models remotely
             model.set_remote(True)
 
-        if _is_class(model):
-            # TODO: Call __init__()
-            pass
+        if _needs_init(model):
+            instance = model._K()
+            # Make sure that the model is the instance's model (and not the
+            # class attribute)
+            model = instance.get_tempo()
 
         if model._load_func:
             model._load_func()

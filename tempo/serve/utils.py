@@ -1,16 +1,22 @@
-import inspect
-from inspect import getmembers, isfunction
+import copy
+from inspect import getmembers, isclass, isfunction
 from typing import Any, Callable, Optional, Type
 
-from tempo.kfserving.protocol import KFServingV2Protocol
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
-from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline, PipelineModels
-from tempo.serve.protocol import Protocol
-from tempo.serve.types import ModelDataType
+from ..kfserving.protocol import KFServingV2Protocol
+from .base import BaseModel
+from .metadata import ModelFramework, RuntimeOptions
+from .model import Model
+from .pipeline import Pipeline, PipelineModels
+from .protocol import Protocol
+from .types import ModelDataType
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"
+
+
+def predictmethod(f):
+    setattr(f, PredictMethodAttr, True)
+    return f
 
 
 def _bind(instance, func):
@@ -30,6 +36,51 @@ def _get_predict_method(K: Type) -> Optional[Callable]:
             return func
 
     return None
+
+
+def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
+    setattr(K, field_name, model)
+    model._K = K
+
+    _bind_tempo_interface(K, model)
+
+    orig_init = K.__init__
+
+    # Make copy of original __init__, so we can call it without recursion
+    def __init__(self, *args, **kws):
+        # On __init__, copy pipeline object and update _user_func.
+        # Class-level attributes mutate to instance-level attributes when
+        # overriden.
+        # Therefore, this won't modify the class-level model / pipeline object.
+        class_model = getattr(K, field_name)
+        instance_model = copy.copy(class_model)
+        setattr(self, field_name, instance_model)
+
+        # We bind _user_func so that `self` is passed implicitly
+        instance_model._user_func = _bind(self, instance_model._user_func)
+
+        # Bind back Tempo interface to make sure it points to instance referece
+        _bind_tempo_interface(self, instance_model)
+
+        orig_init(self, *args, **kws)  # Call the original __init__
+
+    K.__init__ = __init__  # Set the class' __init__ to the new one
+
+    def __call__(self, *args, **kwargs) -> Any:
+        model = getattr(self, field_name)
+        return model(*args, **kwargs)
+
+    K.__call__ = __call__  # type: ignore
+
+    return K
+
+
+def _bind_tempo_interface(artifact: Any, model: BaseModel) -> Any:
+    setattr(artifact, "request", model.request)
+    setattr(artifact, "remote", model.remote)
+    setattr(artifact, "get_tempo", model.get_tempo)
+
+    return artifact
 
 
 def pipeline(
@@ -75,40 +126,25 @@ def pipeline(
     """
 
     def _pipeline(f):
-        if inspect.isclass(f):
-            K = f
-            predict_method = _get_predict_method(K)
+        predict_method = f
+        if isclass(f):
+            predict_method = _get_predict_method(f)
 
-            K.pipeline = Pipeline(
-                name,
-                local_folder=local_folder,
-                uri=uri,
-                models=models,
-                inputs=inputs,
-                outputs=outputs,
-                pipeline_func=predict_method,
-                conda_env=conda_env,
-                protocol=protocol,
-                runtime_options=runtime_options,
-            )
-            setattr(K, "request", K.pipeline.request)
-            setattr(K, "remote", K.pipeline.remote)
-            setattr(K, "get_tempo", K.pipeline.get_tempo)
+        pipeline = Pipeline(
+            name,
+            local_folder=local_folder,
+            uri=uri,
+            models=models,
+            inputs=inputs,
+            outputs=outputs,
+            pipeline_func=predict_method,
+            conda_env=conda_env,
+            protocol=protocol,
+            runtime_options=runtime_options,
+        )
 
-            orig_init = K.__init__
-
-            # Make copy of original __init__, so we can call it without recursion
-            def __init__(self, *args, **kws):
-                # We bind _user_func so that `self` is passed implicitly
-                K.pipeline._user_func = _bind(self, K.pipeline._user_func)
-                orig_init(self, *args, **kws)  # Call the original __init__
-
-            K.__init__ = __init__  # Set the class' __init__ to the new one
-
-            def __call__(self, *args, **kwargs) -> Any:
-                return self.pipeline(*args, **kwargs)
-
-            K.__call__ = __call__
+        if isclass(f):
+            K = _wrap_class(f, pipeline, field_name="pipeline")
 
             @property
             def models_property(self):
@@ -119,26 +155,10 @@ def pipeline(
             K.models = models_property
 
             return K
-        else:
-            return Pipeline(
-                name,
-                local_folder=local_folder,
-                uri=uri,
-                models=models,
-                inputs=inputs,
-                outputs=outputs,
-                pipeline_func=f,
-                conda_env=conda_env,
-                protocol=protocol,
-                runtime_options=runtime_options,
-            )
+
+        return pipeline
 
     return _pipeline
-
-
-def predictmethod(f):
-    setattr(f, PredictMethodAttr, True)
-    return f
 
 
 def model(
@@ -183,55 +203,26 @@ def model(
     """
 
     def _model(f):
-        if inspect.isclass(f):
-            K = f
-            predict_method = _get_predict_method(K)
+        predict_method = f
+        if isclass(f):
+            predict_method = _get_predict_method(f)
 
-            K.pipeline = Model(
-                name,
-                protocol=protocol,
-                local_folder=local_folder,
-                uri=uri,
-                platform=platform,
-                inputs=inputs,
-                outputs=outputs,
-                model_func=predict_method,
-                conda_env=conda_env,
-                runtime_options=runtime_options,
-            )
+        model = Model(
+            name,
+            protocol=protocol,
+            local_folder=local_folder,
+            uri=uri,
+            platform=platform,
+            inputs=inputs,
+            outputs=outputs,
+            model_func=predict_method,
+            conda_env=conda_env,
+            runtime_options=runtime_options,
+        )
 
-            setattr(K, "request", K.pipeline.request)
-            setattr(K, "remote", K.pipeline.remote)
-            setattr(K, "get_tempo", K.pipeline.get_tempo)
+        if isclass(f):
+            return _wrap_class(f, model)
 
-            orig_init = K.__init__
-
-            # Make copy of original __init__, so we can call it without recursion
-            def __init__(self, *args, **kws):
-                # We bind _user_func so that `self` is passed implicitly
-                K.pipeline._user_func = _bind(self, K.pipeline._user_func)
-                orig_init(self, *args, **kws)  # Call the original __init__
-
-            K.__init__ = __init__  # Set the class' __init__ to the new one
-
-            def __call__(self, *args, **kwargs) -> Any:
-                return self.pipeline(*args, **kwargs)
-
-            K.__call__ = __call__
-
-            return K
-        else:
-            return Model(
-                name,
-                protocol=protocol,
-                local_folder=local_folder,
-                uri=uri,
-                platform=platform,
-                inputs=inputs,
-                outputs=outputs,
-                model_func=f,
-                conda_env=conda_env,
-                runtime_options=runtime_options,
-            )
+        return model
 
     return _model

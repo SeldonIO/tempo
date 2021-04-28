@@ -1,3 +1,4 @@
+from .serve.loader import save, upload
 from .serve.metadata import ModelFramework
 from .serve.model import Model
 from .serve.pipeline import Pipeline
@@ -12,4 +13,6 @@ __all__ = [
     "pipeline",
     "predictmethod",
     "model",
+    "save",
+    "upload",
 ]
