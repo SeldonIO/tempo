@@ -1,18 +1,22 @@
+import json
 import os
 import time
-from typing import Any, Optional
+from typing import Any, Sequence, Optional
 
 import requests
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
+from tempo.k8s.constants import TempoK8sDescriptionAnnotation, TempoK8sLabel, TempoK8sModelSpecAnnotation
+from tempo.k8s.models import KubernetesModelListing
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
+from tempo.serve.base import Remote, RemoteModel
 from tempo.serve.constants import ENV_K8S_SERVICE_HOST
-from tempo.serve.metadata import RuntimeOptions
-from tempo.serve.remote import Remote
+from tempo.serve.metadata import ModelListing, RuntimeOptions
 from tempo.serve.runtime import ModelSpec, Runtime
+from tempo.serve.stub import deserialize
 from tempo.utils import logger
 
 
@@ -116,3 +120,50 @@ class SeldonKubernetesRuntime(Runtime, Remote):
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         k8s_spec = KubernetesSpec(model_spec)
         return yaml.safe_dump(k8s_spec.spec)
+
+    def list_models(self, namespace: Optional[str] = None) -> Sequence[ModelListing]:
+        self.create_k8s_client()
+        api_instance = client.CustomObjectsApi()
+
+        if namespace is None:
+            namespace = self.runtime_options.k8s_options.namespace
+
+        try:
+            models = []
+            response = api_instance.list_namespaced_custom_object(
+                group="machinelearning.seldon.io",
+                version="v1",
+                namespace=namespace,
+                plural="seldondeployments",
+                label_selector=TempoK8sLabel + "=true",
+            )
+            for model in response["items"]:
+                models.append(
+                    KubernetesModelListing(
+                        name=model["metadata"]["name"],
+                        description=model["metadata"]["annotations"][TempoK8sDescriptionAnnotation],
+                        namespace=namespace,
+                    )
+                )
+            return models
+        except ApiException as e:
+            if e.status == 404:
+                return []
+            else:
+                raise e
+
+    def load_remote(self, model_listing: KubernetesModelListing) -> RemoteModel:
+        self.create_k8s_client()
+        api_instance = client.CustomObjectsApi()
+
+        model = api_instance.get_namespaced_custom_object(
+            "machinelearning.seldon.io",
+            "v1",
+            model_listing.namespace,
+            "seldondeployments",
+            model_listing.name,
+        )
+
+        metadata = model["metadata"]["annotations"][TempoK8sModelSpecAnnotation]
+        d = json.loads(metadata)
+        return deserialize(d)

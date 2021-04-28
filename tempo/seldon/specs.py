@@ -1,5 +1,6 @@
 import json
 
+from tempo.k8s.constants import TempoK8sDescriptionAnnotation, TempoK8sLabel, TempoK8sModelSpecAnnotation
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
@@ -113,6 +114,13 @@ class KubernetesSpec:
             "metadata": {
                 "name": self._details.model_details.name,
                 "namespace": self._details.runtime_options.k8s_options.namespace,
+                "labels": {
+                    TempoK8sLabel: "true",
+                },
+                "annotations": {
+                    TempoK8sDescriptionAnnotation: self._details.model_details.description,
+                    TempoK8sModelSpecAnnotation: self._details.json(),
+                },
             },
             "spec": {"protocol": protocol, "predictors": [predictor]},
         }

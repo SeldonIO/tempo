@@ -2,7 +2,7 @@ import os
 import time
 from enum import Enum
 from http import cookies
-from typing import Any, Dict
+from typing import Any, Dict, Sequence
 
 from pydantic import BaseModel
 from seldon_deploy_sdk import ApiClient, Configuration, EnvironmentApi, SeldonDeploymentsApi
@@ -16,8 +16,8 @@ from seldon_deploy_sdk.models.seldon_deployment_spec import SeldonDeploymentSpec
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.specs import KubernetesSpec
-from tempo.serve.metadata import ModelDetails
-from tempo.serve.remote import Remote
+from tempo.serve.base import Remote, RemoteModel
+from tempo.serve.metadata import ModelDetails, ModelListing
 from tempo.serve.runtime import ModelSpec, Runtime
 
 
@@ -38,6 +38,12 @@ class SeldonDeployConfig(BaseModel):
 
 
 class SeldonDeployRuntime(Runtime, Remote):
+    def load_remote(self, model_listing: ModelListing) -> RemoteModel:
+        pass
+
+    def list_models(self) -> Sequence[ModelListing]:
+        pass
+
     def __init__(self):
         self.api_client = None
 

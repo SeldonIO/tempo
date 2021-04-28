@@ -20,6 +20,7 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
         platform=ModelFramework.SKLearn,
         local_folder=f"{artifacts_folder}/{SKLearnFolder}",
         uri="s3://tempo/basic/sklearn",
+        description="An SKLearn Iris classification model",
     )
 
     xgboost_model = Model(
@@ -27,6 +28,7 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
         platform=ModelFramework.XGBoost,
         local_folder=f"{artifacts_folder}/{XGBoostFolder}",
         uri="s3://tempo/basic/xgboost",
+        description="An XGBoost Iris classification model",
     )
 
     @pipeline(
@@ -34,6 +36,7 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
         uri="s3://tempo/basic/pipeline",
         local_folder=f"{artifacts_folder}/{PipelineFolder}",
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
+        description="A pipeline to use either an sklearn or xgboost model for Iris classification",
     )
     def classifier(payload: np.ndarray) -> Tuple[np.ndarray, str]:
         res1 = classifier.models.sklearn(input=payload)

@@ -29,7 +29,7 @@ class PipelineModels(SimpleNamespace):
                 platform=model.get_tempo().details.platform,
                 inputs=model.get_tempo().details.inputs,
                 outputs=model.get_tempo().details.outputs,
-                protocol=model.get_tempo().protocol,
+                protocol=model.get_tempo().model_spec.protocol,
                 runtime_options=model.get_tempo().model_spec.runtime_options,
             )
         return PipelineModels(**output)
@@ -48,6 +48,7 @@ class Pipeline(BaseModel):
         outputs: ModelDataType = None,
         conda_env: str = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
+        description: str = "",
     ):
         super().__init__(
             name=name,
@@ -61,6 +62,7 @@ class Pipeline(BaseModel):
             conda_env=conda_env,
             protocol=protocol,
             runtime_options=runtime_options,
+            description=description,
         )
 
         if models is None:

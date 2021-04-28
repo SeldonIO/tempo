@@ -1,5 +1,6 @@
 import numpy as np
-from src.tempo import SKLearnTag, XGBoostTag, get_tempo_artifacts
+from src.constants import SKLearnTag, XGBoostTag
+from src.tempo import get_tempo_artifacts
 
 
 def test_sklearn_model_used():

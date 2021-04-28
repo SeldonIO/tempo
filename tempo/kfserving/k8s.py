@@ -1,21 +1,24 @@
 import json
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Sequence, Optional
 
 import requests
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
+from tempo.k8s.constants import TempoK8sDescriptionAnnotation, TempoK8sLabel, TempoK8sModelSpecAnnotation
+from tempo.k8s.models import KubernetesModelListing
 from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
+from tempo.serve.base import Remote, RemoteModel
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
-from tempo.serve.remote import Remote
+from tempo.serve.metadata import ModelFramework, ModelListing, RuntimeOptions
 from tempo.serve.runtime import ModelSpec, Runtime
+from tempo.serve.stub import deserialize
 from tempo.utils import logger
 
 DefaultHTTPPort = "8080"
@@ -171,6 +174,13 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 "metadata": {
                     "name": model_spec.model_details.name,
                     "namespace": model_spec.runtime_options.k8s_options.namespace,
+                    "labels": {
+                        TempoK8sLabel: "true",
+                    },
+                    "annotations": {
+                        TempoK8sDescriptionAnnotation: model_spec.model_details.description,
+                        TempoK8sModelSpecAnnotation: model_spec.json(),
+                    },
                 },
                 "spec": {
                     "predictor": {
@@ -222,6 +232,13 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 "metadata": {
                     "name": model_spec.model_details.name,
                     "namespace": model_spec.runtime_options.k8s_options.namespace,
+                    "labels": {
+                        TempoK8sLabel: "true",
+                    },
+                    "annotations": {
+                        TempoK8sDescriptionAnnotation: model_spec.model_details.description,
+                        TempoK8sModelSpecAnnotation: model_spec.json(),
+                    },
                 },
                 "spec": {
                     "predictor": {
@@ -242,3 +259,50 @@ class KFServingKubernetesRuntime(Runtime, Remote):
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         d = self._get_spec(model_spec)
         return yaml.safe_dump(d)
+
+    def list_models(self, namespace: Optional[str] = None) -> Sequence[ModelListing]:
+        self.create_k8s_client()
+        api_instance = client.CustomObjectsApi()
+
+        if namespace is None:
+            namespace = self.runtime_options.k8s_options.namespace
+
+        try:
+            models = []
+            response = api_instance.list_namespaced_custom_object(
+                group="serving.kubeflow.org",
+                version="v1beta1",
+                namespace=namespace,
+                plural="inferenceservices",
+                label_selector=TempoK8sLabel + "=true",
+            )
+            for model in response["items"]:
+                models.append(
+                    KubernetesModelListing(
+                        name=model["metadata"]["name"],
+                        description=model["metadata"]["annotations"][TempoK8sDescriptionAnnotation],
+                        namespace=namespace,
+                    )
+                )
+            return models
+        except ApiException as e:
+            if e.status == 404:
+                return []
+            else:
+                raise e
+
+    def load_remote(self, model_listing: KubernetesModelListing) -> RemoteModel:
+        self.create_k8s_client()
+        api_instance = client.CustomObjectsApi()
+
+        model = api_instance.get_namespaced_custom_object(
+            "serving.kubeflow.org",
+            "v1beta1",
+            model_listing.namespace,
+            "inferenceservices",
+            model_listing.name,
+        )
+
+        metadata = model["metadata"]["annotations"][TempoK8sModelSpecAnnotation]
+        d = json.loads(metadata)
+        return deserialize(d)

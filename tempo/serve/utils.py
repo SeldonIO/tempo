@@ -42,6 +42,7 @@ def pipeline(
     outputs: ModelDataType = None,
     conda_env: str = None,
     runtime_options: RuntimeOptions = RuntimeOptions(),
+    description: str = "",
 ):
     """
     A decorator for a class or function to make it a Tempo Pipeline.
@@ -67,6 +68,8 @@ def pipeline(
      or generate from current running environment.
     runtime_options
      The runtime options. Can be left empty and set when creating a runtime.
+    description
+     The description of the pipeline
 
     Returns
     -------
@@ -90,6 +93,7 @@ def pipeline(
                 conda_env=conda_env,
                 protocol=protocol,
                 runtime_options=runtime_options,
+                description=description,
             )
             setattr(K, "request", K.pipeline.request)
             setattr(K, "remote", K.pipeline.remote)
@@ -131,6 +135,7 @@ def pipeline(
                 conda_env=conda_env,
                 protocol=protocol,
                 runtime_options=runtime_options,
+                description=description,
             )
 
     return _pipeline
@@ -151,6 +156,7 @@ def model(
     conda_env: str = None,
     protocol: Protocol = KFServingV2Protocol(),
     runtime_options: RuntimeOptions = RuntimeOptions(),
+    description: str = "",
 ):
     """
 
@@ -175,6 +181,8 @@ def model(
      The runtime options. Can be left empty and set when creating a runtime.
     platform
      The :class:`tempo.serve.metadata.ModelFramework`
+    description
+     The description of the model
 
     Returns
     -------
@@ -198,6 +206,7 @@ def model(
                 model_func=predict_method,
                 conda_env=conda_env,
                 runtime_options=runtime_options,
+                description=description,
             )
 
             setattr(K, "request", K.pipeline.request)

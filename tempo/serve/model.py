@@ -20,6 +20,7 @@ class Model(BaseModel):
         model_func: Callable[..., Any] = None,
         conda_env: str = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
+        description: str = "",
     ):
         """
 
@@ -44,6 +45,8 @@ class Model(BaseModel):
          local_folder or generate from current running environment.
         runtime_options
          The runtime options. Can be left empty and set when creating a runtime.
+        description
+         The description of the model
 
         """
         super().__init__(
@@ -58,4 +61,5 @@ class Model(BaseModel):
             conda_env=conda_env,
             protocol=protocol,
             runtime_options=runtime_options,
+            description=description,
         )

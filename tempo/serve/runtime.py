@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import abc
+from pydoc import locate
 from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from tempo.serve.metadata import ModelDetails, RuntimeOptions
 from tempo.serve.protocol import Protocol
+from tempo.serve.typing import fullname
 
 
 class ModelSpec(BaseModel):
@@ -15,8 +17,20 @@ class ModelSpec(BaseModel):
     protocol: Protocol
     runtime_options: RuntimeOptions
 
+    @validator("protocol", pre=True)
+    def ensure_type(cls, v):
+        if isinstance(v, str):
+            klass = locate(v)
+            return klass()
+        else:
+            return v
+
     class Config:
         arbitrary_types_allowed = True
+        json_encoders = {
+            Protocol: lambda v: fullname(v),
+            type: lambda v: v.__module__ + "." + v.__name__,
+        }
 
 
 class Deployer(object):
@@ -50,7 +64,6 @@ class Deployer(object):
 
 
 class Runtime(abc.ABC, Deployer):
-    # TODO change to deploy_model
     @abc.abstractmethod
     def deploy_spec(self, model_spec: ModelSpec):
         pass
