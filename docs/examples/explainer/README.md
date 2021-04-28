@@ -36,30 +36,37 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 
 ```python
 import os
-from tempo.utils import logger
 import logging
 import numpy as np
 import json
+import tempo
+
+from tempo.utils import logger
+
+from src.constants import ARTIFACTS_FOLDER
+
 logger.setLevel(logging.ERROR)
 logging.basicConfig(level=logging.ERROR)
-ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
 ```
 
 
 ```python
 from src.data import AdultData
+
 data = AdultData()
 ```
 
 
 ```python
 from src.model import train_model
+
 adult_model = train_model(ARTIFACTS_FOLDER, data)
 ```
 
 
 ```python
 from src.explainer import train_explainer
+
 train_explainer(ARTIFACTS_FOLDER, data, adult_model)
 ```
 
@@ -69,6 +76,7 @@ train_explainer(ARTIFACTS_FOLDER, data, adult_model)
 
 ```python
 from src.tempo import create_tempo_artifacts
+
 adult_model, explainer = create_tempo_artifacts(ARTIFACTS_FOLDER)
 ```
 
@@ -76,42 +84,42 @@ adult_model, explainer = create_tempo_artifacts(ARTIFACTS_FOLDER)
 ```python
 # %load src/tempo.py
 import os
-from typing import Any, Tuple
-
 import dill
 import numpy as np
+
+from typing import Any, Tuple
 from alibi.utils.wrappers import ArgmaxTransformer
-from src.constants import EXPLAINER_FOLDER, MODEL_FOLDER
 
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import pipeline, predictmethod
 
+from src.constants import ARTIFACTS_FOLDER, EXPLAINER_FOLDER, MODEL_FOLDER
+
 
 def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
     sklearn_model = Model(
         name="income-sklearn",
         platform=ModelFramework.SKLearn,
-        local_folder=f"{artifacts_folder}/{MODEL_FOLDER}",
+        local_folder=os.path.join(ARTIFACTS_FOLDER, MODEL_FOLDER),
         uri="gs://seldon-models/test/income/model",
     )
 
     @pipeline(
         name="income-explainer",
         uri="s3://tempo/explainer/pipeline",
-        local_folder=f"{artifacts_folder}/{EXPLAINER_FOLDER}",
+        local_folder=os.path.join(ARTIFACTS_FOLDER, EXPLAINER_FOLDER),
         models=PipelineModels(sklearn=sklearn_model),
     )
     class ExplainerPipeline(object):
         def __init__(self):
-            if "MLSERVER_MODELS_DIR" in os.environ:
-                models_folder = ""
-            else:
-                models_folder = f"{artifacts_folder}/{EXPLAINER_FOLDER}"
-            with open(models_folder + "/explainer.dill", "rb") as f:
+            pipeline = self.get_tempo()
+            models_folder = pipeline.details.local_folder
+
+            explainer_path = os.path.join(models_folder, "explainer.dill")
+            with open(explainer_path, "rb") as f:
                 self.explainer = dill.load(f)
-            self.ran_init = True
 
         def update_predict_fn(self, x):
             if np.argmax(self.models.sklearn(x).shape) == 0:
@@ -119,14 +127,13 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
                 self.explainer.samplers[0].predictor = self.models.sklearn
             else:
                 self.explainer.predictor = ArgmaxTransformer(self.models.sklearn)
-                self.explainer.samplers[0].predictor = ArgmaxTransformer(self.models.sklearn)
+                self.explainer.samplers[0].predictor = ArgmaxTransformer(
+                    self.models.sklearn
+                )
 
         @predictmethod
         def explain(self, payload: np.ndarray, parameters: dict) -> str:
             print("Explain called with ", parameters)
-            if not self.ran_init:
-                print("Loading explainer")
-                self.__init__()
             self.update_predict_fn(payload)
             explanation = self.explainer.explain(payload, **parameters)
             return explanation.to_json()
@@ -136,7 +143,7 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
 
 ```
 
-## Save Outlier and Svc Environments
+## Save Explainer
 
 
 
@@ -146,8 +153,7 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
 
 
 ```python
-from tempo.serve.loader import save
-save(explainer)
+tempo.save(explainer)
 ```
 
 ## Test Locally on Docker
@@ -156,7 +162,8 @@ Here we test our models using production images but running locally on Docker. T
 
 
 ```python
-from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.seldon import SeldonDockerRuntime
+
 docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(explainer)
 docker_runtime.wait_ready(explainer)
@@ -205,14 +212,14 @@ create_minio_rclone(os.getcwd()+"/rclone-minio.conf")
 
 
 ```python
-from tempo.serve.loader import upload
-upload(adult_model)
-upload(explainer)
+tempo.upload(adult_model)
+tempo.upload(explainer)
 ```
 
 
 ```python
 from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+
 runtime_options = RuntimeOptions(
         k8s_options=KubernetesOptions(
             namespace="production",
@@ -224,6 +231,7 @@ runtime_options = RuntimeOptions(
 
 ```python
 from tempo.seldon.k8s import SeldonKubernetesRuntime
+
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(explainer)
 k8s_runtime.wait_ready(explainer)
@@ -248,8 +256,10 @@ k8s_runtime.undeploy(explainer)
 
 ```python
 from tempo.seldon.k8s import SeldonKubernetesRuntime
+
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 yaml_str = k8s_runtime.to_k8s_yaml(explainer)
+
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```

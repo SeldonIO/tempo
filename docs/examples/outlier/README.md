@@ -38,6 +38,7 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 import os
 import logging
 import numpy as np
+import tempo
 
 from tempo.utils import logger
 from src.constants import ARTIFACTS_FOLDER
@@ -224,10 +225,8 @@ def test_svc_inlier():
 
 
 ```python
-from tempo.serve.loader import save
-
-save(OutlierModel)
-save(Cifar10Svc)
+tempo.save(OutlierModel)
+tempo.save(Cifar10Svc)
 ```
 
 ## Test Locally on Docker
@@ -237,6 +236,7 @@ Here we test our models using production images but running locally on Docker. T
 
 ```python
 from tempo.seldon.docker import SeldonDockerRuntime
+
 docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(svc)
 docker_runtime.wait_ready(svc)
@@ -245,6 +245,7 @@ docker_runtime.wait_ready(svc)
 
 ```python
 from src.utils import show_image
+
 show_image(data.X_test[0:1])
 svc(payload=data.X_test[0:1])
 ```
@@ -258,6 +259,7 @@ svc.remote(payload=data.X_test[0:1])
 
 ```python
 from src.utils import create_cifar10_outlier
+
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
 svc.remote(payload=outlier_img)
@@ -289,20 +291,21 @@ docker_runtime.undeploy(svc)
 ```python
 from tempo.examples.minio import create_minio_rclone
 import os
+
 create_minio_rclone(os.getcwd()+"/rclone-minio.conf")
 ```
 
 
 ```python
-from tempo.serve.loader import upload
-upload(cifar10_model)
-upload(outlier)
-upload(svc)
+tempo.upload(cifar10_model)
+tempo.upload(outlier)
+tempo.upload(svc)
 ```
 
 
 ```python
 from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+
 runtime_options = RuntimeOptions(
         k8s_options=KubernetesOptions(
             namespace="production",
@@ -313,7 +316,8 @@ runtime_options = RuntimeOptions(
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.seldon import SeldonKubernetesRuntime
+
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(svc)
 k8s_runtime.wait_ready(svc)
@@ -322,6 +326,7 @@ k8s_runtime.wait_ready(svc)
 
 ```python
 from src.utils import show_image
+
 show_image(data.X_test[0:1])
 svc.remote(payload=data.X_test[0:1])
 ```
@@ -329,6 +334,7 @@ svc.remote(payload=data.X_test[0:1])
 
 ```python
 from src.utils import create_cifar10_outlier
+
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
 svc.remote(payload=outlier_img)
@@ -346,9 +352,11 @@ k8s_runtime.undeploy(svc)
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.seldon import SeldonKubernetesRuntime
+
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 yaml_str = k8s_runtime.to_k8s_yaml(svc)
+
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```
