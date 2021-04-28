@@ -5,7 +5,7 @@ import os
 import tempfile
 from pydoc import locate
 from types import SimpleNamespace
-from typing import Any, Dict, Sequence, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Type, Sequence
 
 import numpy as np
 
@@ -73,6 +73,9 @@ class BaseModel:
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
 
+        # K holds the wrapped class (if any)
+        self._K: Optional[Type] = None
+
         # context represents internal context shared (optionally) between different
         # methods of the model (e.g. predict, loader, etc.)
         self.context = SimpleNamespace()
@@ -136,12 +139,6 @@ class BaseModel:
             return
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
-        # TODO: Is it necessary to change the `deployed` flag here?
-        #  if not self.deployed:
-        #  self.deployed = True
-        #  save_custom(self, file_path_pkl)
-        #  self.deployed = False
-        #  else:
         logger.info("Saving tempo model to %s", file_path_pkl)
         save_custom(self, file_path_pkl)
 

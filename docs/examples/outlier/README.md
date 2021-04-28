@@ -36,12 +36,15 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 
 ```python
 import os
-from tempo.utils import logger
 import logging
 import numpy as np
+import tempo
+
+from tempo.utils import logger
+from src.constants import ARTIFACTS_FOLDER
+
 logger.setLevel(logging.ERROR)
 logging.basicConfig(level=logging.ERROR)
-ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
 ```
 
 
@@ -75,10 +78,11 @@ else:
 
 ```python
 from src.tempo import create_outlier_cls, create_model, create_svc_cls
-cifar10_model = create_model(ARTIFACTS_FOLDER)
-OutlierModel = create_outlier_cls(ARTIFACTS_FOLDER)
+
+cifar10_model = create_model()
+OutlierModel = create_outlier_cls()
 outlier = OutlierModel()
-Cifar10Svc = create_svc_cls(outlier, cifar10_model, ARTIFACTS_FOLDER)
+Cifar10Svc = create_svc_cls(outlier, cifar10_model)
 svc = Cifar10Svc()
 ```
 
@@ -89,48 +93,35 @@ import json
 import os
 
 import numpy as np
-from src.constants import MODEL_FOLDER, OUTLIER_FOLDER
+from alibi_detect.base import NumpyEncoder
+from src.constants import ARTIFACTS_FOLDER, MODEL_FOLDER, OUTLIER_FOLDER
 
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import model, pipeline, predictmethod
-from alibi_detect.base import NumpyEncoder
 
 
-def create_outlier_cls(artifacts_folder: str):
+def create_outlier_cls():
     @model(
         name="outlier",
-        platform=ModelFramework.TempoPipeline,
+        platform=ModelFramework.Custom,
         protocol=KFServingV2Protocol(),
         uri="s3://tempo/outlier/cifar10/outlier",
-        local_folder=f"{artifacts_folder}/{OUTLIER_FOLDER}",
+        local_folder=os.path.join(ARTIFACTS_FOLDER, OUTLIER_FOLDER),
     )
     class OutlierModel(object):
-
         def __init__(self):
-            self.loaded = False
-
-        def load(self):
             from alibi_detect.utils.saving import load_detector
 
-            if "MLSERVER_MODELS_DIR" in os.environ:
-                models_folder = "/mnt/models"
-            else:
-                models_folder = f"{artifacts_folder}/{OUTLIER_FOLDER}"
+            model = self.get_tempo()
+            models_folder = model.details.local_folder
             print(f"Loading from {models_folder}")
-            self.od = load_detector(f"{models_folder}/cifar10")
-            self.loaded = True
-
-        def unload(self):
-            self.od = None
-            self.loaded = False
+            self.od = load_detector(os.path.join(models_folder, "cifar10"))
 
         @predictmethod
         def outlier(self, payload: np.ndarray) -> dict:
-            if not self.loaded:
-                self.load()
             od_preds = self.od.predict(
                 payload,
                 outlier_type="instance",  # use 'feature' or 'instance' level
@@ -144,25 +135,25 @@ def create_outlier_cls(artifacts_folder: str):
     return OutlierModel
 
 
-def create_model(arifacts_folder: str):
+def create_model():
 
     cifar10_model = Model(
         name="resnet32",
         protocol=KFServingV1Protocol(),
         platform=ModelFramework.Tensorflow,
         uri="gs://seldon-models/tfserving/cifar10/resnet32",
-        local_folder=f"{arifacts_folder}/{MODEL_FOLDER}",
+        local_folder=os.path.join(ARTIFACTS_FOLDER, MODEL_FOLDER),
     )
 
     return cifar10_model
 
 
-def create_svc_cls(outlier, model, arifacts_folder: str):
+def create_svc_cls(outlier, model):
     @pipeline(
         name="cifar10-service",
         protocol=KFServingV2Protocol(),
         uri="s3://tempo/outlier/cifar10/svc",
-        local_folder=f"{arifacts_folder}/svc",
+        local_folder=os.path.join(ARTIFACTS_FOLDER, "svc"),
         models=PipelineModels(outlier=outlier, cifar10=model),
     )
     class Cifar10Svc(object):
@@ -185,32 +176,33 @@ def create_svc_cls(outlier, model, arifacts_folder: str):
 
 ```python
 # %load tests/test_tempo.py
-from src.tempo import create_outlier_cls, create_model, create_svc_cls
 import numpy as np
+from src.tempo import create_model, create_outlier_cls, create_svc_cls
 
 
 def test_svc_outlier():
-    model = create_model("")
-    OutlierModel = create_outlier_cls("")
+    model = create_model()
+    OutlierModel = create_outlier_cls()
     outlier = OutlierModel()
-    Cifar10Svc = create_svc_cls(outlier, model, "")
+    Cifar10Svc = create_svc_cls(outlier, model)
     svc = Cifar10Svc()
-    svc.models.outlier = lambda payload: {"data":{"is_outlier":[1]}}
+    svc.models.outlier = lambda payload: {"data": {"is_outlier": [1]}}
     svc.models.cifar10 = lambda input: np.array([[0.2]])
     res = svc(np.array([1]))
     assert res.shape[0] == 0
 
 
 def test_svc_inlier():
-    model = create_model("")
-    OutlierModel = create_outlier_cls("")
+    model = create_model()
+    OutlierModel = create_outlier_cls()
     outlier = OutlierModel()
-    Cifar10Svc = create_svc_cls(outlier, model, "")
+    Cifar10Svc = create_svc_cls(outlier, model)
     svc = Cifar10Svc()
-    svc.models.outlier = lambda payload: {"data":{"is_outlier":[0]}}
+    svc.models.outlier = lambda payload: {"data": {"is_outlier": [0]}}
     svc.models.cifar10 = lambda input: np.array([[0.2]])
     res = svc(np.array([1]))
     assert res.shape[0] == 1
+
 ```
 
 
@@ -233,9 +225,8 @@ def test_svc_inlier():
 
 
 ```python
-from tempo.serve.loader import save
-save(outlier)
-save(svc)
+tempo.save(OutlierModel)
+tempo.save(Cifar10Svc)
 ```
 
 ## Test Locally on Docker
@@ -245,6 +236,7 @@ Here we test our models using production images but running locally on Docker. T
 
 ```python
 from tempo.seldon.docker import SeldonDockerRuntime
+
 docker_runtime = SeldonDockerRuntime()
 docker_runtime.deploy(svc)
 docker_runtime.wait_ready(svc)
@@ -253,6 +245,7 @@ docker_runtime.wait_ready(svc)
 
 ```python
 from src.utils import show_image
+
 show_image(data.X_test[0:1])
 svc(payload=data.X_test[0:1])
 ```
@@ -266,6 +259,7 @@ svc.remote(payload=data.X_test[0:1])
 
 ```python
 from src.utils import create_cifar10_outlier
+
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
 svc.remote(payload=outlier_img)
@@ -297,20 +291,21 @@ docker_runtime.undeploy(svc)
 ```python
 from tempo.examples.minio import create_minio_rclone
 import os
+
 create_minio_rclone(os.getcwd()+"/rclone-minio.conf")
 ```
 
 
 ```python
-from tempo.serve.loader import upload
-upload(cifar10_model)
-upload(outlier)
-upload(svc)
+tempo.upload(cifar10_model)
+tempo.upload(outlier)
+tempo.upload(svc)
 ```
 
 
 ```python
 from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+
 runtime_options = RuntimeOptions(
         k8s_options=KubernetesOptions(
             namespace="production",
@@ -321,7 +316,8 @@ runtime_options = RuntimeOptions(
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.seldon import SeldonKubernetesRuntime
+
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 k8s_runtime.deploy(svc)
 k8s_runtime.wait_ready(svc)
@@ -330,6 +326,7 @@ k8s_runtime.wait_ready(svc)
 
 ```python
 from src.utils import show_image
+
 show_image(data.X_test[0:1])
 svc.remote(payload=data.X_test[0:1])
 ```
@@ -337,6 +334,7 @@ svc.remote(payload=data.X_test[0:1])
 
 ```python
 from src.utils import create_cifar10_outlier
+
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
 svc.remote(payload=outlier_img)
@@ -354,9 +352,11 @@ k8s_runtime.undeploy(svc)
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.seldon import SeldonKubernetesRuntime
+
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
 yaml_str = k8s_runtime.to_k8s_yaml(svc)
+
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```
