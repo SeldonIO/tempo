@@ -225,7 +225,7 @@ def model(
             model_func=predict_method,
             conda_env=conda_env,
             runtime_options=runtime_options,
-            description=description
+            description=description,
         )
 
         if isclass(f):

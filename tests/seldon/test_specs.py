@@ -12,51 +12,55 @@ def test_kubernetes_spec(sklearn_model: Model):
     expected = {
         "apiVersion": "machinelearning.seldon.io/v1",
         "kind": "SeldonDeployment",
-        'metadata': {'annotations': {'seldon.io/tempo-description': '',
-                                     'seldon.io/tempo-model': '{"model_details": '
-                                                              '{"name": '
-                                                              '"test-iris-sklearn", '
-                                                              '"local_folder": '
-                                                              '"/home/clive/work/mlops/fork-tempo/tests/testdata/sklearn/iris", '
-                                                              '"uri": '
-                                                              '"gs://seldon-models/sklearn/iris", '
-                                                              '"platform": "sklearn", '
-                                                              '"inputs": {"args": '
-                                                              '[{"ty": '
-                                                              '"numpy.ndarray", '
-                                                              '"name": null}]}, '
-                                                              '"outputs": {"args": '
-                                                              '[{"ty": '
-                                                              '"numpy.ndarray", '
-                                                              '"name": null}]}, '
-                                                              '"description": ""}, '
-                                                              '"protocol": '
-                                                              '"tempo.seldon.protocol.SeldonProtocol", '
-                                                              '"runtime_options": '
-                                                              '{"runtime": null, '
-                                                              '"docker_options": '
-                                                              '{"defaultRuntime": '
-                                                              '"tempo.seldon.SeldonDockerRuntime"}, '
-                                                              '"k8s_options": '
-                                                              '{"replicas": 1, '
-                                                              '"minReplicas": null, '
-                                                              '"maxReplicas": null, '
-                                                              '"authSecretName": '
-                                                              'null, '
-                                                              '"serviceAccountName": '
-                                                              'null, '
-                                                              '"defaultRuntime": '
-                                                              '"tempo.seldon.SeldonKubernetesRuntime", '
-                                                              '"namespace": '
-                                                              '"production"}, '
-                                                              '"ingress_options": '
-                                                              '{"ingress": '
-                                                              '"tempo.ingress.istio.IstioIngress", '
-                                                              '"ssl": false, '
-                                                              '"verify_ssl": true}}}'},
-                     'labels': {'seldon.io/tempo': 'true'},
-                     'name': 'test-iris-sklearn',
-                     'namespace': 'production'},
+        "metadata": {
+            "annotations": {
+                "seldon.io/tempo-description": "",
+                "seldon.io/tempo-model": '{"model_details": '
+                '{"name": '
+                '"test-iris-sklearn", '
+                '"local_folder": '
+                '"/home/clive/work/mlops/fork-tempo/tests/testdata/sklearn/iris", '
+                '"uri": '
+                '"gs://seldon-models/sklearn/iris", '
+                '"platform": "sklearn", '
+                '"inputs": {"args": '
+                '[{"ty": '
+                '"numpy.ndarray", '
+                '"name": null}]}, '
+                '"outputs": {"args": '
+                '[{"ty": '
+                '"numpy.ndarray", '
+                '"name": null}]}, '
+                '"description": ""}, '
+                '"protocol": '
+                '"tempo.seldon.protocol.SeldonProtocol", '
+                '"runtime_options": '
+                '{"runtime": null, '
+                '"docker_options": '
+                '{"defaultRuntime": '
+                '"tempo.seldon.SeldonDockerRuntime"}, '
+                '"k8s_options": '
+                '{"replicas": 1, '
+                '"minReplicas": null, '
+                '"maxReplicas": null, '
+                '"authSecretName": '
+                "null, "
+                '"serviceAccountName": '
+                "null, "
+                '"defaultRuntime": '
+                '"tempo.seldon.SeldonKubernetesRuntime", '
+                '"namespace": '
+                '"production"}, '
+                '"ingress_options": '
+                '{"ingress": '
+                '"tempo.ingress.istio.IstioIngress", '
+                '"ssl": false, '
+                '"verify_ssl": true}}}',
+            },
+            "labels": {"seldon.io/tempo": "true"},
+            "name": "test-iris-sklearn",
+            "namespace": "production",
+        },
         "spec": {
             "protocol": "seldon",
             "predictors": [
@@ -98,45 +102,49 @@ def test_kubernetes_spec_pipeline():
     expected = {
         "apiVersion": "machinelearning.seldon.io/v1",
         "kind": "SeldonDeployment",
-        'metadata': {'annotations': {'seldon.io/tempo-description': '',
-                                     'seldon.io/tempo-model': '{"model_details": '
-                                                              '{"name": '
-                                                              '"inference-pipeline", '
-                                                              '"local_folder": "", '
-                                                              '"uri": '
-                                                              '"gs://seldon/tempo", '
-                                                              '"platform": "tempo", '
-                                                              '"inputs": {"args": '
-                                                              '[]}, "outputs": '
-                                                              '{"args": []}, '
-                                                              '"description": ""}, '
-                                                              '"protocol": '
-                                                              '"tempo.kfserving.protocol.KFServingV2Protocol", '
-                                                              '"runtime_options": '
-                                                              '{"runtime": null, '
-                                                              '"docker_options": '
-                                                              '{"defaultRuntime": '
-                                                              '"tempo.seldon.SeldonDockerRuntime"}, '
-                                                              '"k8s_options": '
-                                                              '{"replicas": 1, '
-                                                              '"minReplicas": null, '
-                                                              '"maxReplicas": null, '
-                                                              '"authSecretName": '
-                                                              'null, '
-                                                              '"serviceAccountName": '
-                                                              'null, '
-                                                              '"defaultRuntime": '
-                                                              '"tempo.seldon.SeldonKubernetesRuntime", '
-                                                              '"namespace": '
-                                                              '"production"}, '
-                                                              '"ingress_options": '
-                                                              '{"ingress": '
-                                                              '"tempo.ingress.istio.IstioIngress", '
-                                                              '"ssl": false, '
-                                                              '"verify_ssl": true}}}'},
-                     'labels': {'seldon.io/tempo': 'true'},
-                     'name': 'inference-pipeline',
-                     'namespace': 'production'},
+        "metadata": {
+            "annotations": {
+                "seldon.io/tempo-description": "",
+                "seldon.io/tempo-model": '{"model_details": '
+                '{"name": '
+                '"inference-pipeline", '
+                '"local_folder": "", '
+                '"uri": '
+                '"gs://seldon/tempo", '
+                '"platform": "tempo", '
+                '"inputs": {"args": '
+                '[]}, "outputs": '
+                '{"args": []}, '
+                '"description": ""}, '
+                '"protocol": '
+                '"tempo.kfserving.protocol.KFServingV2Protocol", '
+                '"runtime_options": '
+                '{"runtime": null, '
+                '"docker_options": '
+                '{"defaultRuntime": '
+                '"tempo.seldon.SeldonDockerRuntime"}, '
+                '"k8s_options": '
+                '{"replicas": 1, '
+                '"minReplicas": null, '
+                '"maxReplicas": null, '
+                '"authSecretName": '
+                "null, "
+                '"serviceAccountName": '
+                "null, "
+                '"defaultRuntime": '
+                '"tempo.seldon.SeldonKubernetesRuntime", '
+                '"namespace": '
+                '"production"}, '
+                '"ingress_options": '
+                '{"ingress": '
+                '"tempo.ingress.istio.IstioIngress", '
+                '"ssl": false, '
+                '"verify_ssl": true}}}',
+            },
+            "labels": {"seldon.io/tempo": "true"},
+            "name": "inference-pipeline",
+            "namespace": "production",
+        },
         "spec": {
             "protocol": "kfserving",
             "predictors": [

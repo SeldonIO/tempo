@@ -98,11 +98,3 @@ class RuntimeOptions(BaseModel):
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
     ingress_options: IngressOptions = IngressOptions()
-
-
-class ModelListing(BaseModel):
-    name: str
-    description: str
-
-    def get_id(self) -> str:
-        return self.name

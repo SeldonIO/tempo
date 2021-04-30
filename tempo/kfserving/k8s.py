@@ -1,7 +1,7 @@
 import json
 import os
 import time
-from typing import Any, Dict, Sequence, Optional
+from typing import Any, Dict, Optional, Sequence
 
 import requests
 import yaml
@@ -9,14 +9,13 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from tempo.k8s.constants import TempoK8sDescriptionAnnotation, TempoK8sLabel, TempoK8sModelSpecAnnotation
-from tempo.k8s.models import KubernetesModelListing
 from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
 from tempo.serve.base import Remote, RemoteModel
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
-from tempo.serve.metadata import ModelFramework, ModelListing, RuntimeOptions
+from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
@@ -260,12 +259,15 @@ class KFServingKubernetesRuntime(Runtime, Remote):
         d = self._get_spec(model_spec)
         return yaml.safe_dump(d)
 
-    def list_models(self, namespace: Optional[str] = None) -> Sequence[ModelListing]:
+    def list_models(self, namespace: Optional[str] = None) -> Sequence[RemoteModel]:
         self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
 
-        if namespace is None:
+        if namespace is None and self.runtime_options is not None:
             namespace = self.runtime_options.k8s_options.namespace
+
+        if namespace is None:
+            return []
 
         try:
             models = []
@@ -277,13 +279,9 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 label_selector=TempoK8sLabel + "=true",
             )
             for model in response["items"]:
-                models.append(
-                    KubernetesModelListing(
-                        name=model["metadata"]["name"],
-                        description=model["metadata"]["annotations"][TempoK8sDescriptionAnnotation],
-                        namespace=namespace,
-                    )
-                )
+                metadata = model["metadata"]["annotations"][TempoK8sModelSpecAnnotation]
+                remote_model = deserialize(json.loads(metadata))
+                models.append(remote_model)
             return models
         except ApiException as e:
             if e.status == 404:
@@ -291,18 +289,18 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             else:
                 raise e
 
-    def load_remote(self, model_listing: KubernetesModelListing) -> RemoteModel:
-        self.create_k8s_client()
-        api_instance = client.CustomObjectsApi()
-
-        model = api_instance.get_namespaced_custom_object(
-            "serving.kubeflow.org",
-            "v1beta1",
-            model_listing.namespace,
-            "inferenceservices",
-            model_listing.name,
-        )
-
-        metadata = model["metadata"]["annotations"][TempoK8sModelSpecAnnotation]
-        d = json.loads(metadata)
-        return deserialize(d)
+    # def load_remote(self, model_listing: KubernetesModelListing) -> RemoteModel:
+    #     self.create_k8s_client()
+    #     api_instance = client.CustomObjectsApi()
+    #
+    #     model = api_instance.get_namespaced_custom_object(
+    #         "serving.kubeflow.org",
+    #         "v1beta1",
+    #         model_listing.namespace,
+    #         "inferenceservices",
+    #         model_listing.name,
+    #     )
+    #
+    #     metadata = model["metadata"]["annotations"][TempoK8sModelSpecAnnotation]
+    #     d = json.loads(metadata)
+    #     return deserialize(d)

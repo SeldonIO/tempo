@@ -17,7 +17,7 @@ from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import Remote, RemoteModel
-from tempo.serve.metadata import ModelDetails, ModelListing
+from tempo.serve.metadata import ModelDetails
 from tempo.serve.runtime import ModelSpec, Runtime
 
 
@@ -38,10 +38,7 @@ class SeldonDeployConfig(BaseModel):
 
 
 class SeldonDeployRuntime(Runtime, Remote):
-    def load_remote(self, model_listing: ModelListing) -> RemoteModel:
-        pass
-
-    def list_models(self) -> Sequence[ModelListing]:
+    def list_models(self) -> Sequence[RemoteModel]:
         pass
 
     def __init__(self):

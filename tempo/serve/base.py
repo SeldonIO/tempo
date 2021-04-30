@@ -5,7 +5,7 @@ import os
 import tempfile
 from pydoc import locate
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Tuple, Type, Sequence
+from typing import Any, Dict, Optional, Sequence, Tuple, Type
 
 import numpy as np
 
@@ -15,7 +15,7 @@ from ..utils import logger
 from .args import infer_args, process_datatypes
 from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
 from .loader import load_custom, save_custom, save_environment
-from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, ModelListing, RuntimeOptions
+from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
 from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
@@ -261,9 +261,5 @@ class Remote(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def list_models(self) -> Sequence[ModelListing]:
-        pass
-
-    @abc.abstractmethod
-    def load_remote(self, model_listing: ModelListing) -> RemoteModel:
+    def list_models(self) -> Sequence[RemoteModel]:
         pass
