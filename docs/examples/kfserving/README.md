@@ -103,13 +103,16 @@ classifier, sklearn_model, xgboost_model = get_tempo_artifacts(ARTIFACTS_FOLDER)
 
 ```python
 # %load src/tempo.py
-import numpy as np
 from typing import Tuple
+
+import numpy as np
+from src.constants import SKLearnFolder, XGBFolder, SKLearnTag, XGBoostTag
+
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
-from tempo.serve.pipeline import PipelineModels, Pipeline
+from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline
-from src.constants import SKLearnFolder, XGBFolder
+
 
 def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
     sklearn_model = Model(
@@ -117,6 +120,7 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
         platform=ModelFramework.SKLearn,
         local_folder=f"{artifacts_folder}/{SKLearnFolder}",
         uri="s3://tempo/basic/sklearn",
+        description="SKLearn Iris classification model",
     )
 
     xgboost_model = Model(
@@ -124,25 +128,25 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
         platform=ModelFramework.XGBoost,
         local_folder=f"{artifacts_folder}/{XGBFolder}",
         uri="s3://tempo/basic/xgboost",
+        description="XGBoost Iris classification model",
     )
 
     @pipeline(
         name="classifier",
         uri="s3://tempo/basic/pipeline",
         local_folder=f"{artifacts_folder}/classifier",
-        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model)
+        models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
+        description="A pipeline to use either an sklearn or xgboost model for Iris classification",
     )
     def classifier(payload: np.ndarray) -> Tuple[np.ndarray, str]:
         res1 = classifier.models.sklearn(input=payload)
         print(res1)
         if res1[0] == 1:
-            return res1, "sklearn prediction"
+            return res1, SKLearnTag
         else:
-            return classifier.models.xgboost(input=payload), "xgboost prediction"
+            return classifier.models.xgboost(input=payload), XGBoostTag
 
-
-
-
+    return classifier, sklearn_model, xgboost_model
 
 ```
 
@@ -153,11 +157,10 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
 
 ```python
 # %load tests/test_deploy.py
-import os
-import sys
-
 import numpy as np
-from src.deploy import SKLearnTag, XGBoostTag, get_tempo_artifacts
+from src.tempo import get_tempo_artifacts
+from src.constants import SKLearnTag, XGBoostTag
+
 
 def test_sklearn_model_used():
     classifier, _, _ = get_tempo_artifacts("")
@@ -286,6 +289,24 @@ k8s_runtime.wait_ready(classifier)
 ```python
 print(classifier.remote(payload=np.array([[0, 0, 0, 0]])))
 print(classifier.remote(payload=np.array([[1, 2, 3, 4]])))
+```
+
+### Illustrate client using model remotely
+
+With the Kubernetes runtime one can list running models on the Kubernetes cluster and instantiate a RemoteModel to call the Tempo model.
+
+
+```python
+models = k8s_runtime.list_models(namespace="production")
+print("Name\tDescription")
+for model in models:
+    details = model.get_tempo().model_spec.model_details
+    print(f"{details.name}\t{details.description}")
+```
+
+
+```python
+models[0].remote(payload=np.array([[1, 2, 3, 4]]))
 ```
 
 

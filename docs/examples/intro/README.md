@@ -275,6 +275,22 @@ print(classifier.remote(payload=np.array([[0, 0, 0, 0]])))
 print(classifier.remote(payload=np.array([[1, 2, 3, 4]])))
 ```
 
+### Illustrate use of Deployed Model by Remote Client
+
+
+```python
+models = k8s_runtime.list_models(namespace="production")
+print("Name\tDescription")
+for model in models:
+    details = model.get_tempo().model_spec.model_details
+    print(f"{details.name}\t{details.description}")
+```
+
+
+```python
+models[0].remote(payload=np.array([[1, 2, 3, 4]]))
+```
+
 
 ```python
 k8s_runtime.undeploy(classifier)
@@ -304,6 +320,27 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
 
 ```python
 !kustomize build k8s
+```
+
+## Save / Load Pipeline
+We serialize the Kubernetes model so we can pass this to external clients who want to call the model from python.
+
+
+```python
+from tempo.serve.stub import save_remote
+path = "./k8s/remotes/classifier.json"
+save_remote(classifier, path)
+```
+
+
+```python
+from tempo.serve.stub import load_remote
+classifier_stub = load_remote(path)
+```
+
+
+```python
+classifier_stub.remote(payload=np.array([[1, 2, 3, 4]]))
 ```
 
 
