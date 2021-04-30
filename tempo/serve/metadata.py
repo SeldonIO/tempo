@@ -1,7 +1,8 @@
 from enum import Enum
+from pydoc import locate
 from typing import List, Optional, Type, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class ModelFramework(Enum):
@@ -20,6 +21,16 @@ class ModelFramework(Enum):
 class ModelDataArg(BaseModel):
     ty: Type
     name: Optional[str] = None
+
+    @validator("ty", pre=True)
+    def ensure_type(cls, v):
+        if isinstance(v, str):
+            return locate(v)
+        else:
+            return v
+
+    class Config:
+        json_encoders = {type: lambda v: v.__module__ + "." + v.__name__}
 
 
 class ModelDataArgs(BaseModel):
@@ -45,6 +56,9 @@ class ModelDataArgs(BaseModel):
     def __len__(self):
         return len(self.args)
 
+    class Config:
+        json_encoders = {type: lambda v: v.__module__ + "." + v.__name__}
+
 
 class ModelDetails(BaseModel):
     name: str
@@ -53,6 +67,10 @@ class ModelDetails(BaseModel):
     platform: ModelFramework
     inputs: ModelDataArgs
     outputs: ModelDataArgs
+    description: str = ""
+
+    # class Config:
+    #    use_enum_values = True
 
 
 class KubernetesOptions(BaseModel):

@@ -12,6 +12,19 @@ from tempo.serve.model import Model
         """apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: ''
+    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-sklearn", "local_folder":
+      "/tmp/model", "uri": "gs://seldon-models/sklearn/iris", "platform": "sklearn",
+      "inputs": {"args": [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args":
+      [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.seldon.protocol.SeldonProtocol",
+      "runtime_options": {"runtime": null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: test-iris-sklearn
   namespace: default
 spec:
@@ -32,8 +45,8 @@ def test_seldon_sklearn_model_yaml(expected):
         name="test-iris-sklearn",
         platform=ModelFramework.SKLearn,
         uri="gs://seldon-models/sklearn/iris",
+        local_folder="/tmp/model",
         protocol=SeldonProtocol(),
-        local_folder="",
     )
     runtime = SeldonKubernetesRuntime()
     assert runtime.to_k8s_yaml(m) == expected
@@ -45,6 +58,19 @@ def test_seldon_sklearn_model_yaml(expected):
         """apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: ''
+    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-xgboost", "local_folder":
+      "/tmp/model", "uri": "gs://seldon-models/xgboost/iris", "platform": "xgboost",
+      "inputs": {"args": [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args":
+      [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.seldon.protocol.SeldonProtocol",
+      "runtime_options": {"runtime": null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: test-iris-xgboost
   namespace: default
 spec:
@@ -66,7 +92,8 @@ def test_seldon_xgboost_model_yaml(expected):
         protocol=SeldonProtocol(),
         platform=ModelFramework.XGBoost,
         uri="gs://seldon-models/xgboost/iris",
-        local_folder="",
+        local_folder="/tmp/model",
     )
     runtime = SeldonKubernetesRuntime()
+    print(runtime.to_k8s_yaml(m))
     assert runtime.to_k8s_yaml(m) == expected

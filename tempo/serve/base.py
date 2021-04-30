@@ -1,23 +1,22 @@
 from __future__ import annotations
 
+import abc
 import os
 import tempfile
 from pydoc import locate
 from types import SimpleNamespace
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, Optional, Sequence, Tuple, Type
 
 import numpy as np
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
-from ..kfserving import KFServingV2Protocol
 from ..utils import logger
 from .args import infer_args, process_datatypes
 from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
 from .loader import load_custom, save_custom, save_environment
 from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
-from .remote import Remote
 from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 
@@ -36,35 +35,40 @@ class BaseModel:
         conda_env: str = None,
         protocol: Protocol = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
+        model_spec: ModelSpec = None,
+        description: str = "",
     ):
-        if protocol is None:
-            protocol = KFServingV2Protocol()
-        self._name = name
-        self._user_func = user_func
-        self._load_func = load_func
-        self.conda_env_name = conda_env
+        if model_spec is not None:
+            self.name = model_spec.model_details.name
+            self.details = model_spec.model_details
+            self.model_spec = model_spec
+        else:
+            self._name = name
+            self._user_func = user_func
+            self._load_func = load_func
+            self.conda_env_name = conda_env
 
-        if uri is None:
-            uri = ""
+            if uri is None:
+                uri = ""
 
-        local_folder = self._get_local_folder(local_folder)
-        input_args, output_args = self._get_args(inputs, outputs)
+            local_folder = self._get_local_folder(local_folder)
+            input_args, output_args = self._get_args(inputs, outputs)
 
-        self.details = ModelDetails(
-            name=name,
-            local_folder=local_folder,
-            uri=uri,
-            platform=platform,
-            inputs=input_args,
-            outputs=output_args,
-        )
+            self.details = ModelDetails(
+                name=name,
+                local_folder=local_folder,
+                uri=uri,
+                platform=platform,
+                inputs=input_args,
+                outputs=output_args,
+                description=description,
+            )
 
-        self.protocol = protocol
-        self.model_spec = ModelSpec(
-            model_details=self.details,
-            protocol=self.protocol,
-            runtime_options=runtime_options,
-        )
+            self.model_spec = ModelSpec(
+                model_details=self.details,
+                protocol=protocol,
+                runtime_options=runtime_options,
+            )
 
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
@@ -155,7 +159,7 @@ class BaseModel:
         if self._user_func is None:
             raise UndefinedCustomImplementation(self.details.name)
 
-        req_converted = self.protocol.from_protocol_request(req, self.details.inputs)
+        req_converted = self.model_spec.protocol.from_protocol_request(req, self.details.inputs)
         if type(req_converted) == dict:
             response = self(**req_converted)
         elif type(req_converted) == list or type(req_converted) == tuple:
@@ -164,19 +168,19 @@ class BaseModel:
             response = self(req_converted)
 
         if type(response) == dict:
-            response_converted = self.protocol.to_protocol_response(self.details, **response)
+            response_converted = self.model_spec.protocol.to_protocol_response(self.details, **response)
         elif type(response) == list or type(response) == tuple:
-            response_converted = self.protocol.to_protocol_response(self.details, *response)
+            response_converted = self.model_spec.protocol.to_protocol_response(self.details, *response)
         else:
-            response_converted = self.protocol.to_protocol_response(self.details, response)
+            response_converted = self.model_spec.protocol.to_protocol_response(self.details, response)
 
         return response_converted
 
     def _get_model_spec(self) -> ModelSpec:
         if self.runtime_options_override:
             return ModelSpec(
-                model_details=self.details,
-                protocol=self.protocol,
+                model_details=self.model_spec.model_details,
+                protocol=self.model_spec.protocol,
                 runtime_options=self.runtime_options_override,
             )
         else:
@@ -219,6 +223,9 @@ class BaseModel:
         logger.info("Undeploying %s", self.details.name)
         runtime.undeploy_spec(self._get_model_spec())
 
+    def serialize(self) -> str:
+        return self._get_model_spec().json()
+
     def get_tempo(self) -> BaseModel:
         return self
 
@@ -230,3 +237,29 @@ class BaseModel:
             return self.remote(*args, **kwargs)
 
         return self._user_func(*args, **kwargs)
+
+
+class RemoteModel(BaseModel):
+    def __init__(self, model_spec: ModelSpec):
+        super().__init__(model_spec.model_details.name, model_spec=model_spec)
+
+    def deploy(self, runtime: Runtime):
+        logger.warn("Remote model %s can't be deployed", self.model_spec.model_details.name)
+        pass
+
+    def undeploy(self, runtime: Runtime):
+        logger.warn("Remote model %s can't be undeployed", self.model_spec.model_details.name)
+        pass
+
+
+class Remote(abc.ABC):
+    def __init__(self, runtime_options: Optional[RuntimeOptions]):
+        self.runtime_options = runtime_options
+
+    @abc.abstractmethod
+    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
+        pass
+
+    @abc.abstractmethod
+    def list_models(self) -> Sequence[RemoteModel]:
+        pass
