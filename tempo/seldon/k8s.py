@@ -149,19 +149,3 @@ class SeldonKubernetesRuntime(Runtime, Remote):
                 return []
             else:
                 raise e
-
-    # def load_remote(self, model_listing: ModelListing) -> RemoteModel:
-    #     self.create_k8s_client()
-    #     api_instance = client.CustomObjectsApi()
-    #
-    #     model = api_instance.get_namespaced_custom_object(
-    #         "machinelearning.seldon.io",
-    #         "v1",
-    #         model_listing.namespace,
-    #         "seldondeployments",
-    #         model_listing.name,
-    #     )
-    #
-    #     metadata = model["metadata"]["annotations"][TempoK8sModelSpecAnnotation]
-    #     d = json.loads(metadata)
-    #     return deserialize(d)

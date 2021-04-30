@@ -288,19 +288,3 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 return []
             else:
                 raise e
-
-    # def load_remote(self, model_listing: KubernetesModelListing) -> RemoteModel:
-    #     self.create_k8s_client()
-    #     api_instance = client.CustomObjectsApi()
-    #
-    #     model = api_instance.get_namespaced_custom_object(
-    #         "serving.kubeflow.org",
-    #         "v1beta1",
-    #         model_listing.namespace,
-    #         "inferenceservices",
-    #         model_listing.name,
-    #     )
-    #
-    #     metadata = model["metadata"]["annotations"][TempoK8sModelSpecAnnotation]
-    #     d = json.loads(metadata)
-    #     return deserialize(d)
