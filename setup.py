@@ -53,6 +53,7 @@ setup(
         "seldon-deploy-sdk",
         "conda-pack",
         "mlserver",
+        "redis==3.3.11",
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,

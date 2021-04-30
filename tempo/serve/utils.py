@@ -9,6 +9,7 @@ from .model import Model
 from .pipeline import Pipeline, PipelineModels
 from .protocol import Protocol
 from .types import ModelDataType
+from .state import StateDetails
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"
@@ -93,6 +94,7 @@ def pipeline(
     outputs: ModelDataType = None,
     conda_env: str = None,
     runtime_options: RuntimeOptions = RuntimeOptions(),
+    state_details: StateDetails = None,
 ):
     """
     A decorator for a class or function to make it a Tempo Pipeline.
@@ -141,6 +143,7 @@ def pipeline(
             conda_env=conda_env,
             protocol=protocol,
             runtime_options=runtime_options,
+            state_details=state_details,
         )
 
         if isclass(f):
@@ -171,6 +174,7 @@ def model(
     conda_env: str = None,
     protocol: Protocol = KFServingV2Protocol(),
     runtime_options: RuntimeOptions = RuntimeOptions(),
+    state_details: StateDetails = None,
 ):
     """
 
@@ -218,6 +222,7 @@ def model(
             model_func=predict_method,
             conda_env=conda_env,
             runtime_options=runtime_options,
+            state_details=state_details,
         )
 
         if isclass(f):
