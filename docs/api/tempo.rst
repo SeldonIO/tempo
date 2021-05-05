@@ -14,6 +14,7 @@ Subpackages
 
    tempo.examples
    tempo.ingress
+   tempo.k8s
    tempo.kfserving
    tempo.seldon
    tempo.serve

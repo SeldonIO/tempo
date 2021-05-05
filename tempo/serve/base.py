@@ -140,7 +140,11 @@ class BaseModel:
 
         file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
         logger.info("Saving tempo model to %s", file_path_pkl)
-        save_custom(self, file_path_pkl)
+        if self._user_func is not None:
+            module = self._user_func.__module__
+        else:
+            module = None
+        save_custom(self, module, file_path_pkl)
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)

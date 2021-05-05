@@ -14,7 +14,7 @@ The Runtimes defined within Tempo are:
 
 | Runtime | Infrastructure Target | Example |
 | ------- | --------------------- | -------- |
-| SeldonDockerRuntime | deploy Tempo models to Docker | [intro](../examples/intro/local.html) |
-| SeldonKubernetesRuntime | deploy Tempo models to a Kubernetes cluster with Seldon Core installed | [intro_k8s](../examples/intro/k8s.html) |
+| SeldonDockerRuntime | deploy Tempo models to Docker | [intro](../examples/custom-model/local.html) |
+| SeldonKubernetesRuntime | deploy Tempo models to a Kubernetes cluster with Seldon Core installed | [intro_k8s](../examples/multi-model/k8s.html) |
 | KFServingKubernetesRuntime | deploy Tempo models to a Kubernetes cluster with KFServing installed | [intro](../examples/kfserving/README.html) |
 | SeldonDeployRuntime | deploy Tempo models to a Kubernetes cluster with Seldon Deploy installed | |
