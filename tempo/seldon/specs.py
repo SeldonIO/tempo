@@ -15,8 +15,10 @@ DefaultServiceAccountName = "tempo-pipeline"
 
 
 def get_container_spec(model_details: ModelSpec) -> dict:
-    if model_details.model_details.platform == ModelFramework.TempoPipeline or \
-              model_details.model_details.platform == ModelFramework.Custom:
+    if (
+        model_details.model_details.platform == ModelFramework.TempoPipeline
+        or model_details.model_details.platform == ModelFramework.Custom
+    ):
         return _V2ContainerFactory.get_container_spec(model_details.model_details, model_details.runtime_options)
 
     if isinstance(model_details.protocol, KFServingV2Protocol):
@@ -96,7 +98,7 @@ class KubernetesSpec:
         # TODO: We need to set an implementation in order to get the init
         # container injected into the spec
         ModelFramework.TempoPipeline: "TRITON_SERVER",
-        ModelFramework.Custom : "TRITON_SERVER",
+        ModelFramework.Custom: "TRITON_SERVER",
     }
 
     def __init__(
@@ -143,8 +145,10 @@ class KubernetesSpec:
             model_implementation = self.Implementations[self._details.model_details.platform]
             graph["implementation"] = model_implementation
 
-        if self._details.model_details.platform == ModelFramework.TempoPipeline or \
-                self._details.model_details.platform == ModelFramework.Custom:
+        if (
+            self._details.model_details.platform == ModelFramework.TempoPipeline
+            or self._details.model_details.platform == ModelFramework.Custom
+        ):
             serviceAccountName = self._details.runtime_options.k8s_options.serviceAccountName
             if serviceAccountName is None:
                 serviceAccountName = DefaultServiceAccountName
@@ -156,8 +160,10 @@ class KubernetesSpec:
             "replicas": self._details.runtime_options.k8s_options.replicas,
         }
 
-        if self._details.model_details.platform == ModelFramework.TempoPipeline or \
-                self._details.model_details.platform == ModelFramework.Custom:
+        if (
+            self._details.model_details.platform == ModelFramework.TempoPipeline
+            or self._details.model_details.platform == ModelFramework.Custom
+        ):
             predictor["componentSpecs"] = self._get_component_specs()
 
         return predictor

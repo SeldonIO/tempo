@@ -4,22 +4,20 @@
 
 import numpy as np
 import pandas as pd
-
 from jax import random
 from numpyro.infer import MCMC, NUTS
 from src.tempo import model_function
 
 
 def train():
-    DATASET_URL = 'https://raw.githubusercontent.com/rmcelreath/rethinking/master/data/WaffleDivorce.csv'
-    dset = pd.read_csv(DATASET_URL, sep=';')
+    DATASET_URL = "https://raw.githubusercontent.com/rmcelreath/rethinking/master/data/WaffleDivorce.csv"
+    dset = pd.read_csv(DATASET_URL, sep=";")
 
-    standardize = lambda x: (x - x.mean()) / x.std()
+    standardize = lambda x: (x - x.mean()) / x.std()  # noqa: E731
 
-    dset['AgeScaled'] = dset.MedianAgeMarriage.pipe(standardize)
-    dset['MarriageScaled'] = dset.Marriage.pipe(standardize)
-    dset['DivorceScaled'] = dset.Divorce.pipe(standardize)
-
+    dset["AgeScaled"] = dset.MedianAgeMarriage.pipe(standardize)
+    dset["MarriageScaled"] = dset.Marriage.pipe(standardize)
+    dset["DivorceScaled"] = dset.Divorce.pipe(standardize)
 
     # Start from this source of randomness. We will split keys for subsequent operations.
     rng_key = random.PRNGKey(0)
@@ -44,7 +42,5 @@ def save(mcmc, folder: str):
         serialisable[k] = np.asarray(v).tolist()
 
     model_file_name = f"{folder}/numpyro-divorce.json"
-    with open(model_file_name, 'w') as model_file:
+    with open(model_file_name, "w") as model_file:
         json.dump(serialisable, model_file)
-
-
