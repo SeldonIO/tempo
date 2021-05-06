@@ -1,6 +1,21 @@
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: ''
+    seldon.io/tempo-model: '{"model_details": {"name": "cifar10-service", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/outlier/artifacts/svc", "uri":
+      "s3://tempo/outlier/cifar10/svc", "platform": "tempo", "inputs": {"args": [{"ty":
+      "numpy.ndarray", "name": "payload"}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+      "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+      "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
+      {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas":
+      1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
+      "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: cifar10-service
   namespace: production
 spec:
@@ -44,6 +59,21 @@ spec:
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: ''
+    seldon.io/tempo-model: '{"model_details": {"name": "outlier", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/outlier/artifacts/outlier",
+      "uri": "s3://tempo/outlier/cifar10/outlier", "platform": "custom", "inputs":
+      {"args": [{"ty": "numpy.ndarray", "name": "payload"}]}, "outputs": {"args":
+      [{"ty": "builtins.dict", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+      "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
+      {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas":
+      1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
+      "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: outlier
   namespace: production
 spec:
@@ -87,6 +117,21 @@ spec:
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: ''
+    seldon.io/tempo-model: '{"model_details": {"name": "resnet32", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/outlier/artifacts/model", "uri":
+      "gs://seldon-models/tfserving/cifar10/resnet32", "platform": "tensorflow", "inputs":
+      {"args": [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty":
+      "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV1Protocol",
+      "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
+      {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas":
+      1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
+      "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: resnet32
   namespace: production
 spec:
