@@ -1,4 +1,5 @@
 import os
+
 import dill
 import numpy as np
 from alibi.utils.wrappers import ArgmaxTransformer
@@ -10,7 +11,7 @@ from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import pipeline, predictmethod
 
 
-def create_adult_model() -> Model :
+def create_adult_model() -> Model:
     sklearn_model = Model(
         name="income-sklearn",
         platform=ModelFramework.SKLearn,
@@ -22,7 +23,6 @@ def create_adult_model() -> Model :
 
 
 def create_explainer(model: Model):
-
     @pipeline(
         name="income-explainer",
         uri="s3://tempo/explainer/pipeline",
@@ -53,6 +53,6 @@ def create_explainer(model: Model):
             explanation = self.explainer.explain(payload, **parameters)
             return explanation.to_json()
 
-    #explainer = ExplainerPipeline()
-    #return sklearn_model, explainer
+    # explainer = ExplainerPipeline()
+    # return sklearn_model, explainer
     return ExplainerPipeline
