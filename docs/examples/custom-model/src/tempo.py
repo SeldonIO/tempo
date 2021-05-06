@@ -49,7 +49,6 @@ def get_tempo_artifact(local_folder: str):
         for k, v in raw_samples.items():
             samples[k] = np.array(v)
 
-        print(model_function.__module__)
         numpyro_divorce.context.predictive_dist = Predictive(model_function, samples)
 
     return numpyro_divorce

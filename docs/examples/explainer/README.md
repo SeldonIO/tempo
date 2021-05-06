@@ -157,7 +157,7 @@ def create_explainer(model: Model) -> Tuple[Model, Any]:
 
 
 ```python
-tempo.save(Explainer, save_env=False)
+tempo.save(Explainer)
 ```
 
 ## Test Locally on Docker

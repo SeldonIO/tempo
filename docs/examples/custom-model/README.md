@@ -218,7 +218,7 @@ We'll deploy first to Docker to test.
 
 ```python
 from tempo.serve.loader import save
-save(numpyro_divorce, save_env=False)
+save(numpyro_divorce)
 ```
 
 
