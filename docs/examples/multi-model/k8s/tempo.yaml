@@ -1,6 +1,23 @@
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: A pipeline to use either an sklearn or xgboost model
+      for Iris classification
+    seldon.io/tempo-model: '{"model_details": {"name": "classifier", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/multi-model/artifacts/classifier",
+      "uri": "s3://tempo/basic/pipeline", "platform": "tempo", "inputs": {"args":
+      [{"ty": "numpy.ndarray", "name": "payload"}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+      "name": null}, {"ty": "builtins.str", "name": null}]}, "description": "A pipeline
+      to use either an sklearn or xgboost model for Iris classification"}, "protocol":
+      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+      null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: classifier
   namespace: default
 spec:
@@ -43,6 +60,21 @@ spec:
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: An SKLearn Iris classification model
+    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-sklearn", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/multi-model/artifacts/sklearn",
+      "uri": "s3://tempo/basic/sklearn", "platform": "sklearn", "inputs": {"args":
+      [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+      "name": null}]}, "description": "An SKLearn Iris classification model"}, "protocol":
+      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+      null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: test-iris-sklearn
   namespace: default
 spec:
@@ -60,6 +92,21 @@ spec:
 apiVersion: machinelearning.seldon.io/v1
 kind: SeldonDeployment
 metadata:
+  annotations:
+    seldon.io/tempo-description: An XGBoost Iris classification model
+    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-xgboost", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/multi-model/artifacts/xgboost",
+      "uri": "s3://tempo/basic/xgboost", "platform": "xgboost", "inputs": {"args":
+      [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+      "name": null}]}, "description": "An XGBoost Iris classification model"}, "protocol":
+      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+      null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: test-iris-xgboost
   namespace: default
 spec:

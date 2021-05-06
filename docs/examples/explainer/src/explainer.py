@@ -12,5 +12,7 @@ def train_explainer(artifacts_folder: str, data: AdultData, model: RandomForestC
     explainer = AnchorTabular(predict_fn, data.feature_names, categorical_names=data.category_map, seed=1)
     explainer.fit(data.X_train, disc_perc=(25, 50, 75))
     with open(f"{artifacts_folder}/{EXPLAINER_FOLDER}" + "/explainer.dill", "wb") as f:
+        explainer.predictor = None
+        explainer.samplers[0].predictor = None
         dill.dump(explainer, f)
     return explainer

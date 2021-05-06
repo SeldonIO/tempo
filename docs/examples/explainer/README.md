@@ -75,30 +75,31 @@ train_explainer(ARTIFACTS_FOLDER, data, adult_model)
 
 
 ```python
-from src.tempo import create_tempo_artifacts
+from src.tempo import create_explainer, create_adult_model
 
-adult_model, explainer = create_tempo_artifacts(ARTIFACTS_FOLDER)
+sklearn_model = create_adult_model()
+Explainer = create_explainer(sklearn_model)
+explainer = Explainer()
 ```
 
 
 ```python
 # %load src/tempo.py
 import os
+from typing import Any, Tuple
+
 import dill
 import numpy as np
-
-from typing import Any, Tuple
 from alibi.utils.wrappers import ArgmaxTransformer
+from src.constants import ARTIFACTS_FOLDER, EXPLAINER_FOLDER, MODEL_FOLDER
 
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import pipeline, predictmethod
 
-from src.constants import ARTIFACTS_FOLDER, EXPLAINER_FOLDER, MODEL_FOLDER
 
-
-def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
+def create_adult_model() -> Model :
     sklearn_model = Model(
         name="income-sklearn",
         platform=ModelFramework.SKLearn,
@@ -106,11 +107,15 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
         uri="gs://seldon-models/test/income/model",
     )
 
+    return sklearn_model
+
+def create_explainer(model: Model) -> Tuple[Model, Any]:
+
     @pipeline(
         name="income-explainer",
         uri="s3://tempo/explainer/pipeline",
         local_folder=os.path.join(ARTIFACTS_FOLDER, EXPLAINER_FOLDER),
-        models=PipelineModels(sklearn=sklearn_model),
+        models=PipelineModels(sklearn=model),
     )
     class ExplainerPipeline(object):
         def __init__(self):
@@ -127,9 +132,7 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
                 self.explainer.samplers[0].predictor = self.models.sklearn
             else:
                 self.explainer.predictor = ArgmaxTransformer(self.models.sklearn)
-                self.explainer.samplers[0].predictor = ArgmaxTransformer(
-                    self.models.sklearn
-                )
+                self.explainer.samplers[0].predictor = ArgmaxTransformer(self.models.sklearn)
 
         @predictmethod
         def explain(self, payload: np.ndarray, parameters: dict) -> str:
@@ -138,8 +141,9 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
             explanation = self.explainer.explain(payload, **parameters)
             return explanation.to_json()
 
-    explainer = ExplainerPipeline()
-    return sklearn_model, explainer
+    #explainer = ExplainerPipeline()
+    #return sklearn_model, explainer
+    return ExplainerPipeline
 
 ```
 
@@ -153,7 +157,7 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
 
 
 ```python
-tempo.save(explainer)
+tempo.save(Explainer, save_env=False)
 ```
 
 ## Test Locally on Docker
@@ -171,7 +175,7 @@ docker_runtime.wait_ready(explainer)
 
 
 ```python
-r = json.loads(explainer(payload=data.X_test[0:1], parameters={"threshold":0.99}))
+r = json.loads(explainer(payload=data.X_test[0:1], parameters={"threshold":0.90}))
 print(r["data"]["anchor"])
 ```
 
@@ -212,7 +216,7 @@ create_minio_rclone(os.getcwd()+"/rclone-minio.conf")
 
 
 ```python
-tempo.upload(adult_model)
+tempo.upload(sklearn_model)
 tempo.upload(explainer)
 ```
 
@@ -267,4 +271,9 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
 
 ```python
 !kustomize build k8s
+```
+
+
+```python
+
 ```

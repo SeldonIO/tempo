@@ -1,5 +1,4 @@
 import os
-from typing import Any, Tuple
 
 import dill
 import numpy as np
@@ -12,7 +11,7 @@ from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import pipeline, predictmethod
 
 
-def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
+def create_adult_model() -> Model:
     sklearn_model = Model(
         name="income-sklearn",
         platform=ModelFramework.SKLearn,
@@ -20,11 +19,15 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
         uri="gs://seldon-models/test/income/model",
     )
 
+    return sklearn_model
+
+
+def create_explainer(model: Model):
     @pipeline(
         name="income-explainer",
         uri="s3://tempo/explainer/pipeline",
         local_folder=os.path.join(ARTIFACTS_FOLDER, EXPLAINER_FOLDER),
-        models=PipelineModels(sklearn=sklearn_model),
+        models=PipelineModels(sklearn=model),
     )
     class ExplainerPipeline(object):
         def __init__(self):
@@ -50,5 +53,6 @@ def create_tempo_artifacts(artifacts_folder: str) -> Tuple[Model, Any]:
             explanation = self.explainer.explain(payload, **parameters)
             return explanation.to_json()
 
-    explainer = ExplainerPipeline()
-    return sklearn_model, explainer
+    # explainer = ExplainerPipeline()
+    # return sklearn_model, explainer
+    return ExplainerPipeline
