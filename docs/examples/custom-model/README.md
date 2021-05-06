@@ -1,7 +1,7 @@
 # Serving a Custom Model
 
 This example walks you through how to deploy a custom model with Tempo.
-In particular, we will walk you through how to write custom logic to run inference on a [`numpyro` model](http://num.pyro.ai/en/stable/).
+In particular, we will walk you through how to write custom logic to run inference on a [numpyro model](http://num.pyro.ai/en/stable/).
 
 Note that we've picked `numpyro` for this example simply because it's not supported out of the box, but it should be possible to adapt this example easily to any other custom model.
 
@@ -13,14 +13,11 @@ This notebooks needs to be run in the `tempo-examples` conda environment defined
 conda env create --name tempo-examples --file conda/tempo-examples.yaml
 ```
 
+## Project Structure
+
 
 ```python
-from IPython.core.magic import register_line_cell_magic
-
-@register_line_cell_magic
-def writetemplate(line, cell):
-    with open(line, 'w') as f:
-        f.write(cell.format(**globals()))
+!tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
 ## Training
@@ -32,51 +29,71 @@ Since this is a probabilistic model, during training we will compute an approxim
 
 
 ```python
+# %load  src/train.py
 # Original source code and more details can be found in:
 # https://nbviewer.jupyter.org/github/pyro-ppl/numpyro/blob/master/notebooks/source/bayesian_regression.ipynb
 
 
-import numpyro
 import numpy as np
 import pandas as pd
 
-from numpyro import distributions as dist
 from jax import random
 from numpyro.infer import MCMC, NUTS
+from src.tempo import model_function
 
-DATASET_URL = 'https://raw.githubusercontent.com/rmcelreath/rethinking/master/data/WaffleDivorce.csv'
-dset = pd.read_csv(DATASET_URL, sep=';')
 
-standardize = lambda x: (x - x.mean()) / x.std()
+def train():
+    DATASET_URL = 'https://raw.githubusercontent.com/rmcelreath/rethinking/master/data/WaffleDivorce.csv'
+    dset = pd.read_csv(DATASET_URL, sep=';')
 
-dset['AgeScaled'] = dset.MedianAgeMarriage.pipe(standardize)
-dset['MarriageScaled'] = dset.Marriage.pipe(standardize)
-dset['DivorceScaled'] = dset.Divorce.pipe(standardize)
+    standardize = lambda x: (x - x.mean()) / x.std()
 
-def model_function(marriage : np.ndarray = None, age : np.ndarray = None, divorce : np.ndarray = None):
-    a = numpyro.sample('a', dist.Normal(0., 0.2))
-    M, A = 0., 0.
-    if marriage is not None:
-        bM = numpyro.sample('bM', dist.Normal(0., 0.5))
-        M = bM * marriage
-    if age is not None:
-        bA = numpyro.sample('bA', dist.Normal(0., 0.5))
-        A = bA * age
-    sigma = numpyro.sample('sigma', dist.Exponential(1.))
-    mu = a + M + A
-    numpyro.sample('obs', dist.Normal(mu, sigma), obs=divorce)
+    dset['AgeScaled'] = dset.MedianAgeMarriage.pipe(standardize)
+    dset['MarriageScaled'] = dset.Marriage.pipe(standardize)
+    dset['DivorceScaled'] = dset.Divorce.pipe(standardize)
 
-# Start from this source of randomness. We will split keys for subsequent operations.
-rng_key = random.PRNGKey(0)
-rng_key, rng_key_ = random.split(rng_key)
 
-num_warmup, num_samples = 1000, 2000
+    # Start from this source of randomness. We will split keys for subsequent operations.
+    rng_key = random.PRNGKey(0)
+    rng_key, rng_key_ = random.split(rng_key)
 
-# Run NUTS.
-kernel = NUTS(model_function)
-mcmc = MCMC(kernel, num_warmup, num_samples)
-mcmc.run(rng_key_, marriage=dset.MarriageScaled.values, divorce=dset.DivorceScaled.values)
-mcmc.print_summary()
+    num_warmup, num_samples = 1000, 2000
+
+    # Run NUTS.
+    kernel = NUTS(model_function)
+    mcmc = MCMC(kernel, num_warmup, num_samples)
+    mcmc.run(rng_key_, marriage=dset.MarriageScaled.values, divorce=dset.DivorceScaled.values)
+    mcmc.print_summary()
+    return mcmc
+
+
+def save(mcmc, folder: str):
+    import json
+
+    samples = mcmc.get_samples()
+    serialisable = {}
+    for k, v in samples.items():
+        serialisable[k] = np.asarray(v).tolist()
+
+    model_file_name = f"{folder}/numpyro-divorce.json"
+    with open(model_file_name, 'w') as model_file:
+        json.dump(serialisable, model_file)
+
+
+
+```
+
+
+```python
+import os
+from tempo.utils import logger
+import logging
+import numpy as np
+logger.setLevel(logging.ERROR)
+logging.basicConfig(level=logging.ERROR)
+ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
+from src.train import train, save, model_function
+mcmc = train()
 ```
 
 ### Saving trained model
@@ -88,16 +105,7 @@ This will get saved in a `numpyro-divorce.json` file.
 
 
 ```python
-import json
-
-samples = mcmc.get_samples()
-serialisable = {}
-for k, v in samples.items():
-    serialisable[k] = np.asarray(v).tolist()
-    
-model_file_name = "./artifacts/numpyro-divorce.json"
-with open(model_file_name, 'w') as model_file:
-    json.dump(serialisable, model_file)
+save(mcmc, ARTIFACTS_FOLDER)
 ```
 
 ## Serving
@@ -117,48 +125,75 @@ With Tempo, this can be achieved as:
 
 
 ```python
+# %load src/tempo.py
 import os
 import json
 import numpy as np
-
-from numpyro.infer import Predictive
+import numpyro
 from numpyro import distributions as dist
+from numpyro.infer import Predictive
 from jax import random
 from tempo import model, ModelFramework
 
-local_folder = os.path.join(os.getcwd(), "artifacts")
+def model_function(marriage : np.ndarray = None, age : np.ndarray = None, divorce : np.ndarray = None):
+    a = numpyro.sample('a', dist.Normal(0., 0.2))
+    M, A = 0., 0.
+    if marriage is not None:
+        bM = numpyro.sample('bM', dist.Normal(0., 0.5))
+        M = bM * marriage
+    if age is not None:
+        bA = numpyro.sample('bA', dist.Normal(0., 0.5))
+        A = bA * age
+    sigma = numpyro.sample('sigma', dist.Exponential(1.))
+    mu = a + M + A
+    numpyro.sample('obs', dist.Normal(mu, sigma), obs=divorce)
 
-@model(
-    name='numpyro-divorce',
-    platform=ModelFramework.Custom,
-    local_folder=local_folder,
-)
-def numpyro_divorce(marriage: np.ndarray, age: np.ndarray) -> np.ndarray:
-    rng_key = random.PRNGKey(0)
-    predictions = numpyro_divorce.context.predictive_dist(
-        rng_key=rng_key,
-        marriage=marriage,
-        age=age
+
+def get_tempo_artifact(local_folder: str):
+    @model(
+        name='numpyro-divorce',
+        platform=ModelFramework.Custom,
+        local_folder=local_folder,
+        uri="s3://tempo/divorce",
     )
-    
-    mean = predictions['obs'].mean(axis=0)
-    return np.asarray(mean)
+    def numpyro_divorce(marriage: np.ndarray, age: np.ndarray) -> np.ndarray:
+        rng_key = random.PRNGKey(0)
+        predictions = numpyro_divorce.context.predictive_dist(
+            rng_key=rng_key,
+            marriage=marriage,
+            age=age
+        )
 
-@numpyro_divorce.loadmethod
-def load_numpyro_divorce():
-    model_uri = os.path.join(
-        numpyro_divorce.details.local_folder,
-        "numpyro-divorce.json"
-    )
-    
-    with open(model_uri) as model_file:
-        raw_samples = json.load(model_file)
+        mean = predictions['obs'].mean(axis=0)
+        return np.asarray(mean)
 
-    samples = {}
-    for k, v in raw_samples.items():
-        samples[k] = np.array(v)
+    @numpyro_divorce.loadmethod
+    def load_numpyro_divorce():
+        model_uri = os.path.join(
+            numpyro_divorce.details.local_folder,
+            "numpyro-divorce.json"
+        )
 
-    numpyro_divorce.context.predictive_dist = Predictive(model_function, samples)
+        with open(model_uri) as model_file:
+            raw_samples = json.load(model_file)
+
+        samples = {}
+        for k, v in raw_samples.items():
+            samples[k] = np.array(v)
+
+        print(model_function.__module__)
+        numpyro_divorce.context.predictive_dist = Predictive(model_function, samples)
+
+    return numpyro_divorce
+
+
+
+```
+
+
+```python
+from src.tempo import get_tempo_artifact
+numpyro_divorce = get_tempo_artifact(ARTIFACTS_FOLDER)
 ```
 
 We can now test our custom logic by running inference locally.
@@ -172,39 +207,21 @@ pred = numpyro_divorce(marriage=marriage, age=age)
 print(pred)
 ```
 
-### Deploying model
+### Deploy the  Model to Docker
 
 Finally, we'll be able to deploy our model using Tempo against one of the available runtimes (i.e. Kubernetes, Docker or Seldon Deploy).
-For this example, we will deploy the model using the Docker runtime.
+
+We'll deploy first to Docker to test.
 
 
 ```python
-import sys
-import os
-PYTHON_VERSION = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
-```
-
-
-```python
-%%writetemplate ./artifacts/conda.yaml
-name: tempo-numpyro
-channels:
-  - defaults
-dependencies:
-  - pip=21.0.1
-  - python=3.7.9
-  - pandas=1.0.1
-  - pip:
-    - mlops-tempo @ file://{TEMPO_DIR}
-    - numpyro==0.6.0
-    - mlserver==0.3.1.dev7
+!cat artifacts/conda.yaml
 ```
 
 
 ```python
 from tempo.serve.loader import save
-save(numpyro_divorce, save_env=True)
+save(numpyro_divorce, save_env=False)
 ```
 
 
@@ -226,4 +243,94 @@ numpyro_divorce.remote(marriage=marriage, age=age)
 
 ```python
 docker_runtime.undeploy(numpyro_divorce)
+```
+
+## Production Option 1 (Deploy to Kubernetes with Tempo)
+
+ * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
+ 
+### Prerequisites
+ 
+ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
+ 
+ ```
+ ansible-playbook ansible/playbooks/default.yaml
+ ```
+
+
+```python
+!kubectl apply -f k8s/rbac -n production
+```
+
+
+```python
+from tempo.examples.minio import create_minio_rclone
+import os
+create_minio_rclone(os.getcwd()+"/rclone.conf")
+```
+
+
+```python
+from tempo.serve.loader import upload
+upload(numpyro_divorce)
+```
+
+
+```python
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+runtime_options = RuntimeOptions(
+        k8s_options=KubernetesOptions(
+            namespace="production",
+            authSecretName="minio-secret"
+        )
+    )
+```
+
+
+```python
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+k8s_runtime.deploy(numpyro_divorce)
+k8s_runtime.wait_ready(numpyro_divorce)
+```
+
+
+```python
+numpyro_divorce.remote(marriage=marriage, age=age)
+```
+
+
+```python
+k8s_runtime.undeploy(numpyro_divorce)
+```
+
+## Production Option 2 (Gitops)
+
+ * We create yaml to provide to our DevOps team to deploy to a production cluster
+ * We add Kustomize patches to modify the base Kubernetes yaml created by Tempo
+
+
+```python
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+runtime_options = RuntimeOptions(
+        k8s_options=KubernetesOptions(
+            namespace="production",
+            authSecretName="minio-secret"
+        )
+    )
+k8s_runtime = SeldonKubernetesRuntime()
+yaml_str = k8s_runtime.to_k8s_yaml(numpyro_divorce)
+with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
+    f.write(yaml_str)
+```
+
+
+```python
+!kustomize build k8s
+```
+
+
+```python
+
 ```

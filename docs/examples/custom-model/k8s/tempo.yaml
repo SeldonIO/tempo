@@ -1,0 +1,54 @@
+apiVersion: machinelearning.seldon.io/v1
+kind: SeldonDeployment
+metadata:
+  annotations:
+    seldon.io/tempo-description: ''
+    seldon.io/tempo-model: '{"model_details": {"name": "numpyro-divorce", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/custom-model/artifacts", "uri":
+      "s3://tempo/divorce", "platform": "custom", "inputs": {"args": [{"ty": "numpy.ndarray",
+      "name": "marriage"}, {"ty": "numpy.ndarray", "name": "age"}]}, "outputs": {"args":
+      [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+      "runtime_options": {"runtime": null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
+      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}}}'
+  labels:
+    seldon.io/tempo: 'true'
+  name: numpyro-divorce
+  namespace: default
+spec:
+  predictors:
+  - componentSpecs:
+    - spec:
+        containers:
+        - args: []
+          env:
+          - name: MLSERVER_HTTP_PORT
+            value: '9000'
+          - name: MLSERVER_GRPC_PORT
+            value: '9500'
+          - name: MLSERVER_MODEL_IMPLEMENTATION
+            value: tempo.mlserver.InferenceRuntime
+          - name: MLSERVER_MODEL_NAME
+            value: numpyro-divorce
+          - name: MLSERVER_MODEL_URI
+            value: /mnt/models
+          - name: TEMPO_RUNTIME_OPTIONS
+            value: '{"runtime": null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
+              "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null,
+              "authSecretName": null, "serviceAccountName": null, "defaultRuntime":
+              "tempo.seldon.SeldonKubernetesRuntime", "namespace": "default"}, "ingress_options":
+              {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
+              true}}'
+          image: seldonio/mlserver:0.3.1.dev7
+          name: numpyro-divorce
+    graph:
+      implementation: TRITON_SERVER
+      modelUri: s3://tempo/divorce
+      name: numpyro-divorce
+      serviceAccountName: tempo-pipeline
+      type: MODEL
+    name: default
+    replicas: 1
+  protocol: kfserving

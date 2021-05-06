@@ -321,29 +321,3 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
 ```python
 !kustomize build k8s
 ```
-
-## Save / Load Pipeline
-We serialize the Kubernetes model so we can pass this to external clients who want to call the model from python.
-
-
-```python
-from tempo.serve.stub import save_remote
-path = "./k8s/remotes/classifier.json"
-save_remote(classifier, path)
-```
-
-
-```python
-from tempo.serve.stub import load_remote
-classifier_stub = load_remote(path)
-```
-
-
-```python
-classifier_stub.remote(payload=np.array([[1, 2, 3, 4]]))
-```
-
-
-```python
-
-```
