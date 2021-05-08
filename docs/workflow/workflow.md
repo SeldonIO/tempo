@@ -34,7 +34,7 @@ Use this when you have a standard artifact that falls into one of the [ModelFram
     )
 ```
 
-For further details see the [Model class](../api/tempo.serve.model.html) docs.
+For further details see the [Model class definition](../api/tempo.serve.model.html) docs.
 
 
 #### Using the model decorator
@@ -42,37 +42,25 @@ For further details see the [Model class](../api/tempo.serve.model.html) docs.
 The model decorator can be used to create a Tempo model from custom python code. Use this if you want to manage the serving of your model yourself as it can not be run on one of the out of the box servers provided by the Runtimes. An example for this is a custom outlier detector written using Seldon's Alibi-Detect library:
 
 ```python
+def create_outlier_cls():
     @model(
         name="outlier",
-        platform=ModelFramework.TempoPipeline,
+        platform=ModelFramework.Custom,
         protocol=KFServingV2Protocol(),
         uri="s3://tempo/outlier/cifar10/outlier",
-        local_folder=f"{artifacts_folder}/{OUTLIER_FOLDER}",
+        local_folder=os.path.join(ARTIFACTS_FOLDER, OUTLIER_FOLDER),
     )
     class OutlierModel(object):
-
         def __init__(self):
-            self.loaded = False
-
-        def load(self):
             from alibi_detect.utils.saving import load_detector
 
-            if "MLSERVER_MODELS_DIR" in os.environ:
-                models_folder = "/mnt/models"
-            else:
-                models_folder = f"{artifacts_folder}/{OUTLIER_FOLDER}"
+            model = self.get_tempo()
+            models_folder = model.details.local_folder
             print(f"Loading from {models_folder}")
-            self.od = load_detector(f"{models_folder}/cifar10")
-            self.loaded = True
-
-        def unload(self):
-            self.od = None
-            self.loaded = False
+            self.od = load_detector(os.path.join(models_folder, "cifar10"))
 
         @predictmethod
         def outlier(self, payload: np.ndarray) -> dict:
-            if not self.loaded:
-                self.load()
             od_preds = self.od.predict(
                 payload,
                 outlier_type="instance",  # use 'feature' or 'instance' level
@@ -81,17 +69,55 @@ The model decorator can be used to create a Tempo model from custom python code.
                 return_instance_score=True,
             )
 
-            return json.loads(json.dumps(od_preds, cls=OutlierModel.NumpyEncoder))
+            return json.loads(json.dumps(od_preds, cls=NumpyEncoder))
 
+    return OutlierModel
 ```
 
 The above example decorates a class with the predict method defined by the `@predictmethod` function decorator. The class contains code to load a saved outlier detector, test if an input is an outlier and return the result as json.
 
-For further details see the [model class](../api/tempo.serve.utils.html).
+For further details see the [Model definition](../api/tempo.serve.utils.html).
+
+
+An alternative is to decorate a function. This is shown below from our [custom model example](../examples/custom-model/README.html):
+
+```python
+def get_tempo_artifact(local_folder: str):
+    @model(
+        name="numpyro-divorce",
+        platform=ModelFramework.Custom,
+        local_folder=local_folder,
+        uri="s3://tempo/divorce",
+    )
+    def numpyro_divorce(marriage: np.ndarray, age: np.ndarray) -> np.ndarray:
+        rng_key = random.PRNGKey(0)
+        predictions = numpyro_divorce.context.predictive_dist(rng_key=rng_key, marriage=marriage, age=age)
+
+        mean = predictions["obs"].mean(axis=0)
+        return np.asarray(mean)
+
+    @numpyro_divorce.loadmethod
+    def load_numpyro_divorce():
+        model_uri = os.path.join(numpyro_divorce.details.local_folder, "numpyro-divorce.json")
+
+        with open(model_uri) as model_file:
+            raw_samples = json.load(model_file)
+
+        samples = {}
+        for k, v in raw_samples.items():
+            samples[k] = np.array(v)
+
+        numpyro_divorce.context.predictive_dist = Predictive(model_function, samples)
+
+    return numpyro_divorce
+```
+
+In the above function we use an auxillary function to allow us to load the model. For this we use a decorator starting with the function name of the form `<function_name>.loadmethod`. Inside this method one can set context variables which can later be accessed from the main function.
+
 
 ### Tempo Pipelines
 
-Pipelines allow you to orchestrate models using any custom python code you need for your business logic. They have a similar structure to the model decorator discussed above. An example is shown below from the [intro example](../examples/intro/README.html):
+Pipelines allow you to orchestrate models using any custom python code you need for your business logic. They have a similar structure to the model decorator discussed above. An example is shown below from the [multi-model example](../examples/multi-model/README.html):
 
 ```python
 def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
@@ -137,7 +163,7 @@ For further details see the [pipeline class](../api/tempo.serve.utils.html).
 
 ## Save Model Artifacts
 
-For any custom python code defined using the *model* and *pipeline* decorators you will need to save the python environment needed to run the code and the pickled code itself. This can be done by using the [save](../api/tempo.serve.loader.html) method. See the [intro example](../examples/intro/README.html) for a demonstration.
+For any custom python code defined using the *model* and *pipeline* decorators you will need to save the python environment needed to run the code and the pickled code itself. This can be done by using the [save](../api/tempo.serve.loader.html) method. See the [example](../examples/multi-model/README.html) for a demonstration.
 
 ## Deploy model
 
@@ -145,7 +171,7 @@ Once saved you can deploy your artifacts using a Runtime.
 
 ### Deploy to Docker
 
-The [SeldonDockerRuntime](../api/tempo.seldon.docker.html) can be used to deploy your pipeline to Docker as for example below taken from the [intro example](../examples/intro/README.html).
+The [SeldonDockerRuntime](../api/tempo.seldon.docker.html) can be used to deploy your pipeline to Docker as for example below taken from the [multi-model example](../examples/multi-model/README.html).
 
 ```
 from tempo.seldon.docker import SeldonDockerRuntime
@@ -156,7 +182,7 @@ docker_runtime.wait_ready(classifier)
 
 ### Deploy to Kubernetes
 
-To run your pipelines and models remotely on a Kubernetes cluster you will need to upload those artifacts to remote bucket stores accesible from your Kubernetes cluster. For this we provide [upload](../api/tempo.serve.loader.html) methods that utilize rclone to achieve this. An example is shown below from our [intro example](../examples/intro/README.html):
+To run your pipelines and models remotely on a Kubernetes cluster you will need to upload those artifacts to remote bucket stores accesible from your Kubernetes cluster. For this we provide [upload](../api/tempo.serve.loader.html) methods that utilize rclone to achieve this. An example is shown below from our [multi-model example](../examples/multi-model/README.html):
 
 ```
 from tempo.serve.loader import upload
@@ -196,4 +222,4 @@ k8s_runtime.wait_ready(classifier)
 
 #### Deploy from YAML
 
-Alternatively you can use GitOps principles and generate the appropriate yaml which can be stored on source control and updated via your production/devops continuous deployment process. For this Runtimes can implement `to_k8s_yaml` methods which can be later modified via Kustomize or other processes for production settings. For an example see the [intro example](../examples/intro/README.html).
+Alternatively you can use GitOps principles and generate the appropriate yaml which can be stored on source control and updated via your production/devops continuous deployment process. For this Runtimes can implement `to_k8s_yaml` methods which can be later modified via Kustomize or other processes for production settings. For an example see the [multi-model example](../examples/multi-model/README.html).

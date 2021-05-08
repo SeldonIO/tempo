@@ -20,7 +20,7 @@ A Model can be:
 
 A Pipeline is custom python code (defined via a class or function) which references other Tempo components as callable functions.
 
-An example is shown below for the [outlier demo](../examples/outlier/README.md). There we have a Pipeline which calls the outlier model and if the request is determined to be an outlier then the processing is halted otherwise the model is called.
+An example is shown below for the [outlier demo](../examples/outlier/README.html). There we have a Pipeline which calls the outlier model and if the request is determined to be an outlier then the processing is halted otherwise the model is called.
 
 ![outlier demo](outlier-demo.png)
 
