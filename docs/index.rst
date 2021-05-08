@@ -10,6 +10,8 @@ Tempo
     Quickstart <overview/quickstart.md>
     Architecture <overview/architecture.md>
     Workflow <workflow/workflow.md>
+    Runtimes <overview/runtimes.md>
+    FAQ <overview/FAQ.md>    
 
 .. toctree::
     :titlesonly:
