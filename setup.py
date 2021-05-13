@@ -53,6 +53,8 @@ setup(
         "seldon-deploy-sdk",
         "conda-pack",
         "mlserver",
+        "googleapis-common-protos",
+        "protoc-gen-validate",
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,

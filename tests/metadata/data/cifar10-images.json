@@ -1,0 +1,30 @@
+{
+  "requests": [
+    {
+      "name": "Input Image",
+      "type": "TENSOR",
+      "data_type": "FLOAT",
+      "shape": [32, 32, 3]
+    }
+  ],
+  "responses": [
+    {
+      "name": "Image Class",
+      "type": "CATEGORICAL",
+      "data_type": "INT",
+      "n_categories": 10,
+      "category_map": {
+        "0": "Airplane",
+        "1": "Automobile",
+        "2": "Bird",
+        "3": "Cat",
+        "4": "Deer",
+        "5": "Dog",
+        "6": "Frog",
+        "7": "Horse",
+        "8": "Ship",
+        "9": "Truck"
+      }
+    }
+  ]
+}

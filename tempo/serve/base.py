@@ -37,6 +37,8 @@ class BaseModel:
         runtime_options: RuntimeOptions = RuntimeOptions(),
         model_spec: ModelSpec = None,
         description: str = "",
+        version: str = "",
+        task_type: str = "",
     ):
         if model_spec is not None:
             self.name = model_spec.model_details.name
@@ -62,6 +64,8 @@ class BaseModel:
                 inputs=input_args,
                 outputs=output_args,
                 description=description,
+                version=version,
+                task_type=task_type,
             )
 
             self.model_spec = ModelSpec(

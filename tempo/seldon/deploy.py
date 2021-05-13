@@ -2,9 +2,9 @@ import os
 import time
 from enum import Enum
 from http import cookies
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Optional, Sequence
 
-from pydantic import BaseModel
+import pydantic
 from seldon_deploy_sdk import ApiClient, Configuration, EnvironmentApi, SeldonDeploymentsApi
 from seldon_deploy_sdk.auth import OIDCAuthenticator, SessionAuthenticator
 from seldon_deploy_sdk.models.object_meta import ObjectMeta
@@ -17,8 +17,10 @@ from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import Remote, RemoteModel
-from tempo.serve.metadata import ModelDetails
+from tempo.serve.metadata import ModelDetails, RuntimeOptions
 from tempo.serve.runtime import ModelSpec, Runtime
+
+from .seldondeploy.metadata import Metadata
 
 
 class SeldonDeployAuthType(Enum):
@@ -26,7 +28,7 @@ class SeldonDeployAuthType(Enum):
     oidc = "oidc"
 
 
-class SeldonDeployConfig(BaseModel):
+class SeldonDeployConfig(pydantic.BaseModel):
 
     host: str
     user: str
@@ -41,7 +43,10 @@ class SeldonDeployRuntime(Runtime, Remote):
     def list_models(self) -> Sequence[RemoteModel]:
         pass
 
-    def __init__(self):
+    def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
+        if runtime_options:
+            runtime_options.runtime = "tempo.seldon.SeldonKubernetesRuntime"
+        super().__init__(runtime_options)
         self.api_client = None
 
     def authenticate(self, settings: SeldonDeployConfig):
@@ -148,3 +153,7 @@ class SeldonDeployRuntime(Runtime, Remote):
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         srt = SeldonKubernetesRuntime()
         return srt.to_k8s_yaml_spec(model_spec)
+
+    def register(self, model: Any):
+        m = Metadata(self.api_client)
+        m.register(model)

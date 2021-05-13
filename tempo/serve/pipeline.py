@@ -49,6 +49,8 @@ class Pipeline(BaseModel):
         conda_env: str = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
         description: str = "",
+        version: str = "",
+        task_type: str = "",
     ):
         super().__init__(
             name=name,
@@ -63,6 +65,8 @@ class Pipeline(BaseModel):
             protocol=protocol,
             runtime_options=runtime_options,
             description=description,
+            version=version,
+            task_type=task_type,
         )
 
         if models is None:

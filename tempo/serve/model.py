@@ -21,6 +21,8 @@ class Model(BaseModel):
         conda_env: str = None,
         runtime_options: RuntimeOptions = RuntimeOptions(),
         description: str = "",
+        version: str = "",
+        task_type: str = "",
     ):
         """
 
@@ -47,6 +49,10 @@ class Model(BaseModel):
          The runtime options. Can be left empty and set when creating a runtime.
         description
          The description of the model
+        version
+         The model version
+        task_type
+         The type of model: examples classification, regression
 
         """
         super().__init__(
@@ -62,4 +68,6 @@ class Model(BaseModel):
             protocol=protocol,
             runtime_options=runtime_options,
             description=description,
+            version=version,
+            task_type=task_type,
         )
