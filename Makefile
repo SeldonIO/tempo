@@ -71,6 +71,8 @@ build: clean
 .PHONY: clean
 clean:
 	rm -rf ./dist ./build *.egg-info
+	rm -rf protoc-gen-validate
+	rm -rf api-common-protos
 
 .PHONY: push-test
 push-test:

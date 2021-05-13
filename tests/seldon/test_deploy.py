@@ -49,6 +49,7 @@ def test_deploy():
     print(sklearn_model(np.array([[4.9, 3.1, 1.5, 0.2]])))
     rt.undeploy(sklearn_model)
 
+
 @pytest.mark.skip("needs deploy cluster")
 def test_deploy_metadata():
     rt = SeldonDeployRuntime()
