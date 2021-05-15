@@ -158,10 +158,10 @@ class KubernetesSpec:
             "replicas": self._details.runtime_options.k8s_options.replicas,
         }
 
-        #if (
+        # if (
         #    self._details.model_details.platform == ModelFramework.TempoPipeline
         #    or self._details.model_details.platform == ModelFramework.Custom
-        #):
+        # ):
         #    predictor["componentSpecs"] = self._get_component_specs()
 
         return predictor
