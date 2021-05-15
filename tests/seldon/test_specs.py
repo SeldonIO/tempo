@@ -1,6 +1,6 @@
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.seldon.specs import KubernetesSpec, _V2ContainerFactory, get_container_spec
+from tempo.seldon.specs import KubernetesSpec, get_container_spec
 from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.runtime import ModelSpec
@@ -44,9 +44,6 @@ def test_kubernetes_spec_pipeline():
     runtime_options = RuntimeOptions(k8s_options=options)
     model_spec = ModelSpec(model_details=details, protocol=protocol, runtime_options=runtime_options)
     k8s_object = KubernetesSpec(model_spec)
-
-    container_spec = _V2ContainerFactory.get_container_spec(details, runtime_options)
-    container_env = [{"name": name, "value": value} for name, value in container_spec["environment"].items()]
 
     expected = {
         "apiVersion": "machinelearning.seldon.io/v1",
