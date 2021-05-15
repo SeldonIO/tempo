@@ -98,25 +98,11 @@ def test_kubernetes_spec_pipeline():
             "protocol": "kfserving",
             "predictors": [
                 {
-                    "componentSpecs": [
-                        {
-                            "spec": {
-                                "containers": [
-                                    {
-                                        "name": "inference-pipeline",
-                                        "image": container_spec["image"],
-                                        "env": container_env,
-                                        "args": [],
-                                    }
-                                ]
-                            }
-                        }
-                    ],
                     "graph": {
                         "modelUri": details.uri,
                         "name": "inference-pipeline",
                         "type": "MODEL",
-                        "implementation": "TRITON_SERVER",
+                        "implementation": "TEMPO_SERVER",
                         "serviceAccountName": "tempo-pipeline",
                     },
                     "name": "default",
