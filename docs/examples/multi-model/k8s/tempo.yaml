@@ -11,43 +11,21 @@ metadata:
       "name": null}, {"ty": "builtins.str", "name": null}]}, "description": "A pipeline
       to use either an sklearn or xgboost model for Iris classification"}, "protocol":
       "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
-      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
-      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
-      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "tempo.seldon.SeldonKubernetesRuntime", "docker_options": {"defaultRuntime":
+      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas": 1, "minReplicas":
+      null, "maxReplicas": null, "authSecretName": "minio-secret", "serviceAccountName":
+      null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime", "namespace":
+      "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
       "ssl": false, "verify_ssl": true}}}'
   labels:
     seldon.io/tempo: 'true'
   name: classifier
-  namespace: default
+  namespace: production
 spec:
   predictors:
-  - componentSpecs:
-    - spec:
-        containers:
-        - args: []
-          env:
-          - name: MLSERVER_HTTP_PORT
-            value: '9000'
-          - name: MLSERVER_GRPC_PORT
-            value: '9500'
-          - name: MLSERVER_MODEL_IMPLEMENTATION
-            value: tempo.mlserver.InferenceRuntime
-          - name: MLSERVER_MODEL_NAME
-            value: classifier
-          - name: MLSERVER_MODEL_URI
-            value: /mnt/models
-          - name: TEMPO_RUNTIME_OPTIONS
-            value: '{"runtime": null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
-              "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null,
-              "authSecretName": null, "serviceAccountName": null, "defaultRuntime":
-              "tempo.seldon.SeldonKubernetesRuntime", "namespace": "default"}, "ingress_options":
-              {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
-              true}}'
-          image: seldonio/mlserver:0.3.1.dev7
-          name: classifier
-    graph:
-      implementation: TRITON_SERVER
+  - graph:
+      envSecretRefName: minio-secret
+      implementation: TEMPO_SERVER
       modelUri: s3://tempo/basic/pipeline
       name: classifier
       serviceAccountName: tempo-pipeline
@@ -68,18 +46,20 @@ metadata:
       [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
       "name": null}]}, "description": "An SKLearn Iris classification model"}, "protocol":
       "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
-      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
-      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
-      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "tempo.seldon.SeldonKubernetesRuntime", "docker_options": {"defaultRuntime":
+      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas": 1, "minReplicas":
+      null, "maxReplicas": null, "authSecretName": "minio-secret", "serviceAccountName":
+      null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime", "namespace":
+      "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
       "ssl": false, "verify_ssl": true}}}'
   labels:
     seldon.io/tempo: 'true'
   name: test-iris-sklearn
-  namespace: default
+  namespace: production
 spec:
   predictors:
   - graph:
+      envSecretRefName: minio-secret
       implementation: SKLEARN_SERVER
       modelUri: s3://tempo/basic/sklearn
       name: test-iris-sklearn
@@ -100,18 +80,20 @@ metadata:
       [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
       "name": null}]}, "description": "An XGBoost Iris classification model"}, "protocol":
       "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      null, "docker_options": {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"},
-      "k8s_options": {"replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
-      null, "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
-      "namespace": "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "tempo.seldon.SeldonKubernetesRuntime", "docker_options": {"defaultRuntime":
+      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas": 1, "minReplicas":
+      null, "maxReplicas": null, "authSecretName": "minio-secret", "serviceAccountName":
+      null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime", "namespace":
+      "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
       "ssl": false, "verify_ssl": true}}}'
   labels:
     seldon.io/tempo: 'true'
   name: test-iris-xgboost
-  namespace: default
+  namespace: production
 spec:
   predictors:
   - graph:
+      envSecretRefName: minio-secret
       implementation: XGBOOST_SERVER
       modelUri: s3://tempo/basic/xgboost
       name: test-iris-xgboost
