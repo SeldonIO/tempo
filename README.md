@@ -125,4 +125,4 @@ k8s_runtime.deploy(classifier)
 k8s_runtime.wait_ready(classifier)
 ```
 
-This is an extract from the [introduction](https://tempo.readthedocs.io/en/latest/examples/intro/README.html) demo.
+This is an extract from the [multi-model introduction](https://tempo.readthedocs.io/en/latest/examples/multi-model/README.html) demo.
