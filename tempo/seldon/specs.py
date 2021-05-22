@@ -95,10 +95,8 @@ class KubernetesSpec:
         ModelFramework.PyTorch: "TRITON_SERVER",
         ModelFramework.ONNX: "TRITON_SERVER",
         ModelFramework.TensorRT: "TRITON_SERVER",
-        # TODO: We need to set an implementation in order to get the init
-        # container injected into the spec
-        ModelFramework.TempoPipeline: "TRITON_SERVER",
-        ModelFramework.Custom: "TRITON_SERVER",
+        ModelFramework.TempoPipeline: "TEMPO_SERVER",
+        ModelFramework.Custom: "TEMPO_SERVER",
     }
 
     def __init__(
@@ -160,11 +158,11 @@ class KubernetesSpec:
             "replicas": self._details.runtime_options.k8s_options.replicas,
         }
 
-        if (
-            self._details.model_details.platform == ModelFramework.TempoPipeline
-            or self._details.model_details.platform == ModelFramework.Custom
-        ):
-            predictor["componentSpecs"] = self._get_component_specs()
+        # if (
+        #    self._details.model_details.platform == ModelFramework.TempoPipeline
+        #    or self._details.model_details.platform == ModelFramework.Custom
+        # ):
+        #    predictor["componentSpecs"] = self._get_component_specs()
 
         return predictor
 

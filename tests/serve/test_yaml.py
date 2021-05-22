@@ -2,7 +2,7 @@ import pytest
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.serve.metadata import ModelFramework
+from tempo.serve.metadata import KubernetesOptions, ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 
 
@@ -97,3 +97,18 @@ def test_seldon_xgboost_model_yaml(expected):
     runtime = SeldonKubernetesRuntime()
     print(runtime.to_k8s_yaml(m))
     assert runtime.to_k8s_yaml(m) == expected
+
+
+def test_seldon_model_yaml_auth():
+    m = Model(
+        name="test-iris-xgboost",
+        protocol=SeldonProtocol(),
+        platform=ModelFramework.XGBoost,
+        uri="gs://seldon-models/xgboost/iris",
+        local_folder="/tmp/model",
+    )
+    runtime = SeldonKubernetesRuntime(
+        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(authSecretName="auth"))
+    )
+    print(runtime.to_k8s_yaml(m))
+    # assert runtime.to_k8s_yaml(m) == expected
