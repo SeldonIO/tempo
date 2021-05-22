@@ -1,0 +1,36 @@
+---
+- name: knative
+  hosts: localhost
+  roles:
+    - kind
+    - metallb
+    - istio
+    - knative_serving
+    - knative_eventing
+    - minio
+    - seldon_core    
+  vars:
+    kind_cluster_name: corekn
+    kind_image_version: kindest/node:v1.18.15
+    kind_config_file: files/kind_config.yaml
+    kind_kubectl_default_namespace: seldon
+
+    istio_version: 1.7.6
+    seldon_core_version: v1.7.0
+
+    core_values:
+      ambassador:
+        enabled: true
+
+      istio:
+        enabled: true
+        gateway: "seldon-gateway.istio-system.svc.cluster.local"
+
+    seldon_namespaces:
+      - default
+      - seldon
+      - production
+
+    # Verify Install does not work with 1.7.x on k8s 1.18.x
+    istio_verify_install: false
+    minio_service_type: LoadBalancer

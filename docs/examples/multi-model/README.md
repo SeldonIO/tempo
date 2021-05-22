@@ -1,8 +1,8 @@
-# Tempo Introduction
+# Tempo Multi-Model Introduction
 
 ![architecture](architecture.png)
 
-In this introduction we will:
+In this multi-model introduction we will:
 
   * [Describe the project structure](#Project-Structure)
   * [Train some models](#Train-Models)
