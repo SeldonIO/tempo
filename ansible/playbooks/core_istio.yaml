@@ -11,3 +11,5 @@
       istio:
         enabled: true
         gateway: "seldon-gateway.istio-system.svc.cluster.local"
+    # Verify Install does not work with 1.7.x on k8s 1.18.x
+    istio_verify_install: false
