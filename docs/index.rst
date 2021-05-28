@@ -7,6 +7,7 @@ Tempo
     :titlesonly:
     :caption: Documentation:
 
+    Overview <overview/overview.md>
     Quickstart <overview/quickstart.md>
     Architecture <overview/architecture.md>
     Workflow <workflow/workflow.md>
