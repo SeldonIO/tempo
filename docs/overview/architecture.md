@@ -2,14 +2,14 @@
 
 Overview of Tempo architecture.
 
-![internals](internals.png)
+![internals](../assets/internals.png)
 
 
 ## Model and Pipeline
 
 A Model is the core deployment artifact in tempo and describes the link to a saved machine learning component. A Pipeline is a custom python orchestrator that references other Tempo models or pipelines specied in its definition.
 
-![model-pipeline](model-pipeline.png)
+![model-pipeline](../assets/model-pipeline.png)
 
 
 A Model can be:
@@ -22,7 +22,7 @@ A Pipeline is custom python code (defined via a class or function) which referen
 
 An example is shown below for the [outlier demo](../examples/outlier/README.html). There we have a Pipeline which calls the outlier model and if the request is determined to be an outlier then the processing is halted otherwise the model is called.
 
-![outlier demo](outlier-demo.png)
+![outlier demo](../assets/outlier-demo.png)
 
 ## Runtimes
 
