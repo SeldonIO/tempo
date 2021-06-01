@@ -5,12 +5,11 @@ import numpy as np
 import pytest
 import yaml
 
-from tempo import Model, ModelFramework, Pipeline, model, pipeline, predictmethod
+from tempo import Model, ModelFramework, Pipeline, PipelineModels, model, pipeline, predictmethod
 from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
-from tempo.serve.pipeline import PipelineModels
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
