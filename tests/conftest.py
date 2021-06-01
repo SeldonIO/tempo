@@ -5,12 +5,19 @@ import numpy as np
 import pytest
 import yaml
 
-from tempo import Model, ModelFramework, Pipeline, model, pipeline, predictmethod
+from tempo import (
+    Model,
+    ModelFramework,
+    PipelineModels,
+    Pipeline,
+    model,
+    pipeline,
+    predictmethod,
+)
 from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
-from tempo.serve.pipeline import PipelineModels
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -52,7 +59,9 @@ def sklearn_model() -> Model:
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
         protocol=SeldonProtocol(),
-        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace="production", replicas=1)),
+        runtime_options=RuntimeOptions(
+            k8s_options=KubernetesOptions(namespace="production", replicas=1)
+        ),
     )
 
 
@@ -86,7 +95,9 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
+def inference_pipeline(
+    sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str
+) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
