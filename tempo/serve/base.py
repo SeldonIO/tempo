@@ -3,6 +3,8 @@ from __future__ import annotations
 import abc
 import os
 import tempfile
+import requests
+
 from pydoc import locate
 from types import SimpleNamespace
 from typing import Any, Dict, Optional, Sequence, Tuple, Type
@@ -13,9 +15,20 @@ from ..conf import settings
 from ..errors import UndefinedCustomImplementation
 from ..utils import logger
 from .args import infer_args, process_datatypes
-from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
+from .constants import (
+    ENV_K8S_SERVICE_HOST,
+    DefaultCondaFile,
+    DefaultEnvFilename,
+    DefaultModelFilename,
+)
 from .loader import load_custom, save_custom, save_environment
-from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from .metadata import (
+    ModelDataArg,
+    ModelDataArgs,
+    ModelDetails,
+    ModelFramework,
+    RuntimeOptions,
+)
 from .protocol import Protocol
 from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
@@ -148,7 +161,9 @@ class BaseModel:
 
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
-            conda_env_file_path = os.path.join(self.details.local_folder, DefaultCondaFile)
+            conda_env_file_path = os.path.join(
+                self.details.local_folder, DefaultCondaFile
+            )
             if not os.path.exists(conda_env_file_path):
                 conda_env_file_path = None
 
@@ -163,7 +178,9 @@ class BaseModel:
         if self._user_func is None:
             raise UndefinedCustomImplementation(self.details.name)
 
-        req_converted = self.model_spec.protocol.from_protocol_request(req, self.details.inputs)
+        req_converted = self.model_spec.protocol.from_protocol_request(
+            req, self.details.inputs
+        )
         if type(req_converted) == dict:
             response = self(**req_converted)
         elif type(req_converted) == list or type(req_converted) == tuple:
@@ -172,11 +189,17 @@ class BaseModel:
             response = self(req_converted)
 
         if type(response) == dict:
-            response_converted = self.model_spec.protocol.to_protocol_response(self.details, **response)
+            response_converted = self.model_spec.protocol.to_protocol_response(
+                self.details, **response
+            )
         elif type(response) == list or type(response) == tuple:
-            response_converted = self.model_spec.protocol.to_protocol_response(self.details, *response)
+            response_converted = self.model_spec.protocol.to_protocol_response(
+                self.details, *response
+            )
         else:
-            response_converted = self.model_spec.protocol.to_protocol_response(self.details, response)
+            response_converted = self.model_spec.protocol.to_protocol_response(
+                self.details, response
+            )
 
         return response_converted
 
@@ -202,11 +225,22 @@ class BaseModel:
         return cls()
 
     def remote(self, *args, **kwargs):
-        remoter = self._create_remote(self._get_model_spec())
-        return remoter.remote(self._get_model_spec(), *args, **kwargs)
+        model_spec = self._get_model_spec()
+        remoter = self._create_remote(model_spec)
+
+        prot = model_spec.protocol
+        req = prot.to_protocol_request(*args, **kwargs)
+        endpoint = remoter.get_endpoint_spec(model_spec)
+        response_raw = requests.post(endpoint, json=req)
+
+        response_json = response_raw.json()
+        output_schema = model_spec.model_details.outputs
+        return prot.from_protocol_response(response_json, output_schema)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
-        return runtime.wait_ready_spec(self._get_model_spec(), timeout_secs=timeout_secs)
+        return runtime.wait_ready_spec(
+            self._get_model_spec(), timeout_secs=timeout_secs
+        )
 
     def get_endpoint(self, runtime: Runtime):
         return runtime.get_endpoint_spec(self._get_model_spec())
@@ -248,21 +282,21 @@ class RemoteModel(BaseModel):
         super().__init__(model_spec.model_details.name, model_spec=model_spec)
 
     def deploy(self, runtime: Runtime):
-        logger.warn("Remote model %s can't be deployed", self.model_spec.model_details.name)
+        logger.warn(
+            "Remote model %s can't be deployed", self.model_spec.model_details.name
+        )
         pass
 
     def undeploy(self, runtime: Runtime):
-        logger.warn("Remote model %s can't be undeployed", self.model_spec.model_details.name)
+        logger.warn(
+            "Remote model %s can't be undeployed", self.model_spec.model_details.name
+        )
         pass
 
 
 class Remote(abc.ABC):
     def __init__(self, runtime_options: Optional[RuntimeOptions]):
         self.runtime_options = runtime_options
-
-    @abc.abstractmethod
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
-        pass
 
     @abc.abstractmethod
     def list_models(self) -> Sequence[RemoteModel]:
