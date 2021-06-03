@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from pydoc import locate
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 from pydantic import BaseModel, validator
 
@@ -76,6 +76,9 @@ class Runtime(abc.ABC, Deployer):
     @abc.abstractmethod
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         pass
+
+    def get_headers(self, model_spec: ModelSpec) -> Dict[str, str]:
+        return {}
 
     @abc.abstractmethod
     def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:

@@ -225,16 +225,24 @@ class BaseModel:
         return cls()
 
     def remote(self, *args, **kwargs):
+        # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
         model_spec = self._get_model_spec()
         remoter = self._create_remote(model_spec)
-
         prot = model_spec.protocol
+        ingress_options = model_spec.runtime_options.ingress_options
+
         req = prot.to_protocol_request(*args, **kwargs)
         endpoint = remoter.get_endpoint_spec(model_spec)
-        response_raw = requests.post(endpoint, json=req)
+        headers = remoter.get_headers(model_spec)
+        response_raw = requests.post(
+            endpoint, json=req, headers=headers, verify=ingress_options.verify_ssl
+        )
+
+        response_raw.raise_for_status()
 
         response_json = response_raw.json()
         output_schema = model_spec.model_details.outputs
+
         return prot.from_protocol_response(response_json, output_schema)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):

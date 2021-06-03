@@ -21,18 +21,23 @@ class Model(_Model):
     async def _session(self) -> aiohttp.ClientSession:
         if self._client_session is None:
             # TODO: Delete at some point
-            self._client_session = aiohttp.ClientSession()
+            self._client_session = aiohttp.ClientSession(raise_for_status=True)
 
         return self._client_session
 
     async def remote(self, *args, **kwargs):
+        # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
         model_spec = self._get_model_spec()
         remoter = self._create_remote(model_spec)
-
         prot = model_spec.protocol
+        ingress_options = model_spec.runtime_options.ingress_options
+
         req = prot.to_protocol_request(*args, **kwargs)
         endpoint = remoter.get_endpoint_spec(model_spec)
-        response_raw = await self._session.post(endpoint, json=req)
+        headers = remoter.get_headers(model_spec)
+        response_raw = await self._session.post(
+            endpoint, json=req, headers=headers, verify_ssl=ingress_options.verify_ssl
+        )
 
         response_json = await response_raw.json()
         output_schema = model_spec.model_details.outputs
