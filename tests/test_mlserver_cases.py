@@ -1,7 +1,8 @@
+import numpy as np
+
 from mlserver.settings import ModelParameters, ModelSettings
 
-from tempo import Model
-from tempo.serve.loader import save
+from tempo import Model, aio, save, ModelFramework
 
 
 def case_custom_model(custom_model: Model) -> ModelSettings:
@@ -32,5 +33,19 @@ def case_wrapped_class(inference_pipeline_class) -> ModelSettings:
 
     return ModelSettings(
         name="wrapped-class",
+        parameters=ModelParameters(uri=model_uri),
+    )
+
+
+def case_async_custom_model() -> ModelSettings:
+    @aio.model(name="async-custom-model", platform=ModelFramework.Custom)
+    async def _custom_model(payload: np.ndarray) -> np.ndarray:
+        return payload.sum(keepdims=True)
+
+    save(_custom_model, save_env=False)
+    model_uri = _custom_model.details.local_folder
+
+    return ModelSettings(
+        name="async-custom-model",
         parameters=ModelParameters(uri=model_uri),
     )

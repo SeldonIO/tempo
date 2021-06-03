@@ -1,6 +1,7 @@
 import json
 import os
 
+from inspect import iscoroutinefunction
 from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri
@@ -24,6 +25,8 @@ class InferenceRuntime(MLModel):
     async def load(self) -> bool:
         self._model = await self._load_model()
         await self._load_runtime()
+
+        self._is_coroutine = iscoroutinefunction(self._model.request)
 
         self.ready = True
         return self.ready
@@ -57,4 +60,7 @@ class InferenceRuntime(MLModel):
 
     async def predict(self, payload: InferenceRequest) -> InferenceResponse:
         prediction = self._model.request(payload.dict())
+        if self._is_coroutine:
+            prediction = await prediction  # type: ignore
+
         return InferenceResponse(**prediction)

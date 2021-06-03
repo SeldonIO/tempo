@@ -1,9 +1,9 @@
 from inspect import iscoroutinefunction
-from typing import Any
+from typing import Any, Dict
 
 import aiohttp
 
-from ..errors import InvalidUserFunction
+from ..errors import InvalidUserFunction, UndefinedCustomImplementation
 
 
 class _AsyncMixin:
@@ -47,3 +47,27 @@ class _AsyncMixin:
     async def __call__(self, *args, **kwargs) -> Any:
         future = super().__call__(*args, **kwargs)  # type: ignore
         return await future
+
+    async def request(self, req: Dict) -> Dict:
+        # TODO: Decouple to avoid duplicating code
+        if self._user_func is None:  # type: ignore
+            raise UndefinedCustomImplementation(self.details.name)  # type: ignore
+
+        prot = self.model_spec.protocol  # type: ignore
+        req_converted = prot.from_protocol_request(req, self.details.inputs)  # type: ignore
+
+        if type(req_converted) == dict:
+            response = await self(**req_converted)
+        elif type(req_converted) == list or type(req_converted) == tuple:
+            response = await self(*req_converted)
+        else:
+            response = await self(req_converted)
+
+        if type(response) == dict:
+            response_converted = prot.to_protocol_response(self.details, **response)  # type: ignore
+        elif type(response) == list or type(response) == tuple:
+            response_converted = prot.to_protocol_response(self.details, *response)  # type: ignore
+        else:
+            response_converted = prot.to_protocol_response(self.details, response)  # type: ignore
+
+        return response_converted
