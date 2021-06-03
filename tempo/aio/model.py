@@ -11,14 +11,17 @@ class Model(_Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        is_async = iscoroutinefunction(self._user_func)
-        if not is_async:
-            raise InvalidUserFunction(self._name, reason="function is not awaitable")
+        if self._user_func is not None:
+            is_async = iscoroutinefunction(self._user_func)
+            if not is_async:
+                raise InvalidUserFunction(
+                    self._name, reason="function is not awaitable"
+                )
 
         self._client_session = None
 
     @property
-    async def _session(self) -> aiohttp.ClientSession:
+    def _session(self) -> aiohttp.ClientSession:
         if self._client_session is None:
             # TODO: Delete at some point
             self._client_session = aiohttp.ClientSession(raise_for_status=True)

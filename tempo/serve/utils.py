@@ -169,7 +169,7 @@ def model(
     name: str,
     local_folder: str = None,
     uri: str = None,
-    platform: ModelFramework = None,
+    platform: ModelFramework = ModelFramework.Custom,
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
