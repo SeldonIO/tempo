@@ -6,8 +6,11 @@ from typing import Generator
 from tempo.seldon import SeldonDockerRuntime
 from tempo.serve.model import Model as _Model
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
+from tempo.serve.pipeline import PipelineModels
+
 from tempo.aio.model import Model
-from tempo.aio.utils import model
+from tempo.aio.pipeline import Pipeline
+from tempo.aio.utils import model, pipeline
 
 
 @pytest.fixture
@@ -43,3 +46,19 @@ def custom_model() -> Model:
         return payload.sum(keepdims=True)
 
     return _custom_model
+
+
+@pytest.fixture
+def inference_pipeline(sklearn_model: Model) -> Pipeline:
+    @pipeline(
+        name="inference-pipeline",
+        models=PipelineModels(sklearn=sklearn_model),
+    )
+    async def _pipeline(payload: np.ndarray) -> np.ndarray:
+        res1 = await _pipeline.models.sklearn(payload)
+        if res1[0][0] > 0.7:
+            return res1
+
+        return res1.sum(keepdims=True)
+
+    return _pipeline
