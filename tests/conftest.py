@@ -51,7 +51,9 @@ def sklearn_model() -> Model:
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
         protocol=SeldonProtocol(),
-        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace="production", replicas=1)),
+        runtime_options=RuntimeOptions(
+            k8s_options=KubernetesOptions(namespace="production", replicas=1),
+        ),
     )
 
 
@@ -85,7 +87,9 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
+def inference_pipeline(
+    sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str
+) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
