@@ -1,11 +1,12 @@
-import numpy as np
 import time
+
+import numpy as np
 import pytest
 
-from tempo.errors import InvalidUserFunction
-from tempo.serve.metadata import ModelFramework
 from tempo.aio.model import Model
 from tempo.aio.utils import model
+from tempo.errors import InvalidUserFunction
+from tempo.serve.metadata import ModelFramework
 
 
 async def test_invalid_model():

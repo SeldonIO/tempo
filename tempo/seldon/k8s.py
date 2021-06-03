@@ -66,9 +66,7 @@ class SeldonKubernetesRuntime(Runtime, Remote):
                 "seldondeployments",
                 model_spec.model_details.name,
             )
-            k8s_spec["metadata"]["resourceVersion"] = existing["metadata"][
-                "resourceVersion"
-            ]
+            k8s_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",

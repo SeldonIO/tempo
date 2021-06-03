@@ -1,13 +1,11 @@
 from inspect import isclass
 
 from ..kfserving.protocol import KFServingV2Protocol
-
-from ..serve.utils import _get_predict_method, _wrap_class
 from ..serve.metadata import ModelFramework, RuntimeOptions
-from ..serve.types import ModelDataType
-from ..serve.protocol import Protocol
 from ..serve.pipeline import PipelineModels
-
+from ..serve.protocol import Protocol
+from ..serve.types import ModelDataType
+from ..serve.utils import _get_predict_method, _wrap_class
 from .model import Model
 from .pipeline import Pipeline
 

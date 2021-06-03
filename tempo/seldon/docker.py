@@ -78,9 +78,7 @@ class SeldonDockerRuntime(Runtime, Remote):
             **container_spec,
         )
 
-    def _create_network(
-        self, docker_client: DockerClient, network_name=DefaultNetworkName
-    ):
+    def _create_network(self, docker_client: DockerClient, network_name=DefaultNetworkName):
         try:
             docker_client.networks.get(network_id=network_name)
         except NotFound:
@@ -143,11 +141,7 @@ class SeldonDockerRuntime(Runtime, Remote):
     def _is_inside_docker(self) -> bool:
         # From https://stackoverflow.com/a/48710609/5015573
         path = "/proc/self/cgroup"
-        return (
-            os.path.exists("/.dockerenv")
-            or os.path.isfile(path)
-            and any("docker" in line for line in open(path))
-        )
+        return os.path.exists("/.dockerenv") or os.path.isfile(path) and any("docker" in line for line in open(path))
 
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         raise NotImplementedError()

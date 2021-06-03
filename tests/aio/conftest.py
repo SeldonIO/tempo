@@ -1,16 +1,15 @@
-import pytest
-import numpy as np
-
 from typing import Generator
 
-from tempo.seldon import SeldonDockerRuntime
-from tempo.serve.model import Model as _Model
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
-from tempo.serve.pipeline import PipelineModels
+import numpy as np
+import pytest
 
 from tempo.aio.model import Model
 from tempo.aio.pipeline import Pipeline
 from tempo.aio.utils import model, pipeline
+from tempo.seldon import SeldonDockerRuntime
+from tempo.serve.metadata import ModelFramework, RuntimeOptions
+from tempo.serve.model import Model as _Model
+from tempo.serve.pipeline import PipelineModels
 
 
 @pytest.fixture
@@ -19,9 +18,7 @@ def runtime() -> SeldonDockerRuntime:
 
 
 @pytest.fixture
-def sklearn_model(
-    sklearn_model: _Model, runtime: SeldonDockerRuntime
-) -> Generator[Model, None, None]:
+def sklearn_model(sklearn_model: _Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
     model = Model(
         name=sklearn_model.details.name,
         platform=sklearn_model.details.platform,

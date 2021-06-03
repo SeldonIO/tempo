@@ -7,11 +7,7 @@ import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
-from tempo.k8s.constants import (
-    TempoK8sDescriptionAnnotation,
-    TempoK8sLabel,
-    TempoK8sModelSpecAnnotation,
-)
+from tempo.k8s.constants import TempoK8sDescriptionAnnotation, TempoK8sLabel, TempoK8sModelSpecAnnotation
 from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
@@ -95,9 +91,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 "inferenceservices",
                 model_spec.model_details.name,
             )
-            spec["metadata"]["resourceVersion"] = existing["metadata"][
-                "resourceVersion"
-            ]
+            spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
             api_instance.replace_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
@@ -155,9 +149,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
 
     def _get_spec(self, model_spec: ModelSpec) -> dict:
         if model_spec.model_details.platform == ModelFramework.TempoPipeline:
-            serviceAccountName = (
-                model_spec.runtime_options.k8s_options.serviceAccountName
-            )
+            serviceAccountName = model_spec.runtime_options.k8s_options.serviceAccountName
             if serviceAccountName is None:
                 serviceAccountName = DefaultServiceAccountName
             return {
@@ -208,9 +200,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                                     },
                                     {
                                         "name": ENV_TEMPO_RUNTIME_OPTIONS,
-                                        "value": json.dumps(
-                                            model_spec.runtime_options.dict()
-                                        ),
+                                        "value": json.dumps(model_spec.runtime_options.dict()),
                                     },
                                 ],
                             },
@@ -236,9 +226,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 },
                 "spec": {
                     "predictor": {
-                        model_implementation: {
-                            "storageUri": model_spec.model_details.uri
-                        },
+                        model_implementation: {"storageUri": model_spec.model_details.uri},
                     },
                 },
             }
@@ -247,9 +235,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                     "serviceAccountName"
                 ] = model_spec.runtime_options.k8s_options.serviceAccountName
             if isinstance(model_spec.protocol, KFServingV2Protocol):
-                spec["spec"]["predictor"][model_implementation][
-                    "protocolVersion"
-                ] = "v2"
+                spec["spec"]["predictor"][model_implementation]["protocolVersion"] = "v2"
             return spec
         else:
             raise ValueError(

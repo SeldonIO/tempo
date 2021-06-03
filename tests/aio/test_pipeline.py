@@ -1,4 +1,5 @@
 import time
+
 import numpy as np
 
 from tempo.aio.pipeline import Pipeline

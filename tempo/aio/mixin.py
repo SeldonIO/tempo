@@ -1,7 +1,7 @@
-import aiohttp
-
-from typing import Any
 from inspect import iscoroutinefunction
+from typing import Any
+
+import aiohttp
 
 from ..errors import InvalidUserFunction
 
