@@ -46,6 +46,7 @@ setup(
         "kubernetes",
         "docker",
         "packaging",
+        "aiohttp",
         "requests",
         "pydantic",
         "cloudpickle",
