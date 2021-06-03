@@ -18,7 +18,7 @@ class Model(_Model):
         self._client_session = None
 
     @property
-    async def _session(self) -> aiohttp.Session:
+    async def _session(self) -> aiohttp.ClientSession:
         if self._client_session is None:
             # TODO: Delete at some point
             self._client_session = aiohttp.ClientSession()
