@@ -1,10 +1,9 @@
 import os
 import socket
 import time
-from typing import Any, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 import docker
-import requests
 from docker.client import DockerClient
 from docker.errors import NotFound
 from docker.models.containers import Container
@@ -46,12 +45,6 @@ class SeldonDockerRuntime(Runtime, Remote):
 
         return f"http://{host_ip}:{host_port}{predict_path}"
 
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
-        req = model_spec.protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint_spec(model_spec)
-        response_raw = requests.post(endpoint, json=req)
-        return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
-
     def deploy_spec(self, model_details: ModelSpec):
         try:
             container = self._get_container(model_details)
@@ -85,7 +78,9 @@ class SeldonDockerRuntime(Runtime, Remote):
             **container_spec,
         )
 
-    def _create_network(self, docker_client: DockerClient, network_name=DefaultNetworkName):
+    def _create_network(
+        self, docker_client: DockerClient, network_name=DefaultNetworkName
+    ):
         try:
             docker_client.networks.get(network_id=network_name)
         except NotFound:
@@ -148,7 +143,11 @@ class SeldonDockerRuntime(Runtime, Remote):
     def _is_inside_docker(self) -> bool:
         # From https://stackoverflow.com/a/48710609/5015573
         path = "/proc/self/cgroup"
-        return os.path.exists("/.dockerenv") or os.path.isfile(path) and any("docker" in line for line in open(path))
+        return (
+            os.path.exists("/.dockerenv")
+            or os.path.isfile(path)
+            and any("docker" in line for line in open(path))
+        )
 
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         raise NotImplementedError()

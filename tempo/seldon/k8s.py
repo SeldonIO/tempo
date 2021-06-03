@@ -1,9 +1,8 @@
 import json
 import os
 import time
-from typing import Any, Optional, Sequence
+from typing import Optional, Sequence
 
-import requests
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -39,13 +38,6 @@ class SeldonKubernetesRuntime(Runtime, Remote):
         endpoint = Endpoint()
         return endpoint.get_url(model_spec)
 
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
-        req = model_spec.protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint_spec(model_spec)
-        logger.debug("Endpoint is ", endpoint)
-        response_raw = requests.post(endpoint, json=req, verify=model_spec.runtime_options.ingress_options.verify_ssl)
-        return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
-
     def undeploy_spec(self, model_spec: ModelSpec):
         self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
@@ -74,7 +66,9 @@ class SeldonKubernetesRuntime(Runtime, Remote):
                 "seldondeployments",
                 model_spec.model_details.name,
             )
-            k8s_spec["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
+            k8s_spec["metadata"]["resourceVersion"] = existing["metadata"][
+                "resourceVersion"
+            ]
             api_instance.replace_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
