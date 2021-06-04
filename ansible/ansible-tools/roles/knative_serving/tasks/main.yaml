@@ -8,3 +8,22 @@
     - "{{ knative_core }}"
     - "{{ knative_net_istio }}"      
 
+- name: Wait for KNative Serving deployments
+  community.kubernetes.k8s_info:
+    kind: Deployment
+    wait: yes
+    wait_condition:
+      type: Available
+      status: "True"
+      reason: MinimumReplicasAvailable
+    name: "{{ item }}"
+    namespace: knative-serving
+    wait_timeout: 360
+  with_items:
+    - activator
+    - autoscaler
+    - controller
+    - istio-webhook
+    - networking-istio
+    - webhook
+  when: knative_serving_wait_for_deployments | bool

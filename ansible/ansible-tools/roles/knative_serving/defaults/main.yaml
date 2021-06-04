@@ -3,3 +3,4 @@ knative_crds: "https://github.com/knative/serving/releases/download/v0.21.0/serv
 knative_core: "https://github.com/knative/serving/releases/download/v0.21.0/serving-core.yaml"
 knative_net_istio: "https://github.com/knative/net-istio/releases/download/v0.21.0/net-istio.yaml"
 
+knative_serving_wait_for_deployments: true

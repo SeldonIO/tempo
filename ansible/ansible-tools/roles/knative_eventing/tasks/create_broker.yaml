@@ -1,0 +1,17 @@
+---
+- name: "Create a k8s namespace {{ knative_eventing_default_broker_namespace }} "
+  community.kubernetes.k8s:
+    name: "{{ knative_eventing_default_broker_namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create default broker
+  community.kubernetes.k8s:
+    state: present
+    definition:
+      apiVersion: eventing.knative.dev/v1
+      kind: Broker
+      metadata:
+        name: "{{ knative_eventing_default_broker_name }}"
+        namespace: "{{ knative_eventing_default_broker_namespace }}"

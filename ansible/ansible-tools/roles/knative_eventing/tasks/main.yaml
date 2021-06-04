@@ -7,7 +7,29 @@
     - "{{ knative_eventing_crds }}"
     - "{{ knative_eventing_core }}"
     - "{{ knative_eventing_channel }}"
-    - "{{ knative_eventing_broker }}"    
+    - "{{ knative_eventing_broker }}"
+
+- name: Wait for KNative Eventing deployments
+  community.kubernetes.k8s_info:
+    kind: Deployment
+    wait: yes
+    wait_condition:
+      type: Available
+      status: "True"
+      reason: MinimumReplicasAvailable
+    name: "{{ item }}"
+    namespace: knative-eventing
+    wait_timeout: 360
+  with_items:
+    - eventing-controller
+    - eventing-webhook
+    - imc-controller
+    - imc-dispatcher
+    - mt-broker-controller
+    - mt-broker-filter
+    - mt-broker-ingress
+    - pingsource-mt-adapter
+  when: knative_eventing_wait_for_deployments | bool
 
 - name: Add tag resolution disabled repositories
   community.kubernetes.k8s:
@@ -21,4 +43,8 @@
         name: config-deployment
         namespace: knative-serving
       data:
-        registriesSkippingTagResolving: kind.local,ko.local,dev.local    
+        registriesSkippingTagResolving: kind.local,ko.local,dev.local
+
+- name: Create default broker
+  include: create_broker.yaml
+  when: knative_eventing_create_default_broker | bool

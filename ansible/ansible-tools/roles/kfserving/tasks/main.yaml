@@ -25,3 +25,15 @@
                   "localGateway" : "knative-local-gateway.knative-serving",
                   "localGatewayService" : "knative-local-gateway.istio-system.svc.cluster.local"
                 }
+
+- name: Wait for KFServing Controller Manager
+  community.kubernetes.k8s_info:
+    kind: Pod
+    wait: yes
+    label_selectors:
+      - control-plane = kfserving-controller-manager
+    namespace: kfserving-system
+    wait_timeout: 600
+  with_items:
+    - kfserving-controller-manager
+  when: kfserving_wait_for_deployments | bool

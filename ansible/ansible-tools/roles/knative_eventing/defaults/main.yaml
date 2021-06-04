@@ -3,3 +3,9 @@ knative_eventing_crds: "https://github.com/knative/eventing/releases/download/v0
 knative_eventing_core: "https://github.com/knative/eventing/releases/download/v0.22.0/eventing-core.yaml"
 knative_eventing_channel: "https://github.com/knative/eventing/releases/download/v0.22.0/in-memory-channel.yaml"
 knative_eventing_broker: "https://github.com/knative/eventing/releases/download/v0.22.0/mt-channel-broker.yaml"
+
+knative_eventing_wait_for_deployments: true
+
+knative_eventing_create_default_broker: false
+knative_eventing_default_broker_name: default
+knative_eventing_default_broker_namespace: default
