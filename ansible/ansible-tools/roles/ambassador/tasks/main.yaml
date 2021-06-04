@@ -15,5 +15,5 @@
     values:
       image:
         repository: quay.io/datawire/ambassador
-      enableAES: false
+      enableAES: '{{ ambassador_enableAES }}'
       crds.keep: false
