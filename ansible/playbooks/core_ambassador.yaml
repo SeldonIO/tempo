@@ -2,10 +2,29 @@
 - name: Install Seldon Core
   hosts: localhost
   roles:
+    - kind
+    - metallb
+    - minio
     - ambassador
     - seldon_core
   vars:
+    kind_cluster_name: ambassador
+    kind_image_version: kindest/node:v1.18.15
+    kind_kubectl_default_namespace: seldon
+
     seldon_core_version: master
+
     core_values:
       ambassador:
         enabled: true
+
+      istio:
+        enabled: false
+
+    seldon_namespaces:
+      - default
+      - seldon
+      - production
+
+    minio_service_type: LoadBalancer
+    
