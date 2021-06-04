@@ -12,3 +12,6 @@ tox==3.22.0
 
 # Pushing to PyPi
 twine==3.3.0
+
+# proto
+grpcio-tools==1.33.2

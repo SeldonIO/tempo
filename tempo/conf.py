@@ -8,4 +8,4 @@ class TempoSettings(BaseSettings):
     use_kubernetes: bool = False
 
 
-settings = TempoSettings()
+settings = TempoSettings(_env_file=str(Path.home()) + "/.config/seldon/tempo.env")  # type: ignore

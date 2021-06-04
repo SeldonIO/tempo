@@ -124,3 +124,6 @@ tests/testdata/xgboost
 #mlflow
 mlruns
 
+#proto dependencies
+api-common-protos
+protoc-gen-validate

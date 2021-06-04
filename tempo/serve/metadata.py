@@ -68,9 +68,8 @@ class ModelDetails(BaseModel):
     inputs: ModelDataArgs
     outputs: ModelDataArgs
     description: str = ""
-
-    # class Config:
-    #    use_enum_values = True
+    version: str = ""
+    task_type: str = ""
 
 
 class KubernetesOptions(BaseModel):

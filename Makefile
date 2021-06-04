@@ -18,26 +18,31 @@ test:
 fmt:
 	isort . \
 		--skip ansible \
+		--skip protoc-gen-validate \
+		--skip api-common-protos \
 		--skip .tox \
 		--skip .eggs \
 		--skip build
 	black . \
-		--exclude "(.eggs|.tox|ansible|build)" \
+		--exclude "(.eggs|.tox|ansible|build|protoc-gen-validate|api-common-protos)" \
 		--line-length 120
 
 .PHONY: lint
 lint:
 	flake8 . \
-		--extend-exclude "ansible"
+		--extend-exclude "ansible,protoc-gen-validate,api-common-protos,tempo/metadata"
 	mypy ./tempo
 	isort . --check \
 		--skip ansible \
+		--skip protoc-gen-validate \
+		--skip api-common-protos \
+		--skip tempo/metadata \
 		--skip .tox \
 		--skip .eggs \
 		--skip build
 	black . \
 		--check \
-		--exclude "(.eggs|.tox|ansible|build)" \
+		--exclude "(.eggs|.tox|ansible|build|protoc-gen-validate|api-common-protos|tempo/metadata)" \
 		--line-length 120
 
 .PHONY: install-rclone
@@ -66,6 +71,8 @@ build: clean
 .PHONY: clean
 clean:
 	rm -rf ./dist ./build *.egg-info
+	rm -rf protoc-gen-validate
+	rm -rf api-common-protos
 
 .PHONY: push-test
 push-test:
@@ -78,3 +85,19 @@ push:
 .PHONY: version
 version:
 	@echo ${VERSION}
+
+protoc-gen-validate:
+	git clone git@github.com:envoyproxy/protoc-gen-validate.git
+
+api-common-protos:
+	git clone git@github.com:googleapis/api-common-protos.git
+
+build_metadata_protos: protoc-gen-validate api-common-protos
+	python \
+		-m grpc.tools.protoc \
+		-I./ \
+		-I./api-common-protos/ \
+		-I./tempo/metadata/ \
+		--python_out=./ \
+		--grpc_python_out=./ \
+		$$(find ./tempo/metadata -name '*.proto')

@@ -94,6 +94,8 @@ def pipeline(
     conda_env: str = None,
     runtime_options: RuntimeOptions = RuntimeOptions(),
     description: str = "",
+    version: str = "",
+    task_type: str = "",
 ):
     """
     A decorator for a class or function to make it a Tempo Pipeline.
@@ -121,6 +123,10 @@ def pipeline(
      The runtime options. Can be left empty and set when creating a runtime.
     description
      Description of the pipeline
+    version:
+     The pipeline version
+    task_type
+     The pipeline task type, examples: ensemble, multi-armed bandit
 
     Returns
     -------
@@ -145,6 +151,8 @@ def pipeline(
             protocol=protocol,
             runtime_options=runtime_options,
             description=description,
+            version=version,
+            task_type=task_type,
         )
 
         if isclass(f):
@@ -176,6 +184,8 @@ def model(
     protocol: Protocol = KFServingV2Protocol(),
     runtime_options: RuntimeOptions = RuntimeOptions(),
     description: str = "",
+    version: str = "",
+    task_type: str = "",
 ):
     """
 
@@ -226,6 +236,8 @@ def model(
             conda_env=conda_env,
             runtime_options=runtime_options,
             description=description,
+            version=version,
+            task_type=task_type,
         )
 
         if isclass(f):

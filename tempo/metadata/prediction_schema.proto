@@ -1,0 +1,42 @@
+syntax = "proto3";
+package predictionschema.v1;
+
+import "google/api/field_behavior.proto";
+import "tempo/metadata/validate.proto";
+
+message PredictionSchema {
+  repeated FeatureSchema requests = 1 [(google.api.field_behavior) = REQUIRED,(validate.rules).repeated.min_items = 1];
+  repeated FeatureSchema responses = 2 [(google.api.field_behavior) = REQUIRED,(validate.rules).repeated.min_items = 1];
+}
+
+enum DataType {
+  FLOAT = 0;
+  INT = 1;
+  BOOL = 2;
+  STRING = 3;
+  BYTES = 4;
+}
+
+enum FeatureType {
+  REAL = 0; /* A numerical variable*/
+  CATEGORICAL = 1; /* A categorical variable*/
+  PROBA = 2;  /* A list of probabilities*/
+  ONE_HOT = 3; /* A list of one-hot encodings*/
+  TEXT = 4;  /* A text string*/
+  TENSOR = 5; /* N-dimensional Tensor*/
+}
+
+message FeatureCategorySchema {
+  string name = 1 [(google.api.field_behavior) = REQUIRED,(validate.rules).string.max_len = 200];
+  DataType data_type = 2 [(google.api.field_behavior) = OPTIONAL,(validate.rules).enum.defined_only = true];
+}
+
+message FeatureSchema {
+  string name = 1 [(google.api.field_behavior) = REQUIRED,(validate.rules).string.max_len = 200];
+  FeatureType type = 2 [(google.api.field_behavior) = REQUIRED,(validate.rules).enum.defined_only = true];
+  DataType data_type = 3 [(google.api.field_behavior) = OPTIONAL,(validate.rules).enum.defined_only = true];
+  int64 n_categories = 4 [(google.api.field_behavior) = OPTIONAL,(validate.rules).int64 = {ignore_empty:true, gte:1}];
+  map<string, string> category_map = 5 [(google.api.field_behavior) = OPTIONAL,(validate.rules).map = {ignore_empty:true, min_pairs:1}];
+  repeated FeatureCategorySchema schema = 6 [(google.api.field_behavior) = OPTIONAL,(validate.rules).repeated = {ignore_empty:true, min_items:1}];
+  repeated int64 shape = 7 [(google.api.field_behavior) = OPTIONAL,(validate.rules).repeated = {ignore_empty:true, min_items:1}];
+}
