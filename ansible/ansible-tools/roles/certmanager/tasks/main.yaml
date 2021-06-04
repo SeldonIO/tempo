@@ -7,8 +7,18 @@
     - "{{ certmanager_yaml }}"
 
 - name: Wait for cert-manager pods become ready
-  shell: "kubectl wait --namespace=cert-manager --for=condition=Ready pods --selector app.kubernetes.io/instance=cert-manager --timeout=600s"
-  register: cert_manager_pods_ready
-      
-
-
+  community.kubernetes.k8s_info:
+    kind: Deployment
+    wait: yes
+    wait_condition:
+      type: Available
+      status: "True"
+      reason: MinimumReplicasAvailable
+    name: "{{ item }}"
+    namespace: cert-manager
+    wait_timeout: 600
+  with_items:
+    - cert-manager
+    - cert-manager-cainjector
+    - cert-manager-webhook
+  when: certmanager_wait_for_deployments | bool
