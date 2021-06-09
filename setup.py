@@ -54,6 +54,7 @@ setup(
         "seldon-deploy-sdk",
         "conda-pack",
         "mlserver",
+        "janus",
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,
