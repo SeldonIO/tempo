@@ -59,7 +59,7 @@ async def start_worker(
     await asyncio.gather(*asyncio.all_tasks())
 
 async def start_insights_worker_from_async(
-    worker_endpoint: str = "http://localhost:3333/",
+    worker_endpoint: str = "",
     batch_size: int = 1,
     parallelism: int = 1,
     retries: int = 3,
