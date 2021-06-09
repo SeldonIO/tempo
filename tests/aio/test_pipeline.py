@@ -1,10 +1,8 @@
-import time
-
 import numpy as np
 
-from tempo.serve.loader import save, load
 from tempo.aio.model import Model
 from tempo.aio.pipeline import Pipeline
+from tempo.serve.loader import load, save
 
 
 async def test_pipeline(inference_pipeline: Pipeline):
@@ -27,8 +25,6 @@ async def test_save(inference_pipeline: Pipeline):
     loaded_pipeline = load(inference_pipeline.details.local_folder)
 
     # Ensure models are exported as async
-    assert len(inference_pipeline.models.__dict__) == len(
-        loaded_pipeline.models.__dict__
-    )
+    assert len(inference_pipeline.models.__dict__) == len(loaded_pipeline.models.__dict__)
     for model in loaded_pipeline.models.values():
         assert isinstance(model, Model)

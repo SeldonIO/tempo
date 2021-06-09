@@ -1,8 +1,7 @@
 import numpy as np
-
 from mlserver.settings import ModelParameters, ModelSettings
 
-from tempo import Model, aio, save, ModelFramework
+from tempo import Model, ModelFramework, aio, save
 
 
 def case_custom_model(custom_model: Model) -> ModelSettings:

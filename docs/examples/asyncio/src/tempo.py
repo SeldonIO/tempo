@@ -1,9 +1,8 @@
 import numpy as np
+from src.constants import ClassifierFolder, SKLearnFolder, XGBoostFolder
 
 from tempo import ModelFramework, PipelineModels
-from tempo.aio import pipeline, Model
-
-from src.constants import ClassifierFolder, SKLearnFolder, XGBoostFolder
+from tempo.aio import Model, pipeline
 
 SKLearnModel = Model(
     name="test-iris-sklearn",

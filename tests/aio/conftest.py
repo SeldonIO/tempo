@@ -1,9 +1,9 @@
-import docker
 import time
-import pytest
-import numpy as np
-
 from typing import Generator
+
+import docker
+import numpy as np
+import pytest
 
 from tempo.aio.model import Model
 from tempo.aio.pipeline import Pipeline
@@ -22,9 +22,7 @@ def runtime() -> SeldonDockerRuntime:
 
 
 @pytest.fixture
-def sklearn_model(
-    sklearn_model: _Model, runtime: SeldonDockerRuntime
-) -> Generator[Model, None, None]:
+def sklearn_model(sklearn_model: _Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
     model = Model(
         name=sklearn_model.details.name,
         platform=sklearn_model.details.platform,
@@ -58,9 +56,7 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(
-    sklearn_model: Model, runtime: SeldonDockerRuntime
-) -> Generator[Pipeline, None, None]:
+def inference_pipeline(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generator[Pipeline, None, None]:
     @pipeline(
         name="inference-pipeline",
         models=PipelineModels(sklearn=sklearn_model),

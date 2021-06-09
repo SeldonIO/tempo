@@ -1,7 +1,7 @@
 import json
 import os
-
 from inspect import iscoroutinefunction
+
 from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri

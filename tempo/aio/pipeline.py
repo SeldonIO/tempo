@@ -1,7 +1,7 @@
-from ..serve.pipeline import Pipeline as _Pipeline, PipelineModels as _PipelineModels
-
-from .model import Model
+from ..serve.pipeline import Pipeline as _Pipeline
+from ..serve.pipeline import PipelineModels as _PipelineModels
 from .mixin import _AsyncMixin
+from .model import Model
 
 
 class PipelineModels(_PipelineModels):

@@ -1,11 +1,10 @@
-import joblib
 import os
 
+import joblib
 from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
-
-from src.data import IrisData
 from src.constants import SKLearnFolder, XGBoostFolder
+from src.data import IrisData
+from xgboost import XGBClassifier
 
 
 def train_sklearn(data: IrisData):
