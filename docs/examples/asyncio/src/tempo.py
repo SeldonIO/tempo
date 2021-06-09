@@ -3,7 +3,7 @@ import numpy as np
 from tempo import ModelFramework, PipelineModels
 from tempo.aio import pipeline, Model
 
-from src.constants import SKLearnFolder, XGBoostFolder
+from src.constants import ClassifierFolder, SKLearnFolder, XGBoostFolder
 
 SKLearnModel = Model(
     name="test-iris-sklearn",
@@ -23,12 +23,13 @@ XGBoostModel = Model(
 
 
 @pipeline(
-    name="inference-pipeline",
+    name="classifier",
     models=PipelineModels(sklearn=SKLearnModel, xgboost=XGBoostModel),
+    local_folder=ClassifierFolder,
 )
-async def inference_pipeline(payload: np.ndarray) -> np.ndarray:
-    res1 = await _pipeline.models.sklearn(input=payload)
-    if res1[0][0] > 0.7:
+async def classifier(payload: np.ndarray) -> np.ndarray:
+    res1 = await classifier.models.sklearn(input=payload)
+    if res1[0] > 0.7:
         return res1
 
-    return await _pipeline.models.xgboost(input=payload)
+    return await classifier.models.xgboost(input=payload)
