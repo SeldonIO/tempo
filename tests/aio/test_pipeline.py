@@ -2,13 +2,33 @@ import time
 
 import numpy as np
 
+from tempo.serve.loader import save, load
+from tempo.aio.model import Model
 from tempo.aio.pipeline import Pipeline
 
 
 async def test_pipeline(inference_pipeline: Pipeline):
-    time.sleep(2)
-
     x_input = np.array([[0.5, 2, 3, 4]])
     y_pred = await inference_pipeline(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [[1.0]], atol=1e-2)
+
+
+async def test_pipeline_remote(inference_pipeline: Pipeline):
+    x_input = np.array([[0.5, 2, 3, 4]])
+    y_pred = await inference_pipeline.remote(payload=x_input)
+
+    np.testing.assert_allclose(y_pred, [[1.0]], atol=1e-2)
+
+
+async def test_save(inference_pipeline: Pipeline):
+    save(inference_pipeline, save_env=False)
+
+    loaded_pipeline = load(inference_pipeline.details.local_folder)
+
+    # Ensure models are exported as async
+    assert len(inference_pipeline.models.__dict__) == len(
+        loaded_pipeline.models.__dict__
+    )
+    for model in loaded_pipeline.models.values():
+        assert isinstance(model, Model)
