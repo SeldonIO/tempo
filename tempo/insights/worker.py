@@ -6,8 +6,8 @@ import asyncio
 import aiohttp
 import aiofiles
 import janus
-import time
 import threading
+from ..utils import logger
 
 async def start_worker(
     q_in: janus.Queue,
@@ -119,24 +119,28 @@ def start_insights_worker_from_sync(
 ) -> janus.Queue:
 
 
-    print("creating threading")
+    logger.info("creating threading")
     event = threading.Event()
     args = (event, worker_endpoint, batch_size, parallelism,
             retries, output_file_path, window_time)
     thread = threading.Thread(target=sync_init_loop_queue, args=args)
     thread.start()
     event.wait()
-    print("waiting for threading")
+    logger.info("waiting for threading")
 
     queue = event.queue # pylint: disable=no-member
 
     return queue.sync_q
 
 if __name__ == "__main__":
-    print("creating insights worker")
+    import time
+
+    logger.info("creating insights worker")
+
     q = start_insights_worker_from_sync(output_file_path="out.txt")
+
     while True:
         time.sleep(1)
-        print("adding")
+        logger.info("adding")
         q.put({"hello": "world"})
 
