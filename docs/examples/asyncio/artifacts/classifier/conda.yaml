@@ -4,5 +4,5 @@ channels:
 dependencies:
   - python=3.7.9
   - pip:
-      - /home/agm/Seldon/tempo
+      - mlops-tempo
       - mlserver==0.3.1.dev7
