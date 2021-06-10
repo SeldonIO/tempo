@@ -8,9 +8,12 @@ from docker.client import DockerClient
 from docker.errors import NotFound
 from docker.models.containers import Container
 
+from tempo.utils import logger
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.metadata import RuntimeOptions
+from tempo.serve.runtime import ModelSpec, Runtime
+from tempo.serve.constants import DefaultInsightsServiceName, DefaultInsightsPort, DefaultInsightsImage
 
 DefaultNetworkName = "tempo"
 
@@ -58,6 +61,26 @@ class SeldonDockerRuntime(Runtime):
             self._run_container(model_details)
         except docker.errors.NotFound:
             self._run_container(model_details)
+
+    def deploy_insights_message_dumper(self):
+        docker_client = docker.from_env()
+        try:
+            docker_client.containers.get(DefaultInsightsServiceName)
+        except docker.errors.NotFound:
+            pass
+        else:
+            logger.info("Attempted to deploy message dumper but already deployed")
+            return
+        uid = os.getuid()
+        self._create_network(docker_client)
+        docker_client.containers.run(
+            name=DefaultInsightsServiceName,
+            ports={f"{DefaultInsightsPort}/tcp": DefaultInsightsPort},
+            image=DefaultInsightsImage,
+            detach=True,
+            network=DefaultNetworkName,
+            user=uid,
+        )
 
     def _run_container(self, model_details: ModelSpec):
         docker_client = docker.from_env()
@@ -125,6 +148,16 @@ class SeldonDockerRuntime(Runtime):
 
     def undeploy_spec(self, model_spec: ModelSpec):
         container = self._get_container(model_spec)
+        container.remove(force=True)
+
+    def undeploy_insights_message_dumper(self):
+        docker_client = docker.from_env()
+        # TODO: Get from constant
+        try:
+            container = docker_client.containers.get(DefaultInsightsServiceName)
+        except docker.errors.NotFound:
+            logger.info("Attempted to undeploy insights dumper but container not running")
+            return
         container.remove(force=True)
 
     def _get_container(self, model_details: ModelSpec) -> Container:

@@ -6,6 +6,9 @@ from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.base import ModelSpec
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions
+from tempo.serve.runtime import ModelSpec
+from tempo.serve.constants import DefaultInsightsLocalEndpoint, DefaultInsightsDockerEndpoint
+from tempo.utils import logger
 
 DefaultHTTPPort = "9000"
 DefaultGRPCPort = "9500"
@@ -15,14 +18,18 @@ DefaultServiceAccountName = "tempo-pipeline"
 
 
 def get_container_spec(model_details: ModelSpec) -> dict:
+    runtime_options = model_details.runtime_options.copy(deep=True)
+    # Override if provided endpoint is the default so it works inside container
+    if runtime_options.insights_options.worker_endpoint in [DefaultInsightsLocalEndpoint, ""]:
+        runtime_options.insights_options.worker_endpoint = DefaultInsightsDockerEndpoint
     if (
         model_details.model_details.platform == ModelFramework.TempoPipeline
         or model_details.model_details.platform == ModelFramework.Custom
     ):
-        return _V2ContainerFactory.get_container_spec(model_details.model_details, model_details.runtime_options)
+        return _V2ContainerFactory.get_container_spec(model_details.model_details, runtime_options)
 
     if isinstance(model_details.protocol, KFServingV2Protocol):
-        return _V2ContainerFactory.get_container_spec(model_details.model_details, model_details.runtime_options)
+        return _V2ContainerFactory.get_container_spec(model_details.model_details, runtime_options)
 
     return _V1ContainerFactory.get_container_spec(model_details.model_details)
 

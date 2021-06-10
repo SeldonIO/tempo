@@ -12,6 +12,8 @@ from .serve.loader import load
 from .serve.metadata import ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
 
+from .insights.manager import InsightsManager
+
 
 def _needs_init(model: BaseModel):
     is_class = model._K is not None
@@ -25,6 +27,7 @@ class InferenceRuntime(MLModel):
     async def load(self) -> bool:
         self._model = await self._load_model()
         await self._load_runtime()
+        await self._load_insights()
 
         self._is_coroutine = iscoroutinefunction(self._model.request)
 
@@ -51,6 +54,13 @@ class InferenceRuntime(MLModel):
             model._load_func()
 
         return model
+
+    async def _load_insights(self):
+        runtime_options = self._model.runtime_options_override
+        if not runtime_options:
+            runtime_options = self._model.model_spec.runtime_options
+        insights_params = runtime_options.insights_options.dict()
+        self._model.insights = InsightsManager(**insights_params)
 
     async def _load_runtime(self):
         rt_options_str = os.getenv(ENV_TEMPO_RUNTIME_OPTIONS)

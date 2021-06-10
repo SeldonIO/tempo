@@ -15,3 +15,10 @@ DefaultCondaFile = "conda.yaml"
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
 
 ENV_TEMPO_RUNTIME_OPTIONS = "TEMPO_RUNTIME_OPTIONS"
+
+DefaultInsightsServiceName = "insights-dumper"
+DefaultInsightsPort = 8080
+DefaultInsightsLocalEndpoint = "http://0.0.0.0:8080"
+DefaultInsightsDockerEndpoint = f"http://{DefaultInsightsServiceName}:8080"
+DefaultInsightsImage = "mendhak/http-https-echo:18"
+

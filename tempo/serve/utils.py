@@ -9,6 +9,7 @@ from .model import Model
 from .pipeline import Pipeline, PipelineModels
 from .protocol import Protocol
 from .types import ModelDataType
+from ..insights.manager import InsightsManager
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"

@@ -92,9 +92,16 @@ class IngressOptions(BaseModel):
     ssl: bool = False
     verify_ssl: bool = True
 
+class InsightsOptions(BaseModel):
+    worker_endpoint: str = ""
+    batch_size: int = 1
+    parallelism: int = 1
+    retries: int = 3
+    window_time: int = None
 
 class RuntimeOptions(BaseModel):
     runtime: str = "tempo.seldon.SeldonDockerRuntime"
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
     ingress_options: IngressOptions = IngressOptions()
+    insights_options: InsightsOptions = InsightsOptions()

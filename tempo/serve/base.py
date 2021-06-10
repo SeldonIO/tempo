@@ -16,12 +16,13 @@ from ..conf import settings
 from ..errors import UndefinedCustomImplementation
 from ..utils import logger
 from .args import infer_args, process_datatypes
-from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
+from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename, DefaultInsightsLocalEndpoint
 from .loader import load_custom, save_custom, save_environment
 from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from .typing import fullname
+from ..insights.manager import InsightsManager
 
 
 class BaseModel:
@@ -76,6 +77,15 @@ class BaseModel:
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
 
+        # TODO: This could leave ghost message dumper containers running if changed
+        self.deploy_message_dumper = not runtime_options.insights_options.worker_endpoint
+
+        insights_params = runtime_options.insights_options.dict()
+        if self.deploy_message_dumper:
+            insights_params["worker_endpoint"] = DefaultInsightsLocalEndpoint
+
+        self.insights = InsightsManager(**insights_params)
+
         # K holds the wrapped class (if any)
         self._K: Optional[Type] = None
 
@@ -127,6 +137,7 @@ class BaseModel:
         """
         state = self.__dict__.copy()
         state["context"] = SimpleNamespace()
+        state["insights"] = SimpleNamespace()
 
         return state
 
