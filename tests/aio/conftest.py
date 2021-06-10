@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Generator
 
@@ -12,8 +13,6 @@ from tempo.seldon import SeldonDockerRuntime
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model as _Model
 from tempo.serve.pipeline import PipelineModels
-
-from ..conftest import PIPELINE_LOCAL_DIR
 
 
 @pytest.fixture
@@ -56,11 +55,13 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generator[Pipeline, None, None]:
+def inference_pipeline(
+    sklearn_model: Model, runtime: SeldonDockerRuntime, pipeline_conda_yaml: str
+) -> Generator[Pipeline, None, None]:
     @pipeline(
         name="inference-pipeline",
         models=PipelineModels(sklearn=sklearn_model),
-        local_folder=PIPELINE_LOCAL_DIR,
+        local_folder=os.path.dirname(pipeline_conda_yaml),
     )
     async def _pipeline(payload: np.ndarray) -> np.ndarray:
         res1 = await _pipeline.models.sklearn(payload)
