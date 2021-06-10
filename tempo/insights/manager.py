@@ -2,7 +2,7 @@ import asyncio
 
 from .worker import start_insights_worker_from_async, start_insights_worker_from_sync
 
-class InsightsLogger:
+class InsightsManager:
     def __init__(
             self,
             worker_endpoint: str = "",

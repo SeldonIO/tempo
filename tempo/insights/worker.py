@@ -56,9 +56,12 @@ async def start_worker(
 
     asyncio.create_task(_start_queues_worker())
 
-    await asyncio.gather(*asyncio.all_tasks())
+    try:
+        await asyncio.gather(*asyncio.all_tasks())
+    except KeyboardInterrupt():
+        print("Terminating")
 
-async def start_insights_worker_from_async(
+def start_insights_worker_from_async(
     worker_endpoint: str = "",
     batch_size: int = 1,
     parallelism: int = 1,
@@ -107,7 +110,11 @@ def sync_init_loop_queue(
             window_time,
         )
 
-    asyncio.run(inner_loop())
+    try:
+        asyncio.run(inner_loop())
+    except KeyboardInterrupt():
+        print("Terminating")
+
 
 def start_insights_worker_from_sync(
     worker_endpoint: str = "",
