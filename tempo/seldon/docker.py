@@ -1,10 +1,9 @@
 import os
 import socket
 import time
-from typing import Any, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
 import docker
-import requests
 from docker.client import DockerClient
 from docker.errors import NotFound
 from docker.models.containers import Container
@@ -45,12 +44,6 @@ class SeldonDockerRuntime(Runtime, Remote):
         host_ip, host_port = self._get_host_ip_port(model_spec)
 
         return f"http://{host_ip}:{host_port}{predict_path}"
-
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
-        req = model_spec.protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint_spec(model_spec)
-        response_raw = requests.post(endpoint, json=req)
-        return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
 
     def deploy_spec(self, model_details: ModelSpec):
         try:

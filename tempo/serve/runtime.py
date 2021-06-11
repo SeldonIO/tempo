@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from pydoc import locate
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, validator
 
@@ -77,6 +77,9 @@ class Runtime(abc.ABC, Deployer):
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         pass
 
+    def get_headers(self, model_spec: ModelSpec) -> Dict[str, str]:
+        return {}
+
     @abc.abstractmethod
     def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         pass
@@ -85,30 +88,3 @@ class Runtime(abc.ABC, Deployer):
     @abc.abstractmethod
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         pass
-
-
-class LocalRuntime(Runtime):
-    """
-    LocalRuntime lets you run model functions explicitly as a local function.
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def deploy(self, model_details: ModelDetails):
-        pass
-
-    def undeploy(self, model_spec: ModelDetails):
-        pass
-
-    def remote(self, model_spec: ModelDetails, *args, **kwargs) -> Any:
-        raise NotImplementedError("LocalRuntime is only meant to be used locally")
-
-    def get_endpoint(self, model_spec: ModelDetails) -> str:
-        return ""
-
-    def wait_ready(self, model_spec: ModelDetails, timeout_secs=None) -> bool:
-        return True
-
-    def to_k8s_yaml(self, model_spec: ModelDetails) -> str:
-        return ""

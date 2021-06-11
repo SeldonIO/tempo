@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from typing import Any, Dict, Optional, Sequence, Tuple, Type
 
 import numpy as np
+import requests
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
@@ -202,8 +203,23 @@ class BaseModel:
         return cls()
 
     def remote(self, *args, **kwargs):
-        remoter = self._create_remote(self._get_model_spec())
-        return remoter.remote(self._get_model_spec(), *args, **kwargs)
+        # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
+        model_spec = self._get_model_spec()
+        remoter = self._create_remote(model_spec)
+        prot = model_spec.protocol
+        ingress_options = model_spec.runtime_options.ingress_options
+
+        req = prot.to_protocol_request(*args, **kwargs)
+        endpoint = remoter.get_endpoint_spec(model_spec)
+        headers = remoter.get_headers(model_spec)
+        response_raw = requests.post(endpoint, json=req, headers=headers, verify=ingress_options.verify_ssl)
+
+        response_raw.raise_for_status()
+
+        response_json = response_raw.json()
+        output_schema = model_spec.model_details.outputs
+
+        return prot.from_protocol_response(response_json, output_schema)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
         return runtime.wait_ready_spec(self._get_model_spec(), timeout_secs=timeout_secs)
@@ -259,10 +275,6 @@ class RemoteModel(BaseModel):
 class Remote(abc.ABC):
     def __init__(self, runtime_options: Optional[RuntimeOptions]):
         self.runtime_options = runtime_options
-
-    @abc.abstractmethod
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
-        pass
 
     @abc.abstractmethod
     def list_models(self) -> Sequence[RemoteModel]:

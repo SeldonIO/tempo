@@ -2,7 +2,7 @@ import os
 import time
 from enum import Enum
 from http import cookies
-from typing import Any, Dict, Sequence
+from typing import Dict, Sequence
 
 from pydantic import BaseModel
 from seldon_deploy_sdk import ApiClient, Configuration, EnvironmentApi, SeldonDeploymentsApi
@@ -17,7 +17,6 @@ from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import Remote, RemoteModel
-from tempo.serve.metadata import ModelDetails
 from tempo.serve.runtime import ModelSpec, Runtime
 
 
@@ -89,7 +88,8 @@ class SeldonDeployRuntime(Runtime, Remote):
             kind="SeldonDeployment",
             api_version="machinelearning.seldon.io/v1",
             metadata=ObjectMeta(
-                name=model_spec.model_details.name, namespace=model_spec.runtime_options.k8s_options.namespace
+                name=model_spec.model_details.name,
+                namespace=model_spec.runtime_options.k8s_options.namespace,
             ),
             spec=SeldonDeploymentSpec(
                 predictors=[
@@ -116,7 +116,8 @@ class SeldonDeployRuntime(Runtime, Remote):
         dep_instance = SeldonDeploymentsApi(self.api_client)
         while not ready:
             sdep: SeldonDeployment = dep_instance.read_seldon_deployment(
-                model_spec.model_details.name, model_spec.runtime_options.k8s_options.namespace
+                model_spec.model_details.name,
+                model_spec.runtime_options.k8s_options.namespace,
             )
             sdep_dict = sdep.to_dict()
             ready = sdep_dict["status"]["state"] == "Available"
@@ -130,20 +131,17 @@ class SeldonDeployRuntime(Runtime, Remote):
         self._create_api_client()
         dep_instance = SeldonDeploymentsApi(self.api_client)
         dep_instance.delete_seldon_deployment(
-            model_spec.model_details.name, model_spec.runtime_options.k8s_options.namespace, _preload_content=False
+            model_spec.model_details.name,
+            model_spec.runtime_options.k8s_options.namespace,
+            _preload_content=False,
         )
 
     def get_endpoint_spec(self, model_spec: ModelSpec):
         endpoint = Endpoint()
         return endpoint.get_url(model_spec)
 
-    def get_headers(self, model_details: ModelDetails) -> Dict[str, str]:
+    def get_headers(self, model_spec: ModelSpec) -> Dict[str, str]:
         return {}
-
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
-        self._create_api_client()
-        srt = SeldonKubernetesRuntime()
-        srt.remote(model_spec, *args, **kwargs)
 
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         srt = SeldonKubernetesRuntime()

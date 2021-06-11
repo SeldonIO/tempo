@@ -1,9 +1,8 @@
 import json
 import os
 import time
-from typing import Any, Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence
 
-import requests
 import yaml
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -65,20 +64,6 @@ class KFServingKubernetesRuntime(Runtime, Remote):
             return {"Host": service_host}
         else:
             return {}
-
-    def remote(self, model_spec: ModelSpec, *args, **kwargs) -> Any:
-        req = model_spec.protocol.to_protocol_request(*args, **kwargs)
-        endpoint = self.get_endpoint_spec(model_spec)
-        logger.debug("Endpoint is", endpoint)
-        headers = self.get_headers(model_spec)
-        logger.debug("Headers are", headers)
-        response_raw = requests.post(
-            endpoint, json=req, headers=headers, verify=model_spec.runtime_options.ingress_options.verify_ssl
-        )
-        if response_raw.status_code == 200:
-            return model_spec.protocol.from_protocol_response(response_raw.json(), model_spec.model_details.outputs)
-        else:
-            raise ValueError("Bad return code", response_raw.status_code, response_raw.text)
 
     def undeploy_spec(self, model_spec: ModelSpec):
         self.create_k8s_client()
@@ -253,7 +238,10 @@ class KFServingKubernetesRuntime(Runtime, Remote):
                 spec["spec"]["predictor"][model_implementation]["protocolVersion"] = "v2"
             return spec
         else:
-            raise ValueError("Can't create spec for implementation ", model_spec.model_details.platform)
+            raise ValueError(
+                "Can't create spec for implementation ",
+                model_spec.model_details.platform,
+            )
 
     def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
         d = self._get_spec(model_spec)

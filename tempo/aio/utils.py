@@ -1,86 +1,13 @@
-import copy
-from inspect import getmembers, isclass, isfunction
-from typing import Any, Callable, Optional, Type
+from inspect import isclass
 
 from ..kfserving.protocol import KFServingV2Protocol
-from .base import BaseModel
-from .metadata import ModelFramework, RuntimeOptions
+from ..serve.metadata import ModelFramework, RuntimeOptions
+from ..serve.pipeline import PipelineModels
+from ..serve.protocol import Protocol
+from ..serve.types import ModelDataType
+from ..serve.utils import _get_predict_method, _wrap_class
 from .model import Model
-from .pipeline import Pipeline, PipelineModels
-from .protocol import Protocol
-from .types import ModelDataType
-
-PredictMethodAttr = "_tempo_predict"
-LoadMethodAttr = "_tempo_load"
-
-
-def predictmethod(f):
-    setattr(f, PredictMethodAttr, True)
-    return f
-
-
-def _bind(instance, func):
-    """
-    Bind the function *func* to *instance*, with either provided name *as_name*
-    or the existing name of *func*. The provided *func* should accept the
-    instance as the first argument, i.e. "self".
-
-    From https://stackoverflow.com/a/1015405/5015573
-    """
-    return func.__get__(instance, instance.__class__)
-
-
-def _get_predict_method(K: Type) -> Optional[Callable]:
-    for _, func in getmembers(K, isfunction):
-        if hasattr(func, PredictMethodAttr):
-            return func
-
-    return None
-
-
-def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
-    setattr(K, field_name, model)
-    model._K = K
-
-    _bind_tempo_interface(K, model)
-
-    orig_init = K.__init__
-
-    # Make copy of original __init__, so we can call it without recursion
-    def __init__(self, *args, **kws):
-        # On __init__, copy pipeline object and update _user_func.
-        # Class-level attributes mutate to instance-level attributes when
-        # overriden.
-        # Therefore, this won't modify the class-level model / pipeline object.
-        class_model = getattr(K, field_name)
-        instance_model = copy.copy(class_model)
-        setattr(self, field_name, instance_model)
-
-        # We bind _user_func so that `self` is passed implicitly
-        instance_model._user_func = _bind(self, instance_model._user_func)
-
-        # Bind back Tempo interface to make sure it points to instance referece
-        _bind_tempo_interface(self, instance_model)
-
-        orig_init(self, *args, **kws)  # Call the original __init__
-
-    K.__init__ = __init__  # Set the class' __init__ to the new one
-
-    def __call__(self, *args, **kwargs) -> Any:
-        model = getattr(self, field_name)
-        return model(*args, **kwargs)
-
-    K.__call__ = __call__  # type: ignore
-
-    return K
-
-
-def _bind_tempo_interface(artifact: Any, model: BaseModel) -> Any:
-    setattr(artifact, "request", model.request)
-    setattr(artifact, "remote", model.remote)
-    setattr(artifact, "get_tempo", model.get_tempo)
-
-    return artifact
+from .pipeline import Pipeline
 
 
 def pipeline(

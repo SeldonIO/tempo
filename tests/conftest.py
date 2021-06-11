@@ -51,7 +51,9 @@ def sklearn_model() -> Model:
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
         protocol=SeldonProtocol(),
-        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace="production", replicas=1)),
+        runtime_options=RuntimeOptions(
+            k8s_options=KubernetesOptions(namespace="production", replicas=1),
+        ),
     )
 
 

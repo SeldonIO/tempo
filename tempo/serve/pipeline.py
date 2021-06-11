@@ -10,6 +10,8 @@ from tempo.serve.types import ModelDataType
 
 
 class PipelineModels(SimpleNamespace):
+    ModelExportKlass = Model
+
     def keys(self):
         return self.__dict__.keys()
 
@@ -22,7 +24,7 @@ class PipelineModels(SimpleNamespace):
     def remote_copy(self):
         output = {}
         for name, model in self.items():
-            output[name] = Model(
+            output[name] = self.ModelExportKlass(
                 name=model.get_tempo().details.name,
                 local_folder=model.get_tempo().details.local_folder,
                 uri=model.get_tempo().details.uri,

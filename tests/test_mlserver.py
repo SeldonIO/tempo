@@ -1,10 +1,12 @@
 import copy
+from inspect import iscoroutine
 
 import pytest
 from mlserver.settings import ModelSettings
 from mlserver.types import InferenceRequest, RequestInput
 from mlserver.utils import to_ndarray
 from pytest_cases import fixture, parametrize_with_cases
+from pytest_cases.common_pytest_lazy_values import is_lazy
 
 from tempo.mlserver import InferenceRuntime
 from tempo.serve.base import BaseModel
@@ -20,6 +22,10 @@ def inference_request() -> InferenceRequest:
 @fixture
 @parametrize_with_cases("model_settings")
 async def mlserver_runtime(model_settings: ModelSettings) -> InferenceRuntime:
+    if is_lazy(model_settings):
+        # NOTE: Some times pytest-cases may return a "LazyValue"
+        model_settings = model_settings.get(request_or_item=mlserver_runtime)
+
     _runtime = InferenceRuntime(model_settings)
     await _runtime.load()
 
@@ -47,6 +53,8 @@ async def test_predict(mlserver_runtime: InferenceRuntime, inference_request: In
     # Ensure direct call to class does not try to do remote
     custom_model.set_remote(False)
     expected_output = custom_model(payload=pipeline_input)
+    if iscoroutine(expected_output):
+        expected_output = await expected_output
 
     pipeline_output = res.outputs[0].data
 
