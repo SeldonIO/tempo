@@ -15,6 +15,7 @@ from tempo.serve.constants import ENV_K8S_SERVICE_HOST
 from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
+from tempo.serve.constants import DefaultInsightsServiceName, DefaultInsightsPort, DefaultInsightsImage, DefaultSeldonSystemNamespace
 
 
 class SeldonCoreOptions(RuntimeOptions):
@@ -53,6 +54,68 @@ class SeldonKubernetesRuntime(Runtime):
             model_spec.model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
         )
+
+    def undeploy_insights_message_dumper(self):
+        self.create_k8s_client()
+        api_instance = client.CoreV1Api()
+        api_instance.delete_namespaced_pod(
+            DefaultInsightsServiceName,
+            DefaultSeldonSystemNamespace)
+        api_instance.delete_namespaced_service(
+            DefaultInsightsServiceName,
+            DefaultSeldonSystemNamespace)
+
+    def deploy_insights_message_dumper(self):
+        self.create_k8s_client()
+        api_instance = client.CoreV1Api()
+
+        try:
+            existing = api_instance.read_namespaced_pod(
+                DefaultInsightsServiceName,
+                DefaultSeldonSystemNamespace,
+            )
+        except ApiException as e:
+            if e.status != 404:
+                raise e
+
+        k8s_pod_spec = {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": DefaultInsightsServiceName,
+                "labels": { "app": DefaultInsightsServiceName, },
+            },
+            "spec": {
+                "containers": [ {
+                    "name": "default",
+                    "image": DefaultInsightsImage,
+                    "ports": [ { "containerPort": DefaultInsightsPort } ]
+                } ]
+            }
+        }
+        logger.debug(f"Creating kubernetes insights manager pod: {k8s_pod_spec}")
+        api_instance.create_namespaced_pod(
+            DefaultSeldonSystemNamespace,
+            k8s_pod_spec)
+
+        k8s_svc_spec = {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "name": DefaultInsightsServiceName,
+            },
+            "spec": {
+                "selector": { "app": DefaultInsightsServiceName },
+                "ports": [ {
+                    "port": DefaultInsightsPort,
+                    "targetPort": DefaultInsightsPort,
+                } ],
+            }
+        }
+        logger.debug(f"Creating kubernetes insights manager pod: {k8s_svc_spec}")
+        api_instance.create_namespaced_service(
+            DefaultSeldonSystemNamespace,
+            k8s_svc_spec)
 
     def deploy_spec(self, model_spec: ModelSpec):
         self.create_k8s_client()

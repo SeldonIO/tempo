@@ -5,9 +5,9 @@ from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.base import ModelSpec
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
-from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions
+from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions, DockerOptions, KubernetesOptions
 from tempo.serve.runtime import ModelSpec
-from tempo.serve.constants import DefaultInsightsLocalEndpoint, DefaultInsightsDockerEndpoint
+from tempo.serve.constants import DefaultInsightsLocalEndpoint, DefaultInsightsDockerEndpoint, DefaultInsightsK8sEndpoint
 from tempo.utils import logger
 
 DefaultHTTPPort = "9000"
@@ -21,7 +21,10 @@ def get_container_spec(model_details: ModelSpec) -> dict:
     runtime_options = model_details.runtime_options.copy(deep=True)
     # Override if provided endpoint is the default so it works inside container
     if runtime_options.insights_options.worker_endpoint in [DefaultInsightsLocalEndpoint, ""]:
-        runtime_options.insights_options.worker_endpoint = DefaultInsightsDockerEndpoint
+        if runtime_options.runtime == KubernetesOptions().defaultRuntime:
+            runtime_options.insights_options.worker_endpoint = DefaultInsightsK8sEndpoint
+        else:
+            runtime_options.insights_options.worker_endpoint = DefaultInsightsDockerEndpoint
     if (
         model_details.model_details.platform == ModelFramework.TempoPipeline
         or model_details.model_details.platform == ModelFramework.Custom
@@ -91,7 +94,6 @@ class _V2ContainerFactory:
             "image": cls.MLServerImage,
             "environment": env,
         }
-
 
 class KubernetesSpec:
     Implementations = {

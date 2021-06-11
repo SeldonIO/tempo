@@ -18,7 +18,11 @@ ENV_TEMPO_RUNTIME_OPTIONS = "TEMPO_RUNTIME_OPTIONS"
 
 DefaultInsightsServiceName = "insights-dumper"
 DefaultInsightsPort = 8080
+# TODO: Build our own tempo message dumper image
+DefaultInsightsImage = "mendhak/http-https-echo:18"
+
 DefaultInsightsLocalEndpoint = "http://0.0.0.0:8080"
 DefaultInsightsDockerEndpoint = f"http://{DefaultInsightsServiceName}:8080"
-DefaultInsightsImage = "mendhak/http-https-echo:18"
+DefaultSeldonSystemNamespace = "seldon-system"
+DefaultInsightsK8sEndpoint = f"http://{DefaultInsightsServiceName}.{DefaultSeldonSystemNamespace}:8080"
 
