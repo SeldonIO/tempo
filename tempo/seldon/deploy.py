@@ -56,7 +56,7 @@ class SeldonDeployRuntime(Runtime, Remote):
         if settings.auth_type == SeldonDeployAuthType.session_cookie:
             auth = SessionAuthenticator(config)
             # TODO can we use just cookie_str in API client
-            cookie_str = auth.authenticate(settings.user, settings.password)
+            cookie_str = auth.authenticate()
             ckies: cookies.SimpleCookie = cookies.SimpleCookie()
             ckies.load(cookie_str)
             token = ckies["authservice_session"].value
@@ -68,8 +68,10 @@ class SeldonDeployRuntime(Runtime, Remote):
                 os.environ["CURL_CA_BUNDLE"] = ""
             config.oidc_client_id = settings.oidc_client_id
             config.oidc_server = settings.oidc_server
+            config.username = settings.user
+            config.password = settings.password
             auth = OIDCAuthenticator(config)
-            config.access_token = auth.authenticate(settings.user, settings.password)
+            config.access_token = auth.authenticate()
             api_client = ApiClient(config)
             self.api_client = api_client
         else:
