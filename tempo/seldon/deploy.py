@@ -16,8 +16,7 @@ from seldon_deploy_sdk.models.seldon_deployment_spec import SeldonDeploymentSpec
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.specs import KubernetesSpec
-from tempo.serve.base import Remote, RemoteModel
-from tempo.serve.runtime import ModelSpec, Runtime
+from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 
 
 class SeldonDeployAuthType(Enum):
@@ -35,9 +34,9 @@ class SeldonDeployConfig(BaseModel):
     oidc_server: str
     verify_ssl: bool = True
 
-
-class SeldonDeployRuntime(Runtime, Remote):
-    def list_models(self) -> Sequence[RemoteModel]:
+#FIXME: Needs updating for runtime options to include SeldonDeployConfig
+class SeldonDeployRuntime(Runtime):
+    def list_models(self) -> Sequence[DeployedModel]:
         pass
 
     def __init__(self):

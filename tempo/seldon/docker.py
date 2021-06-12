@@ -9,20 +9,20 @@ from docker.errors import NotFound
 from docker.models.containers import Container
 
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
-from tempo.serve.base import Remote, RemoteModel
+from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.metadata import RuntimeOptions
-from tempo.serve.runtime import ModelSpec, Runtime
 
 DefaultNetworkName = "tempo"
 
 
-class SeldonDockerRuntime(Runtime, Remote):
-    def list_models(self) -> Sequence[RemoteModel]:
+class SeldonDockerRuntime(Runtime):
+    def list_models(self) -> Sequence[DeployedModel]:
         pass
 
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
-        if runtime_options:
-            runtime_options.runtime = "tempo.seldon.SeldonDockerRuntime"
+        if runtime_options is None:
+            runtime_options = RuntimeOptions()
+        runtime_options.runtime = "tempo.seldon.SeldonDockerRuntime"
         super().__init__(runtime_options)
 
     def _get_host_ip_port(self, model_details: ModelSpec) -> Tuple[str, str]:

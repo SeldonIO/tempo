@@ -4,7 +4,7 @@ import numpy as np
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
-from tempo.serve.runtime import ModelSpec
+from tempo.serve.base import ModelSpec
 
 
 def test_model_data_arg():

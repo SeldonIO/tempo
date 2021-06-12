@@ -12,10 +12,9 @@ from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
-from tempo.serve.base import Remote, RemoteModel
+from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
-from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
 
@@ -34,10 +33,11 @@ Implementations = {
 }
 
 
-class KFServingKubernetesRuntime(Runtime, Remote):
+class KFServingKubernetesRuntime(Runtime):
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
-        if runtime_options:
-            runtime_options.runtime = "tempo.kfserving.KFServingKubernetesRuntime"
+        if runtime_options is None:
+            runtime_options = RuntimeOptions()
+        runtime_options.runtime = "tempo.kfserving.KFServingKubernetesRuntime"
         super().__init__(runtime_options)
 
     def _inside_cluster(self):
@@ -247,7 +247,7 @@ class KFServingKubernetesRuntime(Runtime, Remote):
         d = self._get_spec(model_spec)
         return yaml.safe_dump(d)
 
-    def list_models(self, namespace: Optional[str] = None) -> Sequence[RemoteModel]:
+    def list_models(self, namespace: Optional[str] = None) -> Sequence[DeployedModel]:
         self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
 

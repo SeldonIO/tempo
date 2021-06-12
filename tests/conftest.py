@@ -87,7 +87,7 @@ def custom_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline(sklearn_model: Model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
+def inference_pipeline(sklearn_model, xgboost_model: Model, pipeline_conda_yaml: str) -> Pipeline:
     @pipeline(
         name="inference-pipeline",
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
@@ -117,7 +117,7 @@ def cifar10_model() -> Model:
 
 
 @pytest.fixture
-def inference_pipeline_class(sklearn_model: Model, xgboost_model: Model):
+def inference_pipeline_class(sklearn_model, xgboost_model: Model):
     @pipeline(
         name="mypipeline",
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),

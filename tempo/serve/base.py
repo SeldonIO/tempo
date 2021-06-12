@@ -9,7 +9,10 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Type
 
 import numpy as np
 import requests
+from pydantic import validator
+import pydantic
 
+from .typing import fullname
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
 from ..utils import logger
@@ -18,7 +21,6 @@ from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilenam
 from .loader import load_custom, save_custom, save_environment
 from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
-from .runtime import ModelSpec, Runtime
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 
 
@@ -181,30 +183,39 @@ class BaseModel:
 
         return response_converted
 
-    def _get_model_spec(self) -> ModelSpec:
+    def _get_model_spec(self, runtime: Optional[Runtime]) -> ModelSpec:
         if self.runtime_options_override:
             return ModelSpec(
                 model_details=self.model_spec.model_details,
                 protocol=self.model_spec.protocol,
                 runtime_options=self.runtime_options_override,
             )
+        elif runtime is not None:
+            return ModelSpec(
+                model_details=self.model_spec.model_details,
+                protocol=self.model_spec.protocol,
+                runtime_options=runtime.runtime_options,
+            )
         else:
             return self.model_spec
 
-    def _create_remote(self, model_spec: ModelSpec) -> Remote:
+    def _create_remote(self, model_spec: ModelSpec) -> Runtime:
         cls_path = model_spec.runtime_options.runtime
         if cls_path is None:
             if settings.use_kubernetes or os.getenv(ENV_K8S_SERVICE_HOST):
-                cls_path = model_spec.runtime_options.k8s_options.defaultRuntime
+                cls_path = model_spec.runtime_options.k8s_options.runtime
             else:
-                cls_path = model_spec.runtime_options.docker_options.defaultRuntime
+                cls_path = model_spec.runtime_options.docker_options.runtime
         logger.debug("Using remote class %s", cls_path)
         cls: Any = locate(cls_path)
         return cls()
 
     def remote(self, *args, **kwargs):
         # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
-        model_spec = self._get_model_spec()
+        model_spec = self._get_model_spec(None)
+        return self.remote_with_spec(model_spec, *args, **kwargs)
+
+    def remote_with_spec(self, model_spec: ModelSpec, *args, **kwargs):
         remoter = self._create_remote(model_spec)
         prot = model_spec.protocol
         ingress_options = model_spec.runtime_options.ingress_options
@@ -222,29 +233,29 @@ class BaseModel:
         return prot.from_protocol_response(response_json, output_schema)
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
-        return runtime.wait_ready_spec(self._get_model_spec(), timeout_secs=timeout_secs)
+        return runtime.wait_ready_spec(self._get_model_spec(runtime), timeout_secs=timeout_secs)
 
     def get_endpoint(self, runtime: Runtime):
-        return runtime.get_endpoint_spec(self._get_model_spec())
+        return runtime.get_endpoint_spec(self._get_model_spec(runtime))
 
     def to_k8s_yaml(self, runtime: Runtime) -> str:
         """
         Get k8s yaml
         """
 
-        return runtime.to_k8s_yaml_spec(self._get_model_spec())
+        return runtime.to_k8s_yaml_spec(self._get_model_spec(runtime))
 
     def deploy(self, runtime: Runtime):
         # self.set_runtime(runtime)
-        runtime.deploy_spec(self._get_model_spec())
+        runtime.deploy_spec(self._get_model_spec(runtime))
 
     def undeploy(self, runtime: Runtime):
         # self.unset_runtime()
         logger.info("Undeploying %s", self.details.name)
-        runtime.undeploy_spec(self._get_model_spec())
+        runtime.undeploy_spec(self._get_model_spec(runtime))
 
     def serialize(self) -> str:
-        return self._get_model_spec().json()
+        return self._get_model_spec(None).json()
 
     def get_tempo(self) -> BaseModel:
         return self
@@ -259,7 +270,7 @@ class BaseModel:
         return self._user_func(*args, **kwargs)
 
 
-class RemoteModel(BaseModel):
+class DeployedModel(BaseModel):
     def __init__(self, model_spec: ModelSpec):
         super().__init__(model_spec.model_details.name, model_spec=model_spec)
 
@@ -272,10 +283,84 @@ class RemoteModel(BaseModel):
         pass
 
 
-class Remote(abc.ABC):
+class ModelSpec(pydantic.BaseModel):
+
+    model_details: ModelDetails
+    protocol: Protocol
+    runtime_options: RuntimeOptions
+
+    @validator("protocol", pre=True)
+    def ensure_type(cls, v):
+        if isinstance(v, str):
+            klass = locate(v)
+            return klass()
+        else:
+            return v
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            Protocol: lambda v: fullname(v),
+            type: lambda v: v.__module__ + "." + v.__name__,
+        }
+
+
+class Deployer(object):
     def __init__(self, runtime_options: Optional[RuntimeOptions]):
         self.runtime_options = runtime_options
 
+    def deploy(self, model: Any):
+        t = model.get_tempo()
+        t.set_runtime_options_override(self.runtime_options)
+        t.deploy(self)
+
+    def undeploy(self, model: Any):
+        t = model.get_tempo()
+        t.set_runtime_options_override(self.runtime_options)
+        t.undeploy(self)
+
+    def get_endpoint(self, model: Any):
+        t = model.get_tempo()
+        t.set_runtime_options_override(self.runtime_options)
+        return t.get_endpoint(self)
+
+    def wait_ready(self, model: Any, timeout_secs=None):
+        t = model.get_tempo()
+        t.set_runtime_options_override(self.runtime_options)
+        t.wait_ready(self, timeout_secs)
+
+    def to_k8s_yaml(self, model: Any):
+        t = model.get_tempo()
+        t.set_runtime_options_override(self.runtime_options)
+        return t.to_k8s_yaml(self)
+
+
+class Runtime(abc.ABC, Deployer):
     @abc.abstractmethod
-    def list_models(self) -> Sequence[RemoteModel]:
+    def deploy_spec(self, model_spec: ModelSpec):
+        pass
+
+    # TODO change to undeploy_model
+    @abc.abstractmethod
+    def undeploy_spec(self, model_spec: ModelSpec):
+        pass
+
+    @abc.abstractmethod
+    def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
+        pass
+
+    def get_headers(self, model_spec: ModelSpec) -> Dict[str, str]:
+        return {}
+
+    @abc.abstractmethod
+    def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
+        pass
+
+    # TODO change to to_yaml
+    @abc.abstractmethod
+    def to_k8s_yaml_spec(self, model_spec: ModelSpec) -> str:
+        pass
+
+    @abc.abstractmethod
+    def list_models(self) -> Sequence[DeployedModel]:
         pass

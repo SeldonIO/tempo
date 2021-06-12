@@ -28,7 +28,7 @@ class _AsyncMixin:
 
     async def remote(self, *args, **kwargs):
         # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
-        model_spec = self._get_model_spec()
+        model_spec = self._get_model_spec(None)
         remoter = self._create_remote(model_spec)
         prot = model_spec.protocol
         ingress_options = model_spec.runtime_options.ingress_options

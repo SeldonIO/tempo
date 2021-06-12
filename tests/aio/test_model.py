@@ -24,7 +24,7 @@ async def test_model(custom_model: Model):
     assert res == payload.sum(keepdims=True)
 
 
-async def test_model_remote(sklearn_model: Model):
+async def test_model_remote(sklearn_model):
     time.sleep(2)
 
     x_input = np.array([[1, 2, 3, 4]])

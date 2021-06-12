@@ -4,7 +4,7 @@ from typing import Any
 
 import attr
 
-from tempo.serve.runtime import ModelSpec
+from tempo.serve.base import ModelSpec
 
 
 @attr.s(auto_attribs=True)

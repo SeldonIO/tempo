@@ -74,17 +74,17 @@ class ModelDetails(BaseModel):
 
 
 class KubernetesOptions(BaseModel):
+    runtime: str = "tempo.seldon.SeldonKubernetesRuntime"
     replicas: int = 1
     namespace = "default"
     minReplicas: Optional[int] = None
     maxReplicas: Optional[int] = None
     authSecretName: Optional[str] = None
     serviceAccountName: Optional[str] = None
-    defaultRuntime: str = "tempo.seldon.SeldonKubernetesRuntime"
 
 
 class DockerOptions(BaseModel):
-    defaultRuntime: str = "tempo.seldon.SeldonDockerRuntime"
+    runtime: str = "tempo.seldon.SeldonDockerRuntime"
 
 
 class IngressOptions(BaseModel):
@@ -94,7 +94,7 @@ class IngressOptions(BaseModel):
 
 
 class RuntimeOptions(BaseModel):
-    runtime: Optional[str] = None
+    runtime: Optional[str] = "tempo.seldon.SeldonDockerRuntime"
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
     ingress_options: IngressOptions = IngressOptions()
