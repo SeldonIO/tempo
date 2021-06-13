@@ -1,6 +1,7 @@
 import logging
 import os
 
+
 def _get_logger():
     logger = logging.getLogger("tempo")
     logger.setLevel(logging.INFO)

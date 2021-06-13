@@ -7,7 +7,11 @@ from tempo.serve.base import ModelSpec
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions, DockerOptions, KubernetesOptions
 from tempo.serve.runtime import ModelSpec
-from tempo.serve.constants import DefaultInsightsLocalEndpoint, DefaultInsightsDockerEndpoint, DefaultInsightsK8sEndpoint
+from tempo.serve.constants import (
+    DefaultInsightsLocalEndpoint,
+    DefaultInsightsDockerEndpoint,
+    DefaultInsightsK8sEndpoint,
+)
 from tempo.utils import logger
 
 DefaultHTTPPort = "9000"
@@ -96,6 +100,7 @@ class _V2ContainerFactory:
             "image": cls.MLServerImage,
             "environment": env,
         }
+
 
 class KubernetesSpec:
     Implementations = {

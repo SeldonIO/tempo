@@ -1,4 +1,3 @@
-
 import requests
 import os
 import json
@@ -8,15 +7,17 @@ import janus
 import threading
 from ..utils import logger
 
+
 async def start_worker(
     q_in: janus.Queue,
     worker_endpoint: str,
     parallelism: int = 1,
-    batch_size: int = 1, # TODO
-    retries: int = 3, # TODO
-    window_time: int = None, # TODO
+    batch_size: int = 1,  # TODO
+    retries: int = 3,  # TODO
+    window_time: int = None,  # TODO
 ):
     logger.debug("Insights Worker Starting Requests Functions")
+
     async def _start_request_worker():
         async with aiohttp.ClientSession() as session:
             while True:
@@ -31,12 +32,13 @@ async def start_worker(
     logger.debug("Insights Worker Waiting for worker tasks")
     await asyncio.gather(*asyncio.all_tasks())
 
+
 def start_insights_worker_from_async(
     worker_endpoint: str,
     parallelism: int = 1,
-    batch_size: int = 1, # TODO
-    retries: int = 3, # TODO
-    window_time: int = None, # TODO
+    batch_size: int = 1,  # TODO
+    retries: int = 3,  # TODO
+    window_time: int = None,  # TODO
 ) -> janus.Queue:
 
     queue = janus.Queue()
@@ -55,13 +57,14 @@ def start_insights_worker_from_async(
 
     return queue.async_q
 
+
 def sync_init_loop_queue(
-        event,
-        worker_endpoint,
-        parallelism,
-        batch_size,
-        retries,
-        window_time,
+    event,
+    worker_endpoint,
+    parallelism,
+    batch_size,
+    retries,
+    window_time,
 ):
     async def inner_loop():
         event.queue = janus.Queue()
@@ -78,6 +81,7 @@ def sync_init_loop_queue(
 
     asyncio.run(inner_loop())
 
+
 def start_insights_worker_from_sync(
     worker_endpoint: str = "",
     batch_size: int = 1,
@@ -86,7 +90,6 @@ def start_insights_worker_from_sync(
     output_file_path: str = None,
     window_time: int = None,
 ) -> janus.Queue:
-
 
     event = threading.Event()
     args = (
@@ -102,9 +105,8 @@ def start_insights_worker_from_sync(
     thread.start()
     event.wait()
 
-    queue = event.queue # pylint: disable=no-member
+    queue = event.queue  # pylint: disable=no-member
 
     logger.debug("Insights Worker successful creation worker from sync")
 
     return queue.sync_q
-

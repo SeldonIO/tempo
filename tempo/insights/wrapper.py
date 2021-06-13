@@ -1,6 +1,4 @@
-
 class InsightsWrapper:
-
     def __init__(self, manager):
         self.set_log_request = False
         self.set_log_response = False
@@ -14,5 +12,3 @@ class InsightsWrapper:
 
     def log_response(self):
         self.set_log_response = True
-
-

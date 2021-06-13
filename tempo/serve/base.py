@@ -17,7 +17,13 @@ from ..conf import settings
 from ..errors import UndefinedCustomImplementation
 from ..utils import logger
 from .args import infer_args, process_datatypes
-from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename, DefaultInsightsLocalEndpoint
+from .constants import (
+    ENV_K8S_SERVICE_HOST,
+    DefaultCondaFile,
+    DefaultEnvFilename,
+    DefaultModelFilename,
+    DefaultInsightsLocalEndpoint,
+)
 from .loader import load_custom, save_custom, save_environment
 from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
