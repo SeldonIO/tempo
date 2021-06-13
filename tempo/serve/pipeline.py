@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 from typing import Any, Callable, Optional
 
-from tempo.serve.base import BaseModel, Runtime, ModelSpec
+from tempo.serve.base import BaseModel, Runtime
 from tempo.serve.metadata import ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
 from tempo.serve.protocol import Protocol

@@ -1,18 +1,18 @@
-from typing import Any
-from tempo.serve.base import Runtime, BaseModel, ModelSpec
-from tempo.serve.metadata import RuntimeOptions
 from pydoc import locate
+from typing import Any
+
+from tempo.serve.base import BaseModel, ModelSpec, Runtime
+from tempo.serve.metadata import RuntimeOptions
 
 
 class RemoteModel:
-
     def __init__(self, model: Any, runtime: Runtime):
-        self.model:BaseModel = model.get_tempo()
+        self.model: BaseModel = model.get_tempo()
         self.runtime = runtime
         self.model_spec = ModelSpec(
             model_details=self.model.model_spec.model_details,
             protocol=self.model.model_spec.protocol,
-            runtime_options=self.runtime.runtime_options
+            runtime_options=self.runtime.runtime_options,
         )
 
     def deploy(self):

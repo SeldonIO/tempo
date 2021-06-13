@@ -1,7 +1,6 @@
 import numpy as np
 
 from tempo.aio.model import Model
-from tempo.aio.pipeline import Pipeline
 from tempo.serve.loader import load, save
 
 

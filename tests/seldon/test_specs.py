@@ -1,9 +1,7 @@
-from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec, get_container_spec
-from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
-from tempo.serve.model import Model
 from tempo.serve.base import ModelSpec
+from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 
 
 def test_kubernetes_spec(sklearn_model):

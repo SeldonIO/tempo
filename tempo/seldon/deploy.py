@@ -34,7 +34,8 @@ class SeldonDeployConfig(BaseModel):
     oidc_server: str
     verify_ssl: bool = True
 
-#FIXME: Needs updating for runtime options to include SeldonDeployConfig
+
+# FIXME: Needs updating for runtime options to include SeldonDeployConfig
 class SeldonDeployRuntime(Runtime):
     def list_models(self) -> Sequence[DeployedModel]:
         pass

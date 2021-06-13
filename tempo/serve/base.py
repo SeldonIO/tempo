@@ -8,11 +8,10 @@ from types import SimpleNamespace
 from typing import Any, Dict, Optional, Sequence, Tuple, Type
 
 import numpy as np
+import pydantic
 import requests
 from pydantic import validator
-import pydantic
 
-from .typing import fullname
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
 from ..utils import logger
@@ -22,6 +21,7 @@ from .loader import load_custom, save_custom, save_environment
 from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
+from .typing import fullname
 
 
 class BaseModel:

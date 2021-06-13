@@ -2,8 +2,8 @@ import os
 
 from kubernetes import client, config
 
-from tempo.serve.ingress import create_ingress
 from tempo.serve.base import ModelSpec
+from tempo.serve.ingress import create_ingress
 from tempo.utils import logger
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"

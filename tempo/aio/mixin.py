@@ -3,8 +3,10 @@ from typing import Any, Dict
 
 import aiohttp
 
-from ..errors import InvalidUserFunction, UndefinedCustomImplementation
 from tempo.serve.base import ModelSpec
+
+from ..errors import InvalidUserFunction, UndefinedCustomImplementation
+
 
 class _AsyncMixin:
     def __init__(self):
@@ -27,7 +29,7 @@ class _AsyncMixin:
         return self._client_session
 
     async def remote_with_spec(self, model_spec: ModelSpec, *args, **kwargs):
-        remoter = self._create_remote(model_spec)
+        remoter = self._create_remote(model_spec)  # type: ignore
         prot = model_spec.protocol
         ingress_options = model_spec.runtime_options.ingress_options
 

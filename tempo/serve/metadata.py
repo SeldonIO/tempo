@@ -94,7 +94,7 @@ class IngressOptions(BaseModel):
 
 
 class RuntimeOptions(BaseModel):
-    runtime: Optional[str] = "tempo.seldon.SeldonDockerRuntime"
+    runtime: str = "tempo.seldon.SeldonDockerRuntime"
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
     ingress_options: IngressOptions = IngressOptions()

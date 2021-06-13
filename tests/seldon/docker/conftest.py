@@ -6,13 +6,15 @@ import pytest
 
 from tempo import Model, Pipeline
 from tempo.seldon import SeldonDockerRuntime
+from tempo.serve.deploy import RemoteModel, deploy
 from tempo.serve.loader import save
 from tempo.serve.metadata import RuntimeOptions
-from tempo.serve.deploy import deploy, RemoteModel
+
 
 @pytest.fixture
 def runtime() -> SeldonDockerRuntime:
     return SeldonDockerRuntime(RuntimeOptions())
+
 
 @pytest.fixture
 def sklearn_model_deployed(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generator[RemoteModel, None, None]:
@@ -27,8 +29,11 @@ def sklearn_model_deployed(sklearn_model: Model, runtime: SeldonDockerRuntime) -
         # Ignore if the model has already been undeployed
         pass
 
+
 @pytest.fixture
-def sklearn_model_deployed_with_runtime(sklearn_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
+def sklearn_model_deployed_with_runtime(
+    sklearn_model: Model, runtime: SeldonDockerRuntime
+) -> Generator[Model, None, None]:
     runtime.deploy(sklearn_model)
     runtime.wait_ready(sklearn_model, timeout_secs=60)
 
@@ -58,7 +63,9 @@ def xgboost_model_deployed(xgboost_model: Model, runtime: SeldonDockerRuntime) -
 
 
 @pytest.fixture
-def cifar10_model_deployed_with_runtime(cifar10_model: Model, runtime: SeldonDockerRuntime) -> Generator[Model, None, None]:
+def cifar10_model_deployed_with_runtime(
+    cifar10_model: Model, runtime: SeldonDockerRuntime
+) -> Generator[Model, None, None]:
     runtime.deploy(cifar10_model)
     runtime.wait_ready(cifar10_model, timeout_secs=60)
 
@@ -87,6 +94,7 @@ def inference_pipeline_deployed(
         # TODO: Should undeploy be idempotent as well?
         # Ignore if the model has already been undeployed
         pass
+
 
 @pytest.fixture
 def inference_pipeline_deployed_with_runtime(

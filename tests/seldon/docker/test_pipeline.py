@@ -1,12 +1,11 @@
-import docker
 import numpy as np
 import pytest
 import yaml
 
 from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.base import DeployedModel
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.pipeline import Pipeline
-from tempo.serve.base import DeployedModel
 
 
 def test_conda_yaml(pipeline_conda_yaml):
@@ -19,7 +18,7 @@ def test_conda_yaml(pipeline_conda_yaml):
 
 
 def test_deploy_pipeline_docker(
-        inference_pipeline_deployed_with_runtime,
+    inference_pipeline_deployed_with_runtime,
     runtime: SeldonDockerRuntime,
 ):
     for model in inference_pipeline_deployed_with_runtime.models.values():

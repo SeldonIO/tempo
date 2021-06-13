@@ -1,7 +1,7 @@
 from kubernetes import client, config
 
-from tempo.serve.ingress import Ingress
 from tempo.serve.base import ModelSpec
+from tempo.serve.ingress import Ingress
 
 
 class IstioIngress(Ingress):

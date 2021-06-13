@@ -56,7 +56,7 @@ def custom_model() -> Model:
 
 @pytest.fixture
 def inference_pipeline(
-        sklearn_model, runtime: SeldonDockerRuntime, pipeline_conda_yaml: str
+    sklearn_model, runtime: SeldonDockerRuntime, pipeline_conda_yaml: str
 ) -> Generator[Pipeline, None, None]:
     @pipeline(
         name="inference-pipeline",

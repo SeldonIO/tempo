@@ -4,8 +4,6 @@ from kubernetes import client
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.serve.metadata import RuntimeOptions
-from tempo.serve.model import Model
-from tempo.serve.pipeline import Pipeline
 
 
 def test_create_k8s_runtime():
@@ -14,7 +12,7 @@ def test_create_k8s_runtime():
     assert rt.runtime_options.runtime == "tempo.seldon.SeldonKubernetesRuntime"
 
 
-#@pytest.mark.skip(reason="needs k8s cluster")
+@pytest.mark.skip(reason="needs k8s cluster")
 def test_deploy_k8s(sklearn_model, runtime: SeldonKubernetesRuntime):
     crd_api = client.CustomObjectsApi()
     sdep = crd_api.get_namespaced_custom_object(
