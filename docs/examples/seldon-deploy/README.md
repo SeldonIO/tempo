@@ -166,25 +166,28 @@ Here we test our models using production images but running locally on Docker. T
 
 
 ```python
-from tempo import deploy
-rm = deploy(explainer)
+from tempo.seldon import SeldonDockerRuntime
+
+docker_runtime = SeldonDockerRuntime()
+docker_runtime.deploy(explainer)
+docker_runtime.wait_ready(explainer)
 ```
 
 
 ```python
-r = json.loads(rm.predict(payload=data.X_test[0:1], parameters={"threshold":0.90}))
+r = json.loads(explainer(payload=data.X_test[0:1], parameters={"threshold":0.90}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-r = json.loads(rm.predict(payload=data.X_test[0:1], parameters={"threshold":0.99}))
+r = json.loads(explainer.predict(payload=data.X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-rm.undeploy()
+docker_runtime.undeploy(explainer)
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -219,9 +222,9 @@ tempo.upload(explainer)
 
 
 ```python
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+
+runtime_options = RuntimeOptions(
         k8s_options=KubernetesOptions(
             namespace="production",
             authSecretName="minio-secret"
@@ -231,19 +234,22 @@ runtime_options = SeldonCoreOptions(
 
 
 ```python
-from tempo import deploy
-rm = deploy(explainer, options=runtime_options)
+from tempo.seldon.k8s import SeldonKubernetesRuntime
+
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+k8s_runtime.deploy(explainer)
+k8s_runtime.wait_ready(explainer)
 ```
 
 
 ```python
-r = json.loads(rm.predict(payload=data.X_test[0:1], parameters={"threshold":0.95}))
+r = json.loads(explainer.predict(payload=data.X_test[0:1], parameters={"threshold":0.95}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-rm.undeploy()
+k8s_runtime.undeploy(explainer)
 ```
 
 ## Production Option 2 (Gitops)
@@ -256,7 +262,7 @@ rm.undeploy()
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-yaml_str = k8s_runtime.manifest(explainer)
+yaml_str = k8s_runtime.to_k8s_yaml(explainer)
 
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)

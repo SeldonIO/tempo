@@ -171,18 +171,28 @@ Once saved you can deploy your artifacts using a Runtime.
 
 ### Deploy to Docker
 
-The [SeldonDockerRuntime](../api/tempo.seldon.docker.html) can be used to deploy your pipeline to Docker as for example below taken from the [multi-model example](../examples/multi-model/README.html).
+By default tempo will deploy to Docker:
 
-```
-from tempo.seldon.docker import SeldonDockerRuntime
-docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(classifier)
-docker_runtime.wait_ready(classifier)
+```python
+from tempo import deploy
+rm = deploy(classifier)
 ```
 
-### Deploy to Kubernetes
+The returned RemoteModel can be used to get predictions:
 
-To run your pipelines and models remotely on a Kubernetes cluster you will need to upload those artifacts to remote bucket stores accesible from your Kubernetes cluster. For this we provide [upload](../api/tempo.serve.loader.html) methods that utilize rclone to achieve this. An example is shown below from our [multi-model example](../examples/multi-model/README.html):
+```python
+rm.predict(np.array([[1, 2, 3, 4]]))
+```
+
+And then undeploy:
+
+```python
+rm.undeploy()
+```
+
+### Deploy to Production
+
+To run your pipelines and models remotely in production you will need to upload those artifacts to remote bucket stores accesible from your Kubernetes cluster. For this we provide [upload](../api/tempo.serve.loader.html) methods that utilize rclone to achieve this. An example is shown below from our [multi-model example](../examples/multi-model/README.html):
 
 ```
 from tempo.serve.loader import upload
@@ -191,35 +201,45 @@ upload(xgboost_model)
 upload(classifier)
 ```
 
-Once uploaded you can run your pipelines you can deploy to Kubernetes in two main ways.
+Once uploaded you can run your pipelines you can deploy to production in two main ways.
 
-#### Deploy to Kubernetes Directly
+#### Update RuntimeOptions with the production runtime
 
 For Kubernetes you can use a Kubernetes Runtime such as [SeldonKubernetesRuntime](../api/tempo.seldon.k8s.html) or [KFServingKubernetesRuntime](../api/tempo.kfserving.k8s.html). 
 
 Create appropriate Kubernetes settings as shown below for your use case. This may require creating the appropriate RBAC to allow components to access the remote bucket storage.
 
 ```
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options = RuntimeOptions(
+from tempo.serve.metadata import KubernetesOptions
+from tempo.seldon.k8s import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(
         k8s_options=KubernetesOptions(
-            namespace="production",
+	    namespace="production",
             authSecretName="minio-secret"
-        )
-    )
+	)
+)	
 
 ```
 
-The you can deploy directly from tempo. In the example below using the [SeldonKubernetesRuntime](../api/tempo.seldon.k8s.html).
+Then you can deploy directly from tempo:
 
 ```
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-k8s_runtime.deploy(classifier)
-k8s_runtime.wait_ready(classifier)
+from tempo import deploy
+rm = deploy(classifier, options=runtime_options)
 ```
 
+And then call prediction as before:
 
-#### Deploy from YAML
+```python
+rm.predict(np.array([[1, 2, 3, 4]]))
+```
 
-Alternatively you can use GitOps principles and generate the appropriate yaml which can be stored on source control and updated via your production/devops continuous deployment process. For this Runtimes can implement `to_k8s_yaml` methods which can be later modified via Kustomize or other processes for production settings. For an example see the [multi-model example](../examples/multi-model/README.html).
+You can also undeploy:
+
+```python
+rm.undeploy()
+```
+
+#### GitOps
+
+Alternatively you can use GitOps principles and generate the appropriate yaml which can be stored on source control and updated via your production/devops continuous deployment process. For this Runtimes can implement the `manifest` method which can be later modified via Kustomize or other processes for production settings. For an example see the [multi-model example](../examples/multi-model/README.html).

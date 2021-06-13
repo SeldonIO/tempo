@@ -235,25 +235,15 @@ Here we test our models using production images but running locally on Docker. T
 
 
 ```python
-from tempo.seldon.docker import SeldonDockerRuntime
-
-docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(svc)
-docker_runtime.wait_ready(svc)
+from tempo import deploy
+rm = deploy(svc)
 ```
 
 
 ```python
 from src.utils import show_image
-
 show_image(data.X_test[0:1])
-svc(payload=data.X_test[0:1])
-```
-
-
-```python
-show_image(data.X_test[0:1])
-svc.remote(payload=data.X_test[0:1])
+rm.predict(payload=data.X_test[0:1])
 ```
 
 
@@ -262,12 +252,12 @@ from src.utils import create_cifar10_outlier
 
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
-svc.remote(payload=outlier_img)
+rm.predict(payload=outlier_img)
 ```
 
 
 ```python
-docker_runtime.undeploy(svc)
+rm.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -304,9 +294,9 @@ tempo.upload(svc)
 
 
 ```python
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-
-runtime_options = RuntimeOptions(
+from tempo.serve.metadata import KubernetesOptions
+from tempo.seldon.k8s import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(
         k8s_options=KubernetesOptions(
             namespace="production",
             authSecretName="minio-secret"
@@ -316,11 +306,8 @@ runtime_options = RuntimeOptions(
 
 
 ```python
-from tempo.seldon import SeldonKubernetesRuntime
-
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-k8s_runtime.deploy(svc)
-k8s_runtime.wait_ready(svc)
+from tempo import deploy
+rm = deploy(svc, options=runtime_options)
 ```
 
 
@@ -328,7 +315,7 @@ k8s_runtime.wait_ready(svc)
 from src.utils import show_image
 
 show_image(data.X_test[0:1])
-svc.remote(payload=data.X_test[0:1])
+rm.predict(payload=data.X_test[0:1])
 ```
 
 
@@ -337,12 +324,12 @@ from src.utils import create_cifar10_outlier
 
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
-svc.remote(payload=outlier_img)
+rm.predict(payload=outlier_img)
 ```
 
 
 ```python
-k8s_runtime.undeploy(svc)
+rm.undeploy()
 ```
 
 ## Production Option 2 (Gitops)
@@ -355,7 +342,7 @@ k8s_runtime.undeploy(svc)
 from tempo.seldon import SeldonKubernetesRuntime
 
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-yaml_str = k8s_runtime.to_k8s_yaml(svc)
+yaml_str = k8s_runtime.manifest(svc)
 
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
