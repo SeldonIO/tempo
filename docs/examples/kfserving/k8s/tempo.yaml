@@ -1,6 +1,24 @@
 apiVersion: serving.kubeflow.org/v1beta1
 kind: InferenceService
 metadata:
+  annotations:
+    seldon.io/tempo-description: A pipeline to use either an sklearn or xgboost model
+      for Iris classification
+    seldon.io/tempo-model: '{"model_details": {"name": "classifier", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/kfserving/artifacts/classifier",
+      "uri": "s3://tempo/basic/pipeline", "platform": "tempo", "inputs": {"args":
+      [{"ty": "numpy.ndarray", "name": "payload"}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+      "name": null}, {"ty": "builtins.str", "name": null}]}, "description": "A pipeline
+      to use either an sklearn or xgboost model for Iris classification"}, "protocol":
+      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+      "tempo.kfserving.KFServingKubernetesRuntime", "docker_options": {"runtime":
+      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime": "tempo.kfserving.KFServingKubernetesRuntime",
+      "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName": null,
+      "serviceAccountName": "kf-tempo", "namespace": "production"}, "ingress_options":
+      {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
+      true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: classifier
   namespace: production
 spec:
@@ -21,10 +39,10 @@ spec:
         value: /mnt/models
       - name: TEMPO_RUNTIME_OPTIONS
         value: '{"runtime": "tempo.kfserving.KFServingKubernetesRuntime", "docker_options":
-          {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas":
-          1, "minReplicas": null, "maxReplicas": null, "authSecretName": null, "serviceAccountName":
-          "kf-tempo", "defaultRuntime": "tempo.kfserving.KFServingKubernetesRuntime",
-          "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+          {"runtime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime":
+          "tempo.kfserving.KFServingKubernetesRuntime", "replicas": 1, "minReplicas":
+          null, "maxReplicas": null, "authSecretName": null, "serviceAccountName":
+          "kf-tempo", "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
           "ssl": false, "verify_ssl": true}}'
       image: seldonio/mlserver:0.3.1.dev7
       name: mlserver
@@ -34,6 +52,22 @@ spec:
 apiVersion: serving.kubeflow.org/v1beta1
 kind: InferenceService
 metadata:
+  annotations:
+    seldon.io/tempo-description: SKLearn Iris classification model
+    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-sklearn", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/kfserving/artifacts/sklearn",
+      "uri": "s3://tempo/basic/sklearn", "platform": "sklearn", "inputs": {"args":
+      [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+      "name": null}]}, "description": "SKLearn Iris classification model"}, "protocol":
+      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+      "tempo.kfserving.KFServingKubernetesRuntime", "docker_options": {"runtime":
+      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime": "tempo.kfserving.KFServingKubernetesRuntime",
+      "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName": null,
+      "serviceAccountName": "kf-tempo", "namespace": "production"}, "ingress_options":
+      {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
+      true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: test-iris-sklearn
   namespace: production
 spec:
@@ -47,6 +81,22 @@ spec:
 apiVersion: serving.kubeflow.org/v1beta1
 kind: InferenceService
 metadata:
+  annotations:
+    seldon.io/tempo-description: XGBoost Iris classification model
+    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-xgboost", "local_folder":
+      "/home/clive/work/mlops/fork-tempo/docs/examples/kfserving/artifacts/xgboost",
+      "uri": "s3://tempo/basic/xgboost", "platform": "xgboost", "inputs": {"args":
+      [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+      "name": null}]}, "description": "XGBoost Iris classification model"}, "protocol":
+      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+      "tempo.kfserving.KFServingKubernetesRuntime", "docker_options": {"runtime":
+      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime": "tempo.kfserving.KFServingKubernetesRuntime",
+      "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName": null,
+      "serviceAccountName": "kf-tempo", "namespace": "production"}, "ingress_options":
+      {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
+      true}}}'
+  labels:
+    seldon.io/tempo: 'true'
   name: test-iris-xgboost
   namespace: production
 spec:

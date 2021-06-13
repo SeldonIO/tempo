@@ -33,6 +33,10 @@ Implementations = {
 }
 
 
+class KFServingOptions(RuntimeOptions):
+    runtime: str = "tempo.kfserving.KFServingKubernetesRuntime"
+
+
 class KFServingKubernetesRuntime(Runtime):
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
         if runtime_options is None:
