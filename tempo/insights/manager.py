@@ -5,6 +5,9 @@ from ..utils import logger
 from ..serve.metadata import InsightRequestModes, DEFAULT_INSIGHTS_REQUEST_MODES
 
 class InsightsManager:
+    """
+    TODO
+    """
     def __init__(
             self,
             worker_endpoint: str = "",
@@ -23,23 +26,23 @@ class InsightsManager:
         )
         logger.info(f"Initialising Insights Manager with Args: {args}")
         if worker_endpoint:
-            #try:
-            #    asyncio.get_running_loop()
-            #except:
-            #    logger.debug("Initialising sync insights worker")
-            #    self._q = start_insights_worker_from_sync(*args)
-            #    def log(self, data):
-            #        self._q.put(data)
-            #    self.log = log.__get__(self, self.__class__) # pylint: disable=E1120,E1111
-            #    logger.debug("Sync worker set up")
-            #else:
-            #    logger.debug("Initialising async insights worker")
-            #    self._q = start_insights_worker_from_async(*args)
-            #    def log(self, data):
-            #        asyncio.create_task(self._q.put(data))
-            #    self.log = log.__get__(self, self.__class__)  # pylint: disable=E1120,E1111
-            #    logger.debug("Async worker set up")
-            self._q = start_insights_worker_from_sync(*args)
+            try:
+                self._loop = asyncio.get_running_loop()
+            except:
+                logger.debug("Initialising sync insights worker")
+                self._q = start_insights_worker_from_sync(*args)
+                def log(self, data):
+                    self._q.put(data)
+                self.log = log.__get__(self, self.__class__) # pylint: disable=E1120,E1111
+                logger.debug("Sync worker set up")
+            else:
+                logger.debug("Initialising async insights worker")
+                self._q = start_insights_worker_from_async(*args)
+                def log(self, data):
+                    logger.warning("Running inside async work")
+                    self._loop.create_task(self._q.put(data))
+                self.log = log.__get__(self, self.__class__)  # pylint: disable=E1120,E1111
+                logger.debug("Async worker set up")
         else:
             logger.info("Insights Manager not initialised as empty URL provided.")
 
@@ -47,9 +50,7 @@ class InsightsManager:
         """
         By default function doesn't have any logic unless an endpoint is provided.
         """
-        # TODO: move to uncommented
-        # pass
-        self._q.put(data)
+        logger.warning("Attempted to log parameter but called manager directly, see documentation [TODO]")
 
     def log_request(self): # pylint: disable=E0202
         """

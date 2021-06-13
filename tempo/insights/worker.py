@@ -16,19 +16,21 @@ async def start_worker(
     retries: int = 3, # TODO
     window_time: int = None, # TODO
 ):
-    logger.info("Insights Worker Starting Requests Functions")
+    logger.warning("Insights Worker Starting Requests Functions")
     async def _start_request_worker():
         async with aiohttp.ClientSession() as session:
+            logger.warning("Insights Worker starting loop")
             while True:
+                logger.warning("Waiting for data")
                 data = await q_in.get()
-                async with  session.post(worker_endpoint, json=data) as response:
+                async with session.post(worker_endpoint, json=data) as response:
                     text = await response.text()
                     q_in.task_done()
 
     for _ in range(parallelism):
         asyncio.create_task(_start_request_worker())
 
-    logger.info("Insights Worker Waiting for worker tasks")
+    logger.warning("Insights Worker Waiting for worker tasks")
     await asyncio.gather(*asyncio.all_tasks())
 
 def start_insights_worker_from_async(
@@ -39,11 +41,10 @@ def start_insights_worker_from_async(
     window_time: int = None, # TODO
 ) -> janus.Queue:
 
-    loop = asyncio.get_event_loop()
-
     queue = janus.Queue()
 
     args = (
+        queue.async_q,
         worker_endpoint,
         parallelism,
         batch_size,
@@ -52,7 +53,8 @@ def start_insights_worker_from_async(
     )
     logger.warning(f"Insights Worker starting insights worker from ASYNC with params {args}")
 
-    loop.create_task(start_worker(*args))
+    asyncio.create_task(start_worker(*args))
+
     return queue.async_q
 
 def sync_init_loop_queue(
@@ -104,7 +106,7 @@ def start_insights_worker_from_sync(
 
     queue = event.queue # pylint: disable=no-member
 
-    logger.info("Insights Worker successful creation worker from sync")
+    logger.warning("Insights Worker successful creation worker from sync")
 
     return queue.sync_q
 
