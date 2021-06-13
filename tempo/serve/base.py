@@ -6,6 +6,7 @@ import tempfile
 from pydoc import locate
 from types import SimpleNamespace
 from typing import Any, Dict, Optional, Sequence, Tuple, Type
+import contextvars
 
 import numpy as np
 import pydantic
@@ -85,6 +86,9 @@ class BaseModel:
             insights_params["worker_endpoint"] = DefaultInsightsLocalEndpoint
 
         self.insights = InsightsManager(**insights_params)
+        self.insights_manager = self.insights
+        self.insights_context = contextvars.ContextVar("insights_manager_local")
+        self.insights_context.set(self.insights)
 
         # K holds the wrapped class (if any)
         self._K: Optional[Type] = None
@@ -92,6 +96,13 @@ class BaseModel:
         # context represents internal context shared (optionally) between different
         # methods of the model (e.g. predict, loader, etc.)
         self.context = SimpleNamespace()
+
+    def set_insights_context(self, insights_context):
+        self.insights_context = insights_context
+
+    def insights_prop(self):
+        logger.warning("CALLING ORIGINAL PROP")
+        return self.insights_context.get()
 
     def set_remote(self, val: bool):
         self.use_remote = val
@@ -138,6 +149,8 @@ class BaseModel:
         state = self.__dict__.copy()
         state["context"] = SimpleNamespace()
         state["insights"] = SimpleNamespace()
+        state["insights_manager"] = SimpleNamespace()
+        state["insights_context"] = SimpleNamespace()
 
         return state
 

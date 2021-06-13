@@ -92,12 +92,25 @@ class IngressOptions(BaseModel):
     ssl: bool = False
     verify_ssl: bool = True
 
+class InsightRequestModes(Enum):
+    ALL = "ALL"
+    REQUEST = "REQUEST"
+    RESPONSE = "RESPONSE"
+    NONE = "NONE"
+
+DEFAULT_INSIGHTS_REQUEST_MODES = InsightRequestModes.NONE
+
 class InsightsOptions(BaseModel):
     worker_endpoint: str = ""
     batch_size: int = 1
     parallelism: int = 1
     retries: int = 3
     window_time: int = None
+    mode_type: InsightRequestModes = DEFAULT_INSIGHTS_REQUEST_MODES
+
+    class Config:
+        # Required to ensure enum json serialisation https://pydantic-docs.helpmanual.io/usage/model_config/
+        use_enum_values = True
 
 class RuntimeOptions(BaseModel):
     runtime: str = "tempo.seldon.SeldonDockerRuntime"

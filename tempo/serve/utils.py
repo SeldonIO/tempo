@@ -1,6 +1,7 @@
 import copy
 from inspect import getmembers, isclass, isfunction
 from typing import Any, Callable, Optional, Type
+from types import SimpleNamespace
 
 from ..kfserving.protocol import KFServingV2Protocol
 from .base import BaseModel
@@ -10,6 +11,7 @@ from .pipeline import Pipeline, PipelineModels
 from .protocol import Protocol
 from .types import ModelDataType
 from ..insights.manager import InsightsManager
+from tempo.utils import logger
 
 PredictMethodAttr = "_tempo_predict"
 LoadMethodAttr = "_tempo_load"
@@ -49,6 +51,7 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
 
     # Make copy of original __init__, so we can call it without recursion
     def __init__(self, *args, **kws):
+        logger.warning("RUNNINT INTERNAL INIT")
         # On __init__, copy pipeline object and update _user_func.
         # Class-level attributes mutate to instance-level attributes when
         # overriden.
@@ -59,6 +62,28 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
 
         # We bind _user_func so that `self` is passed implicitly
         instance_model._user_func = _bind(self, instance_model._user_func)
+
+        # The copy() function calls __getstate__ so we need to set insights as it's set to SimpleNamespace otheriwse
+        setattr(self, "insights", class_model.insights)
+        setattr(self, "insights_manager", class_model.insights_manager)
+        setattr(self, "insights_context", class_model.insights_context)
+        logger.warning(f"Setting objects {class_model.insights_context}")
+
+        if not hasattr(self, "insights_prop"):
+            logger.warning("ADDING INSIGHSTS PROP IN INSIDE INIT")
+
+            def insights_prop(self):
+                logger.warning("RUNNING INSIGHT PROP COPY")
+                if hasattr(self.insights_context, "get"):
+                    return self.insights_context.get()
+                else:
+                    logger.warning("INSIGHTS PROP CALLED BUT SIMPLE NS")
+                    return "nope"
+
+            self.insights_prop = _bind(self, insights_prop)
+
+        # We bind the __getstate__ function to the current object so it also is used when exporting the object
+        self.__getstate__ = _bind(self, class_model.__getstate__)
 
         # Bind back Tempo interface to make sure it points to instance referece
         _bind_tempo_interface(self, instance_model)
