@@ -22,11 +22,9 @@ from .insights.context import insights_context
 def _needs_init(model: BaseModel):
     is_class = model._K is not None
     has_annotation = hasattr(model._user_func, PredictMethodAttr)
-    # TODO: find out why this is required
-    # is_bound = hasattr(model._user_func, "__self__")
+    is_bound = hasattr(model._user_func, "__self__")
 
-    logger.warning(f"isclass {is_class} hasannot {has_annotation}")
-    return is_class and has_annotation# and not is_bound
+    return is_class and has_annotation and not is_bound
 
 
 class InferenceRuntime(MLModel):

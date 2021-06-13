@@ -1,11 +1,5 @@
 import logging
 import os
-import contextvars
-
-try:
-    insights_context
-except:
-    insights_context = contextvars.ContextVar("insights_manager", default=None)
 
 def _get_logger():
     logger = logging.getLogger("tempo")

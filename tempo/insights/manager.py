@@ -5,9 +5,6 @@ from ..utils import logger
 from ..serve.metadata import InsightRequestModes, DEFAULT_INSIGHTS_REQUEST_MODES
 
 class InsightsManager:
-    """
-    TODO
-    """
     def __init__(
             self,
             worker_endpoint: str = "",
@@ -52,12 +49,12 @@ class InsightsManager:
 
     def log_request(self): # pylint: disable=E0202
         """
-        TODO
+        By default function doesn't have any logic unless an endpoint is provided.
         """
         logger.warning("Attempted to log request but called manager directly, see documentation [TODO]")
 
     def log_response(self): # pylint: disable=E0202
         """
-        TODO
+        By default function doesn't have any logic unless an endpoint is provided.
         """
         logger.warning("Attempted to log response but called manager directly, see documentation [TODO]")
