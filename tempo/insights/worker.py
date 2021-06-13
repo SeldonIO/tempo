@@ -16,12 +16,10 @@ async def start_worker(
     retries: int = 3, # TODO
     window_time: int = None, # TODO
 ):
-    logger.warning("Insights Worker Starting Requests Functions")
+    logger.debug("Insights Worker Starting Requests Functions")
     async def _start_request_worker():
         async with aiohttp.ClientSession() as session:
-            logger.warning("Insights Worker starting loop")
             while True:
-                logger.warning("Waiting for data")
                 data = await q_in.get()
                 async with session.post(worker_endpoint, json=data) as response:
                     text = await response.text()
@@ -30,7 +28,7 @@ async def start_worker(
     for _ in range(parallelism):
         asyncio.create_task(_start_request_worker())
 
-    logger.warning("Insights Worker Waiting for worker tasks")
+    logger.debug("Insights Worker Waiting for worker tasks")
     await asyncio.gather(*asyncio.all_tasks())
 
 def start_insights_worker_from_async(
@@ -51,7 +49,7 @@ def start_insights_worker_from_async(
         retries,
         window_time,
     )
-    logger.warning(f"Insights Worker starting insights worker from ASYNC with params {args}")
+    logger.debug(f"Insights Worker starting insights worker from ASYNC with params {args}")
 
     asyncio.create_task(start_worker(*args))
 
@@ -99,14 +97,14 @@ def start_insights_worker_from_sync(
         retries,
         window_time,
     )
-    logger.warning(f"Insights Worker starting insights worker from sync with params {args}")
+    logger.debug(f"Insights Worker starting insights worker from sync with params {args}")
     thread = threading.Thread(target=sync_init_loop_queue, args=args)
     thread.start()
     event.wait()
 
     queue = event.queue # pylint: disable=no-member
 
-    logger.warning("Insights Worker successful creation worker from sync")
+    logger.debug("Insights Worker successful creation worker from sync")
 
     return queue.sync_q
 

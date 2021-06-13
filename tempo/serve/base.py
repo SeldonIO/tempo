@@ -24,6 +24,7 @@ from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from .typing import fullname
 from ..insights.manager import InsightsManager
+from ..insights.context import insights_context
 
 
 class BaseModel:
@@ -69,6 +70,9 @@ class BaseModel:
                 description=description,
             )
 
+            if isinstance(runtime_options, dict):
+                runtime_options = RuntimeOptions.parse_obj(runtime_options)
+
             self.model_spec = ModelSpec(
                 model_details=self.details,
                 protocol=protocol,
@@ -85,10 +89,7 @@ class BaseModel:
         if self.deploy_message_dumper:
             insights_params["worker_endpoint"] = DefaultInsightsLocalEndpoint
 
-        self.insights = InsightsManager(**insights_params)
-        self.insights_manager = self.insights
-        self.insights_context = contextvars.ContextVar("insights_manager_local")
-        self.insights_context.set(self.insights)
+        self.insights_manager = InsightsManager(**insights_params)
 
         # K holds the wrapped class (if any)
         self._K: Optional[Type] = None
@@ -96,13 +97,6 @@ class BaseModel:
         # context represents internal context shared (optionally) between different
         # methods of the model (e.g. predict, loader, etc.)
         self.context = SimpleNamespace()
-
-    def set_insights_context(self, insights_context):
-        self.insights_context = insights_context
-
-    def insights_prop(self):
-        logger.warning("CALLING ORIGINAL PROP")
-        return self.insights_context.get()
 
     def set_remote(self, val: bool):
         self.use_remote = val
@@ -148,9 +142,8 @@ class BaseModel:
         """
         state = self.__dict__.copy()
         state["context"] = SimpleNamespace()
-        state["insights"] = SimpleNamespace()
+        # Remove the insights manager from the cloudpickle context
         state["insights_manager"] = SimpleNamespace()
-        state["insights_context"] = SimpleNamespace()
 
         return state
 
@@ -234,6 +227,9 @@ class BaseModel:
         cls: Any = locate(cls_path)
         return cls()
 
+    def get_insights_mode(self) -> InsightRequestModes:
+        return self.model_spec.runtime_options.insights_options.mode_type
+
     def predict(self, *args, **kwargs):
         # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
         model_spec = self._get_model_spec(None)
@@ -290,6 +286,12 @@ class BaseModel:
 
         if self.use_remote:
             return self.predict(*args, **kwargs)
+
+        # When calling the method from outside mlserver the context is not set
+        # In this situation the context has to be set manually to the local created
+        if not insights_context.get():
+            logger.debug("Setting context to context for insights manager")
+            insights_context.set(self.insights_manager)
 
         return self._user_func(*args, **kwargs)
 
