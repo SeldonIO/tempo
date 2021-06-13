@@ -16,11 +16,15 @@ from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
 from tempo.serve.constants import (
-    DefaultInsightsServiceName,
-    DefaultInsightsPort,
+    ENV_K8S_SERVICE_HOST,
     DefaultInsightsImage,
+    DefaultInsightsPort,
+    DefaultInsightsServiceName,
     DefaultSeldonSystemNamespace,
 )
+from tempo.serve.metadata import RuntimeOptions
+from tempo.serve.stub import deserialize
+from tempo.utils import logger
 
 
 class SeldonCoreOptions(RuntimeOptions):

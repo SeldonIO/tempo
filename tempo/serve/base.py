@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import abc
+import contextvars
 import os
 import tempfile
 from pydoc import locate
 from types import SimpleNamespace
 from typing import Any, Dict, Optional, Sequence, Tuple, Type
-import contextvars
 
 import numpy as np
 import pydantic
@@ -15,14 +15,16 @@ from pydantic import validator
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
+from ..insights.context import insights_context
+from ..insights.manager import InsightsManager
 from ..utils import logger
 from .args import infer_args, process_datatypes
 from .constants import (
     ENV_K8S_SERVICE_HOST,
     DefaultCondaFile,
     DefaultEnvFilename,
-    DefaultModelFilename,
     DefaultInsightsLocalEndpoint,
+    DefaultModelFilename,
 )
 from .loader import load_custom, save_custom, save_environment
 from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions

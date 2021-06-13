@@ -6,11 +6,11 @@ from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.base import ModelSpec
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions, DockerOptions, KubernetesOptions
-from tempo.serve.runtime import ModelSpec
 from tempo.serve.constants import (
-    DefaultInsightsLocalEndpoint,
+    ENV_TEMPO_RUNTIME_OPTIONS,
     DefaultInsightsDockerEndpoint,
     DefaultInsightsK8sEndpoint,
+    DefaultInsightsLocalEndpoint,
 )
 from tempo.utils import logger
 

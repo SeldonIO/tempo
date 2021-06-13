@@ -8,12 +8,11 @@ from docker.client import DockerClient
 from docker.errors import NotFound
 from docker.models.containers import Container
 
-from tempo.utils import logger
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
+from tempo.serve.constants import DefaultInsightsImage, DefaultInsightsPort, DefaultInsightsServiceName
 from tempo.serve.metadata import RuntimeOptions
-from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.serve.constants import DefaultInsightsServiceName, DefaultInsightsPort, DefaultInsightsImage
+from tempo.utils import logger
 
 DefaultNetworkName = "tempo"
 

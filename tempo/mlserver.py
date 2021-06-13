@@ -1,22 +1,21 @@
+import contextvars
 import json
 import os
 from inspect import iscoroutinefunction
-import contextvars
 
 from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri
 
+from .insights.context import insights_context
+from .insights.manager import InsightsManager
+from .insights.wrapper import InsightsWrapper
 from .serve.base import BaseModel
 from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
-from .serve.metadata import ModelFramework, RuntimeOptions, InsightRequestModes
+from .serve.metadata import InsightRequestModes, ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
 from .utils import logger
-
-from .insights.manager import InsightsManager
-from .insights.wrapper import InsightsWrapper
-from .insights.context import insights_context
 
 
 def _needs_init(model: BaseModel):

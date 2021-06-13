@@ -1,8 +1,8 @@
 import asyncio
 
-from .worker import start_insights_worker_from_async, start_insights_worker_from_sync
+from ..serve.metadata import DEFAULT_INSIGHTS_REQUEST_MODES, InsightRequestModes
 from ..utils import logger
-from ..serve.metadata import InsightRequestModes, DEFAULT_INSIGHTS_REQUEST_MODES
+from .worker import start_insights_worker_from_async, start_insights_worker_from_sync
 
 
 class InsightsManager:
