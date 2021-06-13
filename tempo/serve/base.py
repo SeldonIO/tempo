@@ -200,17 +200,17 @@ class BaseModel:
             return self.model_spec
 
     def _create_remote(self, model_spec: ModelSpec) -> Runtime:
-        cls_path = model_spec.runtime_options.runtime
+        if settings.use_kubernetes or os.getenv(ENV_K8S_SERVICE_HOST):
+            cls_path = model_spec.runtime_options.k8s_options.runtime
+        else:
+            cls_path = model_spec.runtime_options.runtime
         if cls_path is None:
-            if settings.use_kubernetes or os.getenv(ENV_K8S_SERVICE_HOST):
-                cls_path = model_spec.runtime_options.k8s_options.runtime
-            else:
-                cls_path = model_spec.runtime_options.docker_options.runtime
+            cls_path = model_spec.runtime_options.docker_options.runtime
         logger.debug("Using remote class %s", cls_path)
         cls: Any = locate(cls_path)
         return cls()
 
-    def remote(self, *args, **kwargs):
+    def predict(self, *args, **kwargs):
         # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
         model_spec = self._get_model_spec(None)
         return self.remote_with_spec(model_spec, *args, **kwargs)
@@ -262,10 +262,10 @@ class BaseModel:
 
     def __call__(self, *args, **kwargs) -> Any:
         if self._user_func is None:
-            return self.remote(*args, **kwargs)
+            return self.predict(*args, **kwargs)
 
         if self.use_remote:
-            return self.remote(*args, **kwargs)
+            return self.predict(*args, **kwargs)
 
         return self._user_func(*args, **kwargs)
 
@@ -319,7 +319,7 @@ class Deployer(object):
         t.set_runtime_options_override(self.runtime_options)
         t.undeploy(self)
 
-    def get_endpoint(self, model: Any):
+    def endpoint(self, model: Any):
         t = model.get_tempo()
         t.set_runtime_options_override(self.runtime_options)
         return t.get_endpoint(self)
@@ -329,7 +329,7 @@ class Deployer(object):
         t.set_runtime_options_override(self.runtime_options)
         t.wait_ready(self, timeout_secs)
 
-    def to_k8s_yaml(self, model: Any):
+    def manifest(self, model: Any):
         t = model.get_tempo()
         t.set_runtime_options_override(self.runtime_options)
         return t.to_k8s_yaml(self)

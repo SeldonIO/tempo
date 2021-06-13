@@ -4,7 +4,7 @@ from typing import Any, Dict
 import aiohttp
 
 from ..errors import InvalidUserFunction, UndefinedCustomImplementation
-
+from tempo.serve.base import ModelSpec
 
 class _AsyncMixin:
     def __init__(self):
@@ -26,9 +26,7 @@ class _AsyncMixin:
 
         return self._client_session
 
-    async def remote(self, *args, **kwargs):
-        # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
-        model_spec = self._get_model_spec(None)
+    async def remote_with_spec(self, model_spec: ModelSpec, *args, **kwargs):
         remoter = self._create_remote(model_spec)
         prot = model_spec.protocol
         ingress_options = model_spec.runtime_options.ingress_options
@@ -43,6 +41,11 @@ class _AsyncMixin:
         response_json = await response_raw.json()
         output_schema = model_spec.model_details.outputs
         return prot.from_protocol_response(response_json, output_schema)
+
+    async def predict(self, *args, **kwargs):
+        # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
+        model_spec = self._get_model_spec(None)
+        return await self.remote_with_spec(model_spec, *args, **kwargs)
 
     async def __call__(self, *args, **kwargs) -> Any:
         future = super().__call__(*args, **kwargs)  # type: ignore

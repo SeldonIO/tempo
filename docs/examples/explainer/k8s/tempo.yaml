@@ -10,10 +10,10 @@ metadata:
       "parameters"}]}, "outputs": {"args": [{"ty": "builtins.str", "name": null}]},
       "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
       "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
-      {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas":
-      1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
-      "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
-      "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      {"runtime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime":
+      "tempo.seldon.SeldonKubernetesRuntime", "replicas": 1, "minReplicas": null,
+      "maxReplicas": null, "authSecretName": "minio-secret", "serviceAccountName":
+      null, "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
       "ssl": false, "verify_ssl": true}}}'
   labels:
     seldon.io/tempo: 'true'
@@ -44,10 +44,10 @@ metadata:
       {"args": [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty":
       "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
       "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
-      {"defaultRuntime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"replicas":
-      1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
-      "serviceAccountName": null, "defaultRuntime": "tempo.seldon.SeldonKubernetesRuntime",
-      "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      {"runtime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime":
+      "tempo.seldon.SeldonKubernetesRuntime", "replicas": 1, "minReplicas": null,
+      "maxReplicas": null, "authSecretName": "minio-secret", "serviceAccountName":
+      null, "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
       "ssl": false, "verify_ssl": true}}}'
   labels:
     seldon.io/tempo: 'true'

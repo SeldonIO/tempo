@@ -20,6 +20,6 @@ def test_deploy_docker(sklearn_model_deployed, runtime: SeldonDockerRuntime):
 def test_sklearn_docker(sklearn_model_deployed, x_input):
     time.sleep(2)
 
-    y_pred = sklearn_model_deployed.remote(x_input)
+    y_pred = sklearn_model_deployed.predict(x_input)
 
     np.testing.assert_allclose(y_pred, [[0, 0, 0.99]], atol=1e-2)

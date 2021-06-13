@@ -54,7 +54,7 @@ def test_deploy_pipeline_docker(
     ],
 )
 def test_pipeline_remote(inference_pipeline_deployed: DeployedModel, x_input):
-    y_pred = inference_pipeline_deployed.remote(payload=x_input)
+    y_pred = inference_pipeline_deployed.predict(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)
 

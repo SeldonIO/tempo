@@ -17,7 +17,7 @@ from tempo.serve.stub import deserialize
 from tempo.utils import logger
 
 
-class SeldonOptions(RuntimeOptions):
+class SeldonCoreOptions(RuntimeOptions):
     runtime: str = "tempo.seldon.SeldonKubernetesRuntime"
 
 

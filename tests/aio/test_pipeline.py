@@ -14,7 +14,7 @@ async def test_pipeline(inference_pipeline):
 
 async def test_pipeline_remote(inference_pipeline):
     x_input = np.array([[0.5, 2, 3, 4]])
-    y_pred = await inference_pipeline.remote(payload=x_input)
+    y_pred = await inference_pipeline.predict(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [[1.0]], atol=1e-2)
 

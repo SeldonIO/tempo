@@ -1,6 +1,6 @@
 from typing import Any
-from .base import Runtime, BaseModel, ModelSpec
-from .metadata import RuntimeOptions
+from tempo.serve.base import Runtime, BaseModel, ModelSpec
+from tempo.serve.metadata import RuntimeOptions
 from pydoc import locate
 
 
@@ -19,8 +19,8 @@ class RemoteModel:
         self.model.deploy(self.runtime)
         self.model.wait_ready(self.runtime)
 
-    def predict(self, *args, **kwargs):
-        return self.model.remote_with_spec(self.model_spec, *args, **kwargs)
+    async def predict(self, *args, **kwargs):
+        return await self.model.remote_with_spec(self.model_spec, *args, **kwargs)
 
     def endpoint(self):
         return self.model.get_endpoint(self.runtime)
@@ -44,4 +44,3 @@ def deploy(model: Any, options: RuntimeOptions = None) -> RemoteModel:
     rm = RemoteModel(model, rt)
     rm.deploy()
     return rm
-

@@ -50,7 +50,7 @@ def test_seldon_sklearn_model_yaml(expected):
         protocol=SeldonProtocol(),
     )
     runtime = SeldonKubernetesRuntime()
-    assert runtime.to_k8s_yaml(m) == expected
+    assert runtime.manifest(m) == expected
 
 
 @pytest.mark.parametrize(
@@ -97,7 +97,7 @@ def test_seldon_xgboost_model_yaml(expected):
         local_folder="/tmp/model",
     )
     runtime = SeldonKubernetesRuntime()
-    assert runtime.to_k8s_yaml(m) == expected
+    assert runtime.manifest(m) == expected
 
 
 @pytest.mark.parametrize(
@@ -147,4 +147,4 @@ def test_seldon_model_yaml_auth(expected):
     runtime = SeldonKubernetesRuntime(
         runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(authSecretName="auth"))
     )
-    assert runtime.to_k8s_yaml(m) == expected
+    assert runtime.manifest(m) == expected

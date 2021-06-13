@@ -69,7 +69,7 @@ def test_deploy_yaml():
         runtime_options=options,
     )
 
-    spec = rt.to_k8s_yaml(sklearn_model)
+    spec = rt.manifest(sklearn_model)
     rtk = SeldonKubernetesRuntime()
-    expected = rtk.to_k8s_yaml(sklearn_model)
+    expected = rtk.manifest(sklearn_model)
     assert spec == expected
