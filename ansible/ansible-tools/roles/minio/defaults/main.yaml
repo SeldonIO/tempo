@@ -1,7 +1,0 @@
----
-minio_secret_namespace: default
-minio_namespace: minio-system
-minio_access_key: minioadmin
-minio_secret_key: minioadmin
-
-minio_service_type: ClusterIP

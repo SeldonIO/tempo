@@ -1,4 +1,0 @@
----
-metallb_version: v0.9.3
-metallb_manifest_namespace: "https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/namespace.yaml"
-metallb_manifest_metallb: "https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/manifests/metallb.yaml"

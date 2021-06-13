@@ -2,13 +2,15 @@
 - name: knative
   hosts: localhost
   roles:
-    - kind
-    - metallb
-    - istio
-    - knative_serving
-    - minio
-    - certmanager
-    - kfserving
+    - role: seldonio.k8s.kind
+      when: skip_kind is not defined
+    - role: seldonio.k8s.metallb
+      when: skip_kind is not defined
+    - seldonio.k8s.istio
+    - seldonio.k8s.knative_serving
+    - seldonio.k8s.minio
+    - seldonio.k8s.certmanager
+    - seldonio.k8s.kfserving
   vars:
     kind_cluster_name: kfserving
     kind_image_version: kindest/node:v1.18.15

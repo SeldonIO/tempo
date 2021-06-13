@@ -1,5 +1,0 @@
----
-knative_crds: "https://github.com/knative/serving/releases/download/v0.21.0/serving-crds.yaml"
-knative_core: "https://github.com/knative/serving/releases/download/v0.21.0/serving-core.yaml"
-knative_net_istio: "https://github.com/knative/net-istio/releases/download/v0.21.0/net-istio.yaml"
-
