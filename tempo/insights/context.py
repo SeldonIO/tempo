@@ -1,5 +1,5 @@
-from typing import Any
 import contextvars
+from typing import Any
 
 insights_context: Any = contextvars.ContextVar("insights_manager", default=None)
 

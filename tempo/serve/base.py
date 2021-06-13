@@ -26,7 +26,7 @@ from .constants import (
     DefaultModelFilename,
 )
 from .loader import load_custom, save_custom, save_environment
-from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions, InsightRequestModes
+from .metadata import InsightRequestModes, ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from .typing import fullname
