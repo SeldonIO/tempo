@@ -1,9 +1,6 @@
 import copy
 from inspect import getmembers, isclass, isfunction
-from types import SimpleNamespace
 from typing import Any, Callable, Optional, Type
-
-from tempo.utils import logger
 
 from ..kfserving.protocol import KFServingV2Protocol
 from .base import BaseModel

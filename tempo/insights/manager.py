@@ -32,16 +32,16 @@ class InsightsManager:
                 def log(self, data):
                     asyncio.create_task(self._q.put(data))
 
-                self.log = log.__get__(self, self.__class__)  # pylint: disable=E1120,E1111
+                self.log = log.__get__(self, self.__class__)  # type: ignore # pylint: disable=E1120,E1111
                 logger.debug("Async worker set up")
             else:
                 logger.debug("Initialising sync insights worker")
-                self._q = start_insights_worker_from_sync(*args)
+                self._q = start_insights_worker_from_sync(*args)  # type: ignore
 
                 def log(self, data):
                     self._q.put(data)
 
-                self.log = log.__get__(self, self.__class__)  # pylint: disable=E1120,E1111
+                self.log = log.__get__(self, self.__class__)  # type: ignore # pylint: disable=E1120,E1111
                 logger.debug("Sync worker set up")
         else:
             logger.warning("Insights Manager not initialised as empty URL provided.")

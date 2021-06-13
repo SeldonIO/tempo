@@ -1,10 +1,7 @@
+from typing import Any
 import contextvars
 
-insights_context = contextvars.ContextVar("insights_manager", default=None)
-
-
-def get_context():
-    return insights_context
+insights_context: Any = contextvars.ContextVar("insights_manager", default=None)
 
 
 class classproperty(object):

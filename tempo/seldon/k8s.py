@@ -75,7 +75,7 @@ class SeldonKubernetesRuntime(Runtime):
         api_instance = client.CoreV1Api()
 
         try:
-            existing = api_instance.read_namespaced_pod(
+            api_instance.read_namespaced_pod(
                 DefaultInsightsServiceName,
                 DefaultSeldonSystemNamespace,
             )

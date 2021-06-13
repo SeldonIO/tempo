@@ -13,6 +13,7 @@ from tempo.serve.constants import (
     DefaultInsightsLocalEndpoint,
 )
 from tempo.utils import logger
+from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework, RuntimeOptions
 
 DefaultHTTPPort = "9000"
 DefaultGRPCPort = "9500"

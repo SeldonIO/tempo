@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import contextvars
 import os
 import tempfile
 from pydoc import locate
@@ -27,7 +26,7 @@ from .constants import (
     DefaultModelFilename,
 )
 from .loader import load_custom, save_custom, save_environment
-from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions, InsightRequestModes
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from .typing import fullname

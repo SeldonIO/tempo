@@ -108,7 +108,7 @@ class InsightsOptions(BaseModel):
     batch_size: int = 1
     parallelism: int = 1
     retries: int = 3
-    window_time: int = None
+    window_time: int = 0
     mode_type: InsightRequestModes = DEFAULT_INSIGHTS_REQUEST_MODES
     in_asyncio: bool = False
 
