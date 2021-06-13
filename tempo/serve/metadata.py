@@ -107,6 +107,7 @@ class InsightsOptions(BaseModel):
     retries: int = 3
     window_time: int = None
     mode_type: InsightRequestModes = DEFAULT_INSIGHTS_REQUEST_MODES
+    in_asyncio: bool = False
 
     class Config:
         # Required to ensure enum json serialisation https://pydantic-docs.helpmanual.io/usage/model_config/

@@ -25,6 +25,8 @@ def get_container_spec(model_details: ModelSpec) -> dict:
             runtime_options.insights_options.worker_endpoint = DefaultInsightsK8sEndpoint
         else:
             runtime_options.insights_options.worker_endpoint = DefaultInsightsDockerEndpoint
+    # Ensure running inside asyncio loop in MLServer
+    runtime_options.insights_options.in_asyncio = True
     if (
         model_details.model_details.platform == ModelFramework.TempoPipeline
         or model_details.model_details.platform == ModelFramework.Custom

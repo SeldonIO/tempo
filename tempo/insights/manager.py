@@ -16,6 +16,7 @@ class InsightsManager:
             retries: int = 3,
             window_time: int = None,
             mode_type: InsightRequestModes = DEFAULT_INSIGHTS_REQUEST_MODES,
+            in_asyncio: bool = False,
         ):
         args = (
             worker_endpoint,
@@ -24,25 +25,22 @@ class InsightsManager:
             retries,
             window_time,
         )
-        logger.warning(f"Initialising Insights Manager with Args: {args}")
+        logger.info(f"Initialising Insights Manager with Args: {args}")
         if worker_endpoint:
-            try:
-                # TODO: Verify enough to validate working loop to use
-                asyncio.get_running_loop()
-            except:
-                logger.debug("Initialising sync insights worker")
-                self._q = start_insights_worker_from_sync(*args)
-                def log(self, data):
-                    self._q.put(data)
-                self.log = log.__get__(self, self.__class__) # pylint: disable=E1120,E1111
-                logger.debug("Sync worker set up")
-            else:
+            if in_asyncio:
                 logger.debug("Initialising async insights worker")
                 self._q = start_insights_worker_from_async(*args)
                 def log(self, data):
                     asyncio.create_task(self._q.put(data))
                 self.log = log.__get__(self, self.__class__)  # pylint: disable=E1120,E1111
                 logger.debug("Async worker set up")
+            else:
+                logger.debug("Initialising sync insights worker")
+                self._q = start_insights_worker_from_sync(*args)
+                def log(self, data):
+                    self._q.put(data)
+                self.log = log.__get__(self, self.__class__) # pylint: disable=E1120,E1111
+                logger.debug("Sync worker set up")
         else:
             logger.warning("Insights Manager not initialised as empty URL provided.")
 
