@@ -199,17 +199,17 @@ save(classifier)
 
 ```python
 from tempo import deploy
-rm = deploy(classifier)
+remote_model = deploy(classifier)
 ```
 
 
 ```python
-rm.predict(np.array([[1, 2, 3, 4]]))
+remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -259,13 +259,13 @@ runtime_options = SeldonCoreOptions(
 
 ```python
 from tempo import deploy
-rm = deploy(classifier, options=runtime_options)
+remote_model = deploy(classifier, options=runtime_options)
 ```
 
 
 ```python
-print(rm.predict(payload=np.array([[0, 0, 0, 0]])))
-print(rm.predict(payload=np.array([[1, 2, 3, 4]])))
+print(remote_model.predict(payload=np.array([[0, 0, 0, 0]])))
+print(remote_model.predict(payload=np.array([[1, 2, 3, 4]])))
 ```
 
 ### Illustrate use of Deployed Model by Remote Client
@@ -288,7 +288,7 @@ models[0].predict(payload=np.array([[1, 2, 3, 4]]))
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ###### Production Option 2 (Gitops)

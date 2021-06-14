@@ -155,24 +155,24 @@ Here we test our models using production images but running locally on Docker. T
 
 ```python
 from tempo.aio import deploy
-rm = deploy(classifier)
+remote_model = deploy(classifier)
 ```
 
 
 ```python
 import numpy as np
-await rm.predict(np.array([[1, 2, 3, 4]]))
+await remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 
 ```python
-print(await rm.predict(np.array([[0, 0, 0,0]])))
-print(await rm.predict(np.array([[5.964,4.006,2.081,1.031]])))
+print(await remote_model.predict(np.array([[0, 0, 0,0]])))
+print(await remote_model.predict(np.array([[5.964,4.006,2.081,1.031]])))
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 

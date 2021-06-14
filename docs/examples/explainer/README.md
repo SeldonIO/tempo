@@ -167,24 +167,24 @@ Here we test our models using production images but running locally on Docker. T
 
 ```python
 from tempo import deploy
-rm = deploy(explainer)
+remote_model = deploy(explainer)
 ```
 
 
 ```python
-r = json.loads(rm.predict(payload=data.X_test[0:1], parameters={"threshold":0.90}))
+r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"threshold":0.90}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-r = json.loads(rm.predict(payload=data.X_test[0:1], parameters={"threshold":0.99}))
+r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -232,18 +232,18 @@ runtime_options = SeldonCoreOptions(
 
 ```python
 from tempo import deploy
-rm = deploy(explainer, options=runtime_options)
+remote_model = deploy(explainer, options=runtime_options)
 ```
 
 
 ```python
-r = json.loads(rm.predict(payload=data.X_test[0:1], parameters={"threshold":0.95}))
+r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"threshold":0.95}))
 print(r["data"]["anchor"])
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 2 (Gitops)

@@ -236,14 +236,14 @@ Here we test our models using production images but running locally on Docker. T
 
 ```python
 from tempo import deploy
-rm = deploy(svc)
+remote_model = deploy(svc)
 ```
 
 
 ```python
 from src.utils import show_image
 show_image(data.X_test[0:1])
-rm.predict(payload=data.X_test[0:1])
+remote_model.predict(payload=data.X_test[0:1])
 ```
 
 
@@ -252,12 +252,12 @@ from src.utils import create_cifar10_outlier
 
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
-rm.predict(payload=outlier_img)
+remote_model.predict(payload=outlier_img)
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -307,7 +307,7 @@ runtime_options = SeldonCoreOptions(
 
 ```python
 from tempo import deploy
-rm = deploy(svc, options=runtime_options)
+remote_model = deploy(svc, options=runtime_options)
 ```
 
 
@@ -315,7 +315,7 @@ rm = deploy(svc, options=runtime_options)
 from src.utils import show_image
 
 show_image(data.X_test[0:1])
-rm.predict(payload=data.X_test[0:1])
+remote_model.predict(payload=data.X_test[0:1])
 ```
 
 
@@ -324,12 +324,12 @@ from src.utils import create_cifar10_outlier
 
 outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
-rm.predict(payload=outlier_img)
+remote_model.predict(payload=outlier_img)
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 2 (Gitops)

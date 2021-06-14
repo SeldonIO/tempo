@@ -207,18 +207,18 @@ save(classifier)
 
 ```python
 from tempo import deploy
-rm = deploy(classifier)
+remote_model = deploy(classifier)
 ```
 
 
 ```python
-rm.predict(np.array([[0, 0, 0,0]]))
-rm.predict(np.array([[5.964,4.006,2.081,1.031]]))
+print(remote_model.predict(np.array([[0, 0, 0,0]])))
+print(remote_model.predict(np.array([[5.964,4.006,2.081,1.031]])))
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -260,19 +260,6 @@ upload(classifier)
 
 
 ```python
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options=RuntimeOptions(  
-    k8s_options=KubernetesOptions( 
-        defaultRuntime="tempo.kfserving.KFServingKubernetesRuntime",
-        namespace="production",
-        serviceAccountName="kf-tempo"
-    )
-)
-
-```
-
-
-```python
 from tempo.serve.metadata import KubernetesOptions
 from tempo.kfserving.k8s import KFServingOptions
 runtime_options = KFServingOptions(
@@ -287,13 +274,13 @@ runtime_options = KFServingOptions(
 
 ```python
 from tempo import deploy
-rm = deploy(classifier, options=runtime_options)
+remote_model = deploy(classifier, options=runtime_options)
 ```
 
 
 ```python
-print(rm.predict(payload=np.array([[0, 0, 0, 0]])))
-print(rm.predict(payload=np.array([[1, 2, 3, 4]])))
+print(remote_model.predict(payload=np.array([[0, 0, 0, 0]])))
+print(remote_model.predict(payload=np.array([[1, 2, 3, 4]])))
 ```
 
 ### Illustrate client using model remotely
@@ -318,7 +305,7 @@ models[0].predict(payload=np.array([[1, 2, 3, 4]]))
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 2 (Gitops)
@@ -338,4 +325,9 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
 
 ```python
 !kustomize build k8s
+```
+
+
+```python
+
 ```

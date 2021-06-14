@@ -224,19 +224,19 @@ save(numpyro_divorce)
 
 ```python
 from tempo import deploy
-rm = deploy(numpyro_divorce)
+remote_model = deploy(numpyro_divorce)
 ```
 
 We can now test our model deployed in Docker as:
 
 
 ```python
-rm.predict(marriage=marriage, age=age)
+remote_model.predict(marriage=marriage, age=age)
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -284,17 +284,17 @@ runtime_options = SeldonCoreOptions(
 
 ```python
 from tempo import deploy
-rm = deploy(numpyro_divorce, options=runtime_options)
+remote_model = deploy(numpyro_divorce, options=runtime_options)
 ```
 
 
 ```python
-rm.predict(marriage=marriage, age=age)
+remote_model.predict(marriage=marriage, age=age)
 ```
 
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ## Production Option 2 (Gitops)

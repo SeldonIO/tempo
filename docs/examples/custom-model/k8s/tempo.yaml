@@ -20,7 +20,31 @@ metadata:
   namespace: production
 spec:
   predictors:
-  - graph:
+  - componentSpecs:
+    - spec:
+        containers:
+        - args: []
+          env:
+          - name: MLSERVER_HTTP_PORT
+            value: '9000'
+          - name: MLSERVER_GRPC_PORT
+            value: '9500'
+          - name: MLSERVER_MODEL_IMPLEMENTATION
+            value: tempo.mlserver.InferenceRuntime
+          - name: MLSERVER_MODEL_NAME
+            value: numpyro-divorce
+          - name: MLSERVER_MODEL_URI
+            value: /mnt/models
+          - name: TEMPO_RUNTIME_OPTIONS
+            value: '{"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
+              {"runtime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime":
+              "tempo.seldon.SeldonKubernetesRuntime", "replicas": 1, "minReplicas":
+              null, "maxReplicas": null, "authSecretName": "minio-secret", "serviceAccountName":
+              null, "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+              "ssl": false, "verify_ssl": true}}'
+          image: seldonio/mlserver:0.3.1.dev7
+          name: numpyro-divorce
+    graph:
       envSecretRefName: minio-secret
       implementation: TEMPO_SERVER
       modelUri: s3://tempo/divorce
