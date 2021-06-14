@@ -12,6 +12,7 @@ from tempo.serve.constants import (
 )
 from tempo.utils import logger
 
+
 def create_k8s_client():
     inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
     if inside_cluster:
@@ -20,6 +21,7 @@ def create_k8s_client():
     else:
         logger.debug("Loading external kubernetes config")
         config.load_kube_config()
+
 
 def deploy_insights_message_dumper():
     create_k8s_client()
@@ -75,15 +77,16 @@ def deploy_insights_message_dumper():
     logger.debug(f"Creating kubernetes insights manager pod: {k8s_svc_spec}")
     api_instance.create_namespaced_service(DefaultSeldonSystemNamespace, k8s_svc_spec)
 
+
 def undeploy_insights_message_dumper():
     create_k8s_client()
     api_instance = client.CoreV1Api()
     api_instance.delete_namespaced_pod(DefaultInsightsServiceName, DefaultSeldonSystemNamespace)
     api_instance.delete_namespaced_service(DefaultInsightsServiceName, DefaultSeldonSystemNamespace)
 
+
 def get_logs_insights_message_dumper():
     create_k8s_client()
     api_instance = client.CoreV1Api()
     response = api_instance.read_namespaced_pod_log(DefaultInsightsServiceName, DefaultSeldonSystemNamespace)
     return response
-

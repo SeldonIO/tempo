@@ -1,13 +1,13 @@
 import json
-import os
 import time
 from typing import Optional, Sequence
 
 import yaml
-from kubernetes.client.rest import ApiException
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from tempo.k8s.constants import TempoK8sLabel, TempoK8sModelSpecAnnotation
+from tempo.k8s.utils import create_k8s_client
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
@@ -21,7 +21,6 @@ from tempo.serve.constants import (
 from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
-from tempo.k8s.utils import create_k8s_client
 
 
 class SeldonCoreOptions(RuntimeOptions):
@@ -114,13 +113,8 @@ class SeldonKubernetesRuntime(Runtime):
         k8s_spec = KubernetesSpec(model_spec)
         return yaml.safe_dump(k8s_spec.spec)
 
-<<<<<<< HEAD
     def list_models(self, namespace: Optional[str] = None) -> Sequence[DeployedModel]:
-        self.create_k8s_client()
-=======
-    def list_models(self, namespace: Optional[str] = None) -> Sequence[RemoteModel]:
         create_k8s_client()
->>>>>>> ee1bf3e (Updated and separated runtimes)
         api_instance = client.CustomObjectsApi()
 
         if namespace is None and self.runtime_options is not None:

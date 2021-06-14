@@ -1,0 +1,9 @@
+name: tempo-insights
+channels:
+  - defaults
+dependencies:
+  - pip=21.0.1
+  - python=3.7.9
+  - pip:
+    - mlops-tempo @ file:///home/alejandro/Programming/kubernetes/seldon/tempo
+    - mlserver==0.3.1.dev7

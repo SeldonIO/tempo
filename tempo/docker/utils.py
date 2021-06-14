@@ -1,9 +1,11 @@
 import os
+
 import docker
 
-from tempo.serve.constants import DefaultInsightsImage, DefaultInsightsPort, DefaultInsightsServiceName
 from tempo.docker.constants import DefaultNetworkName
+from tempo.serve.constants import DefaultInsightsImage, DefaultInsightsPort, DefaultInsightsServiceName
 from tempo.utils import logger
+
 
 def create_network(docker_client: docker.client.DockerClient, network_name=DefaultNetworkName):
     try:
@@ -11,7 +13,10 @@ def create_network(docker_client: docker.client.DockerClient, network_name=Defau
     except docker.errors.NotFound:
         docker_client.networks.create(name=DefaultNetworkName)
 
-def deploy_insights_message_dumper(name=DefaultInsightsServiceName, image=DefaultInsightsImage, port=DefaultInsightsPort):
+
+def deploy_insights_message_dumper(
+    name=DefaultInsightsServiceName, image=DefaultInsightsImage, port=DefaultInsightsPort
+):
     docker_client = docker.from_env()
     try:
         docker_client.containers.get(DefaultInsightsServiceName)
@@ -31,6 +36,7 @@ def deploy_insights_message_dumper(name=DefaultInsightsServiceName, image=Defaul
         user=uid,
     )
 
+
 def undeploy_insights_message_dumper(name=DefaultInsightsServiceName):
     docker_client = docker.from_env()
     # TODO: Get from constant
@@ -41,6 +47,7 @@ def undeploy_insights_message_dumper(name=DefaultInsightsServiceName):
         return
     container.remove(force=True)
 
+
 def get_logs_insights_message_dumper(name=DefaultInsightsServiceName):
     docker_client = docker.from_env()
     # TODO: Get from constant
@@ -50,4 +57,3 @@ def get_logs_insights_message_dumper(name=DefaultInsightsServiceName):
         logger.info("Attempted to undeploy insights dumper but container not running")
         return
     return container.logs().decode("utf-8")
-

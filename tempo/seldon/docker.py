@@ -6,15 +6,13 @@ from typing import Optional, Sequence, Tuple
 import docker
 from docker.models.containers import Container
 
+from tempo.docker.constants import DefaultNetworkName
+from tempo.docker.utils import create_network
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.constants import DefaultInsightsImage, DefaultInsightsPort, DefaultInsightsServiceName
 from tempo.serve.metadata import RuntimeOptions
-from tempo.docker.constants import DefaultNetworkName
-from tempo.docker.utils import create_network
 from tempo.serve.runtime import ModelSpec, Runtime
-from tempo.utils import logger
-
 
 
 class SeldonDockerRuntime(Runtime):
