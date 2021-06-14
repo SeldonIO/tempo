@@ -223,23 +223,20 @@ save(numpyro_divorce)
 
 
 ```python
-from tempo.seldon import SeldonDockerRuntime
-
-docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(numpyro_divorce)
-docker_runtime.wait_ready(numpyro_divorce)
+from tempo import deploy
+remote_model = deploy(numpyro_divorce)
 ```
 
 We can now test our model deployed in Docker as:
 
 
 ```python
-numpyro_divorce.remote(marriage=marriage, age=age)
+remote_model.predict(marriage=marriage, age=age)
 ```
 
 
 ```python
-docker_runtime.undeploy(numpyro_divorce)
+remote_model.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -274,8 +271,9 @@ upload(numpyro_divorce)
 
 
 ```python
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options = RuntimeOptions(
+from tempo.serve.metadata import KubernetesOptions
+from tempo.seldon.k8s import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(
         k8s_options=KubernetesOptions(
             namespace="production",
             authSecretName="minio-secret"
@@ -285,20 +283,18 @@ runtime_options = RuntimeOptions(
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-k8s_runtime.deploy(numpyro_divorce)
-k8s_runtime.wait_ready(numpyro_divorce)
+from tempo import deploy
+remote_model = deploy(numpyro_divorce, options=runtime_options)
 ```
 
 
 ```python
-numpyro_divorce.remote(marriage=marriage, age=age)
+remote_model.predict(marriage=marriage, age=age)
 ```
 
 
 ```python
-k8s_runtime.undeploy(numpyro_divorce)
+remote_model.undeploy()
 ```
 
 ## Production Option 2 (Gitops)
@@ -316,8 +312,8 @@ runtime_options = RuntimeOptions(
             authSecretName="minio-secret"
         )
     )
-k8s_runtime = SeldonKubernetesRuntime()
-yaml_str = k8s_runtime.to_k8s_yaml(numpyro_divorce)
+k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+yaml_str = k8s_runtime.manifest(numpyro_divorce)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```

@@ -10,18 +10,22 @@ from kubernetes.client.rest import ApiException
 from tempo.k8s.constants import TempoK8sLabel, TempoK8sModelSpecAnnotation
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
-from tempo.serve.base import Remote, RemoteModel
+from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.constants import ENV_K8S_SERVICE_HOST
 from tempo.serve.metadata import RuntimeOptions
-from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
 
 
-class SeldonKubernetesRuntime(Runtime, Remote):
+class SeldonCoreOptions(RuntimeOptions):
+    runtime: str = "tempo.seldon.SeldonKubernetesRuntime"
+
+
+class SeldonKubernetesRuntime(Runtime):
     def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
-        if runtime_options:
-            runtime_options.runtime = "tempo.seldon.SeldonKubernetesRuntime"
+        if runtime_options is None:
+            runtime_options = RuntimeOptions()
+        runtime_options.runtime = "tempo.seldon.SeldonKubernetesRuntime"
         super().__init__(runtime_options)
 
     def create_k8s_client(self):
@@ -112,7 +116,7 @@ class SeldonKubernetesRuntime(Runtime, Remote):
         k8s_spec = KubernetesSpec(model_spec)
         return yaml.safe_dump(k8s_spec.spec)
 
-    def list_models(self, namespace: Optional[str] = None) -> Sequence[RemoteModel]:
+    def list_models(self, namespace: Optional[str] = None) -> Sequence[DeployedModel]:
         self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
 

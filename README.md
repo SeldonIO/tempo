@@ -93,36 +93,31 @@ from tempo.serve.loader import save
 save(classifier)
 ```
 
-Deploy to docker.
+Deploy locally to docker.
 
 ```
-from tempo.seldon.docker import SeldonDockerRuntime
-docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(classifier)
-docker_runtime.wait_ready(classifier)
+from tempo import deploy
+remote_model = deploy(classifier)
 ```
 
 Make predictions on containerized servers that would be used in production.
 
 ```
-classifier.remote(payload=np.array([[1, 2, 3, 4]]))
+remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 Deploy to Kubernetes for production.
 
 ```
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options = RuntimeOptions(
+from tempo.serve.metadata import KubernetesOptions
+from tempo.seldon.k8s import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(
         k8s_options=KubernetesOptions(
-            namespace="production",
+	    namespace="production",
             authSecretName="minio-secret"
-        )
-    )
-
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-k8s_runtime.deploy(classifier)
-k8s_runtime.wait_ready(classifier)
+	)
+)	
+remote_model = deploy(classifier, options=runtime_options)
 ```
 
 This is an extract from the [multi-model introduction](https://tempo.readthedocs.io/en/latest/examples/multi-model/README.html) demo.

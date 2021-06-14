@@ -154,27 +154,25 @@ Here we test our models using production images but running locally on Docker. T
 
 
 ```python
-from tempo.seldon.docker import SeldonDockerRuntime
-
-docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(classifier)
-docker_runtime.wait_ready(classifier)
+from tempo.aio import deploy
+remote_model = deploy(classifier)
 ```
 
 
 ```python
-await classifier(np.array([[1, 2, 3, 4]]))
+import numpy as np
+await remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 
 ```python
-print(await classifier.remote(np.array([[0, 0, 0,0]])))
-print(await classifier.remote(np.array([[5.964,4.006,2.081,1.031]])))
+print(await remote_model.predict(np.array([[0, 0, 0,0]])))
+print(await remote_model.predict(np.array([[5.964,4.006,2.081,1.031]])))
 ```
 
 
 ```python
-docker_runtime.undeploy(classifier)
+remote_model.undeploy()
 ```
 
 

@@ -206,26 +206,19 @@ save(classifier)
 
 
 ```python
-from tempo.seldon.docker import SeldonDockerRuntime
-docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(classifier)
-docker_runtime.wait_ready(classifier)
+from tempo import deploy
+remote_model = deploy(classifier)
 ```
 
 
 ```python
-classifier(np.array([[1, 2, 3, 4]]))
+print(remote_model.predict(np.array([[0, 0, 0,0]])))
+print(remote_model.predict(np.array([[5.964,4.006,2.081,1.031]])))
 ```
 
 
 ```python
-print(classifier.remote(np.array([[0, 0, 0,0]])))
-print(classifier.remote(np.array([[5.964,4.006,2.081,1.031]])))
-```
-
-
-```python
-docker_runtime.undeploy(classifier)
+remote_model.undeploy()
 ```
 
 ## Production Option 1 (Deploy to Kubernetes with Tempo)
@@ -267,28 +260,27 @@ upload(classifier)
 
 
 ```python
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options=RuntimeOptions(  
-    k8s_options=KubernetesOptions( 
-        defaultRuntime="tempo.kfserving.KFServingKubernetesRuntime",
-        namespace="production",
-        serviceAccountName="kf-tempo"
+from tempo.serve.metadata import KubernetesOptions
+from tempo.kfserving.k8s import KFServingOptions
+runtime_options = KFServingOptions(
+        k8s_options=KubernetesOptions(
+            runtime="tempo.kfserving.KFServingKubernetesRuntime",
+            namespace="production",
+            serviceAccountName="kf-tempo"
+        )
     )
-)
 ```
 
 
 ```python
-from tempo.kfserving.k8s import KFServingKubernetesRuntime
-k8s_runtime = KFServingKubernetesRuntime(runtime_options)
-k8s_runtime.deploy(classifier)
-k8s_runtime.wait_ready(classifier)
+from tempo import deploy
+remote_model = deploy(classifier, options=runtime_options)
 ```
 
 
 ```python
-print(classifier.remote(payload=np.array([[0, 0, 0, 0]])))
-print(classifier.remote(payload=np.array([[1, 2, 3, 4]])))
+print(remote_model.predict(payload=np.array([[0, 0, 0, 0]])))
+print(remote_model.predict(payload=np.array([[1, 2, 3, 4]])))
 ```
 
 ### Illustrate client using model remotely
@@ -297,6 +289,8 @@ With the Kubernetes runtime one can list running models on the Kubernetes cluste
 
 
 ```python
+from tempo.kfserving.k8s import KFServingKubernetesRuntime
+k8s_runtime = KFServingKubernetesRuntime(runtime_options)
 models = k8s_runtime.list_models(namespace="production")
 print("Name\tDescription")
 for model in models:
@@ -306,12 +300,12 @@ for model in models:
 
 
 ```python
-models[0].remote(payload=np.array([[1, 2, 3, 4]]))
+models[0].predict(payload=np.array([[1, 2, 3, 4]]))
 ```
 
 
 ```python
-k8s_runtime.undeploy(classifier)
+remote_model.undeploy()
 ```
 
 ## Production Option 2 (Gitops)
@@ -323,7 +317,7 @@ k8s_runtime.undeploy(classifier)
 ```python
 from tempo.kfserving.k8s import KFServingKubernetesRuntime
 k8s_runtime = KFServingKubernetesRuntime(runtime_options)
-yaml_str = k8s_runtime.to_k8s_yaml(classifier)
+yaml_str = k8s_runtime.manifest(classifier)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```

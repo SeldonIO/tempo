@@ -52,7 +52,7 @@ def runtime_v2(namespace: str) -> SeldonKubernetesRuntime:
 
 
 @pytest.fixture
-def sklearn_model(sklearn_model: Model, runtime: SeldonKubernetesRuntime) -> Generator[Model, None, None]:
+def sklearn_mode_k8sl(sklearn_model: Model, runtime: SeldonKubernetesRuntime) -> Generator[Model, None, None]:
     sklearn_model.set_runtime(runtime)
 
     sklearn_model.deploy()

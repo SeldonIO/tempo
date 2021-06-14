@@ -7,8 +7,8 @@ Tempo runtimes provide the core functionality to deploy a tempo Model. They must
 | deploy | deploy a model |
 | undeploy | undeploy a model |
 | wait_ready | wait for a deployed model to be ready |
-| get_endpoint | get the URL for the deployed model so it can be called |
-| to_k8s_yaml | optionally get the Kubernetes declarative yaml for the model |
+| endpoint | get the URL for the deployed model so it can be called |
+| manifest | optionally get the Kubernetes declarative yaml for the model |
 
 The Runtimes defined within Tempo are:
 

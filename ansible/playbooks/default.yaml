@@ -13,7 +13,7 @@
     kind_kubectl_default_namespace: seldon
 
     istio_version: 1.7.6
-    seldon_core_version: v1.7.0
+    seldon_core_version: v1.8.0
 
     core_values:
       ambassador:

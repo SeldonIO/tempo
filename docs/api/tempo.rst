@@ -12,6 +12,7 @@ Subpackages
 .. toctree::
    :maxdepth: 6
 
+   tempo.aio
    tempo.examples
    tempo.ingress
    tempo.k8s

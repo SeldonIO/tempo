@@ -1,9 +1,9 @@
-import docker
 import numpy as np
 import pytest
 import yaml
 
 from tempo.seldon.docker import SeldonDockerRuntime
+from tempo.serve.base import DeployedModel
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.pipeline import Pipeline
 
@@ -18,14 +18,14 @@ def test_conda_yaml(pipeline_conda_yaml):
 
 
 def test_deploy_pipeline_docker(
-    inference_pipeline: Pipeline,
+    inference_pipeline_deployed_with_runtime,
     runtime: SeldonDockerRuntime,
 ):
-    for model in inference_pipeline.models.values():
+    for model in inference_pipeline_deployed_with_runtime.models.values():
         container = runtime._get_container(model.model_spec)
         assert container.status == "running"
 
-    pipeline_container = runtime._get_container(inference_pipeline.model_spec)
+    pipeline_container = runtime._get_container(inference_pipeline_deployed_with_runtime.model_spec)
     assert pipeline_container.status == "running"
 
 
@@ -52,8 +52,8 @@ def test_deploy_pipeline_docker(
         ),
     ],
 )
-def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
-    y_pred = inference_pipeline.remote(payload=x_input)
+def test_pipeline_remote(inference_pipeline_deployed: DeployedModel, x_input):
+    y_pred = inference_pipeline_deployed.predict(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)
 
@@ -79,15 +79,7 @@ def test_pipeline_remote(inference_pipeline: Pipeline, x_input):
         )
     ],
 )
-def test_seldon_pipeline_request_docker(inference_pipeline: Pipeline, x_input, expected):
-    y_pred = inference_pipeline.request(x_input)
+def test_seldon_pipeline_request_docker(inference_pipeline_deployed_with_runtime: Pipeline, x_input, expected):
+    y_pred = inference_pipeline_deployed_with_runtime.request(x_input)
 
     assert y_pred == expected
-
-
-def test_undeploy_pipeline_docker(inference_pipeline: Pipeline, runtime: SeldonDockerRuntime):
-    runtime.undeploy(inference_pipeline)
-
-    for model in inference_pipeline.models.values():
-        with pytest.raises(docker.errors.NotFound):
-            runtime._get_container(model.model_spec)
