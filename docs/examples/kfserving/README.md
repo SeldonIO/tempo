@@ -227,11 +227,7 @@ remote_model.undeploy()
  
 ### Prerequisites
  
- Create a Kind Kubernetes cluster with Minio and KFserving installed using Ansible from the Tempo project Ansible playbook.
- 
- ```
- ansible-playbook ansible/playbooks/kfserving.yaml
- ```
+Create a Kind Kubernetes cluster with Minio and KFserving installed using Ansible as described [here](../../overview/quickstart.md#kubernetes-cluster-with-kfserving).
 
 
 ```python

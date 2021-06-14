@@ -1,7 +1,6 @@
 KIND_IMAGE ?= kindest/node:v1.18.15
 KIND_NAME ?= ansible
 
-
 # Kind Cluster
 kind-cluster:
 	kind create cluster --name ${KIND_NAME} --image ${KIND_IMAGE} || echo "already there"
@@ -9,11 +8,8 @@ kind-cluster:
 	kubectl create ns seldon || echo "already there"
 	kubectl config set-context --current --namespace seldon
 
-
 kind-delete:
 	kind delete cluster --name ${KIND_NAME}
-
-
 
 # Port Forwards
 port-forward-ambassador:

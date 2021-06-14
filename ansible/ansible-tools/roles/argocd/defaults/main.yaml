@@ -1,7 +1,0 @@
----
-argocd_namespace: argocd
-argocd_version: v1.7.10
-argocd_manifest: https://raw.githubusercontent.com/argoproj/argo-cd/{{ argocd_version }}/manifests/install.yaml
-
-gitops_repository: ""
-gitops_namespaces: []

@@ -6,12 +6,15 @@
 Requirements:
 ```bash
 pip install ansible openshift
-ansible-galaxy collection install community.kubernetes community.docker
+ansible-galaxy collection install git+https://github.com/SeldonIO/ansible-k8s-collection.git,v0.1.0
 ```
 
 ## Playbooks
 
-### playbooks/default.yaml
+Note: the optional `-e skip_kind=1` flag allow to skip creation of Kind cluster
+
+
+### playbooks/seldon_core.yaml
 
  * Create a kind cluster
  * Install metallb
@@ -19,17 +22,8 @@ ansible-galaxy collection install community.kubernetes community.docker
  * Install Minio
  * Install Seldon Core
 
-```
-ansible-playbook playbooks/default.yaml
-```
-
-### playbooks/core_istio.yaml
-
- * Install istio
- * Install Seldon Core
-
-```
-ansible-playbook playbooks/core_istio.yaml
+```bash
+ansible-playbook playbooks/seldon_core.yaml [-e skip_kind=1]
 ```
 
 ### playbooks/kfserving.yaml
@@ -42,20 +36,6 @@ ansible-playbook playbooks/core_istio.yaml
  * Install certmanager
  * Install kfserving
 
-```
-ansible-playbook playbooks/kfserving.yaml
-```
-
-### playbooks/core_knative.yaml
-
- * Create a kind cluster
- * Install metallb
- * Install istio
- * Install Knative Serving
- * Install Kntive Eventing
- * Install Minio
- * Install Seldon Core
-
-```
-ansible-playbook playbooks/core_knative.yaml
+```bash
+ansible-playbook playbooks/kfserving.yaml [-e skip_kind=1]
 ```

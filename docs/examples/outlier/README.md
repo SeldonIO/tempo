@@ -266,11 +266,7 @@ remote_model.undeploy()
  
 ### Prerequisites
  
- Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
- 
- ```
- ansible-playbook ansible/playbooks/default.yaml
- ```
+Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible as described [here](../../overview/quickstart.md#kubernetes-cluster-with-seldon-core).
 
 
 ```python
