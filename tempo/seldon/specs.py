@@ -24,12 +24,6 @@ DefaultServiceAccountName = "tempo-pipeline"
 
 def get_container_spec(model_details: ModelSpec) -> dict:
     runtime_options = model_details.runtime_options.copy(deep=True)
-    # Override if provided endpoint is the default so it works inside container
-    if runtime_options.insights_options.worker_endpoint in [DefaultInsightsLocalEndpoint, ""]:
-        if runtime_options.runtime == KubernetesOptions().defaultRuntime:
-            runtime_options.insights_options.worker_endpoint = DefaultInsightsK8sEndpoint
-        else:
-            runtime_options.insights_options.worker_endpoint = DefaultInsightsDockerEndpoint
     # Ensure running inside asyncio loop in MLServer
     runtime_options.insights_options.in_asyncio = True
     if (
