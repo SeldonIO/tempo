@@ -1,6 +1,7 @@
 import copy
 from inspect import getmembers, isclass, isfunction
 from typing import Any, Callable, Optional, Type
+from types import SimpleNamespace
 
 from ..kfserving.protocol import KFServingV2Protocol
 from .base import BaseModel
@@ -64,7 +65,14 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
         setattr(instance_model, "insights_manager", class_model.insights_manager)
 
         # We bind the __getstate__ function to the current object so it also is used when exporting the object
-        self.__getstate__ = _bind(self, class_model.__getstate__)
+        def __getstate__(self):
+            state = self.__dict__.copy()
+            state["context"] = SimpleNamespace()
+            # Remove the insights manager from the cloudpickle context
+            state["insights_manager"] = SimpleNamespace()
+            return state
+
+        self.__getstate__ = _bind(self, __getstate__)
 
         # Bind back Tempo interface to make sure it points to instance referece
         _bind_tempo_interface(self, instance_model)
