@@ -97,13 +97,13 @@ Deploy locally to docker.
 
 ```
 from tempo import deploy
-rm = deploy(classifier)
+remote_model = deploy(classifier)
 ```
 
 Make predictions on containerized servers that would be used in production.
 
 ```
-rm.predict(np.array([[1, 2, 3, 4]]))
+remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 Deploy to Kubernetes for production.
@@ -117,7 +117,7 @@ runtime_options = SeldonCoreOptions(
             authSecretName="minio-secret"
 	)
 )	
-rm = deploy(classifier, options=runtime_options)
+remote_model = deploy(classifier, options=runtime_options)
 ```
 
 This is an extract from the [multi-model introduction](https://tempo.readthedocs.io/en/latest/examples/multi-model/README.html) demo.

@@ -175,19 +175,19 @@ By default tempo will deploy to Docker:
 
 ```python
 from tempo import deploy
-rm = deploy(classifier)
+remote_model = deploy(classifier)
 ```
 
 The returned RemoteModel can be used to get predictions:
 
 ```python
-rm.predict(np.array([[1, 2, 3, 4]]))
+remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 And then undeploy:
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 ### Deploy to Production
@@ -225,19 +225,19 @@ Then you can deploy directly from tempo:
 
 ```
 from tempo import deploy
-rm = deploy(classifier, options=runtime_options)
+remote_model = deploy(classifier, options=runtime_options)
 ```
 
 And then call prediction as before:
 
 ```python
-rm.predict(np.array([[1, 2, 3, 4]]))
+remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 You can also undeploy:
 
 ```python
-rm.undeploy()
+remote_model.undeploy()
 ```
 
 #### GitOps
