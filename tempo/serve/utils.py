@@ -1,5 +1,6 @@
 import copy
 from inspect import getmembers, isclass, isfunction
+from types import SimpleNamespace
 from typing import Any, Callable, Optional, Type
 
 from ..kfserving.protocol import KFServingV2Protocol
@@ -59,6 +60,20 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
         # We bind _user_func so that `self` is passed implicitly
         instance_model._user_func = _bind(self, instance_model._user_func)
 
+        # The copy() function calls __getstate__ so we need to set insights as it's set to SimpleNamespace otheriwse
+        setattr(self, "insights_manager", class_model.insights_manager)
+        setattr(instance_model, "insights_manager", class_model.insights_manager)
+
+        # We bind the __getstate__ function to the current object so it also is used when exporting the object
+        def __getstate__(self):
+            state = self.__dict__.copy()
+            state["context"] = SimpleNamespace()
+            # Remove the insights manager from the cloudpickle context
+            state["insights_manager"] = SimpleNamespace()
+            return state
+
+        self.__getstate__ = _bind(self, __getstate__)
+
         # Bind back Tempo interface to make sure it points to instance referece
         _bind_tempo_interface(self, instance_model)
 
@@ -66,6 +81,9 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
 
     K.__init__ = __init__  # Set the class' __init__ to the new one
 
+    # TODO why not call instance_model._user_func instead if already bound
+    # This may be desirable given that it seems there is a discrepancy where the
+    # model function gets called with a different self (the self of the model)
     def __call__(self, *args, **kwargs) -> Any:
         model = getattr(self, field_name)
         return model(*args, **kwargs)

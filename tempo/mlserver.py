@@ -6,10 +6,13 @@ from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri
 
+from .insights.context import insights_context
+from .insights.manager import InsightsManager
+from .insights.wrapper import InsightsWrapper
 from .serve.base import BaseModel
 from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
-from .serve.metadata import ModelFramework, RuntimeOptions
+from .serve.metadata import InsightRequestModes, ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
 
 
@@ -25,6 +28,7 @@ class InferenceRuntime(MLModel):
     async def load(self) -> bool:
         self._model = await self._load_model()
         await self._load_runtime()
+        await self._load_insights()
 
         self._is_coroutine = iscoroutinefunction(self._model.request)
 
@@ -52,15 +56,39 @@ class InferenceRuntime(MLModel):
 
         return model
 
+    async def _load_insights(self):
+        runtime_options = self._model.runtime_options_override
+        if not runtime_options:
+            runtime_options = self._model.model_spec.runtime_options
+        insights_params = runtime_options.insights_options.dict()
+
+        self.insights_manager = InsightsManager(**insights_params)
+
     async def _load_runtime(self):
         rt_options_str = os.getenv(ENV_TEMPO_RUNTIME_OPTIONS)
         if rt_options_str:
             rt_options = RuntimeOptions(**json.loads(rt_options_str))
             self._model.set_runtime_options_override(rt_options)
 
-    async def predict(self, payload: InferenceRequest) -> InferenceResponse:
-        prediction = self._model.request(payload.dict())
-        if self._is_coroutine:
-            prediction = await prediction  # type: ignore
+    async def predict(self, request: InferenceRequest) -> InferenceResponse:
 
-        return InferenceResponse(**prediction)
+        insights_wrapper = InsightsWrapper(self.insights_manager)
+        insights_context.set(insights_wrapper)
+
+        request_dict = request.dict()
+
+        response_dict = self._model.request(request_dict)
+        if self._is_coroutine:
+            response_dict = await response_dict  # type: ignore
+
+        # TODO: Move to functions declared upfront with logic contained to avoid if
+        if self._model.get_insights_mode == InsightRequestModes.ALL:
+            self.insights_manager.log(request_dict)
+            self.insights_manager.log(response_dict)
+        else:
+            if self._model.get_insights_mode == InsightRequestModes.REQUEST or insights_wrapper.set_log_request:
+                self.insights_manager.log(request_dict)
+            if self._model.get_insights_mode == InsightRequestModes.RESPONSE or insights_wrapper.set_log_response:
+                self.insights_manager.log(response_dict)
+
+        return InferenceResponse(**response_dict)

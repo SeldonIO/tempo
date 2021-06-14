@@ -1,17 +1,16 @@
 import json
-import os
 import time
 from typing import Optional, Sequence
 
 import yaml
-from kubernetes import client, config
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from tempo.k8s.constants import TempoK8sLabel, TempoK8sModelSpecAnnotation
+from tempo.k8s.utils import create_k8s_client
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
-from tempo.serve.constants import ENV_K8S_SERVICE_HOST
 from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
@@ -28,22 +27,13 @@ class SeldonKubernetesRuntime(Runtime):
         runtime_options.runtime = "tempo.seldon.SeldonKubernetesRuntime"
         super().__init__(runtime_options)
 
-    def create_k8s_client(self):
-        inside_cluster = os.getenv(ENV_K8S_SERVICE_HOST)
-        if inside_cluster:
-            logger.debug("Loading cluster local config")
-            config.load_incluster_config()
-        else:
-            logger.debug("Loading external kubernetes config")
-            config.load_kube_config()
-
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
-        self.create_k8s_client()
+        create_k8s_client()
         endpoint = Endpoint()
         return endpoint.get_url(model_spec)
 
     def undeploy_spec(self, model_spec: ModelSpec):
-        self.create_k8s_client()
+        create_k8s_client()
         api_instance = client.CustomObjectsApi()
         api_instance.delete_namespaced_custom_object(
             "machinelearning.seldon.io",
@@ -55,7 +45,7 @@ class SeldonKubernetesRuntime(Runtime):
         )
 
     def deploy_spec(self, model_spec: ModelSpec):
-        self.create_k8s_client()
+        create_k8s_client()
         k8s_specer = KubernetesSpec(model_spec)
         k8s_spec = k8s_specer.spec
         logger.debug(k8s_spec)
@@ -92,7 +82,7 @@ class SeldonKubernetesRuntime(Runtime):
                 raise e
 
     def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
-        self.create_k8s_client()
+        create_k8s_client()
         ready = False
         t0 = time.time()
         while not ready:
@@ -117,7 +107,7 @@ class SeldonKubernetesRuntime(Runtime):
         return yaml.safe_dump(k8s_spec.spec)
 
     def list_models(self, namespace: Optional[str] = None) -> Sequence[DeployedModel]:
-        self.create_k8s_client()
+        create_k8s_client()
         api_instance = client.CustomObjectsApi()
 
         if namespace is None and self.runtime_options is not None:

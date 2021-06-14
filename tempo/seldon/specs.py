@@ -15,14 +15,17 @@ DefaultServiceAccountName = "tempo-pipeline"
 
 
 def get_container_spec(model_details: ModelSpec) -> dict:
+    runtime_options = model_details.runtime_options.copy(deep=True)
+    # Ensure running inside asyncio loop in MLServer
+    runtime_options.insights_options.in_asyncio = True
     if (
         model_details.model_details.platform == ModelFramework.TempoPipeline
         or model_details.model_details.platform == ModelFramework.Custom
     ):
-        return _V2ContainerFactory.get_container_spec(model_details.model_details, model_details.runtime_options)
+        return _V2ContainerFactory.get_container_spec(model_details.model_details, runtime_options)
 
     if isinstance(model_details.protocol, KFServingV2Protocol):
-        return _V2ContainerFactory.get_container_spec(model_details.model_details, model_details.runtime_options)
+        return _V2ContainerFactory.get_container_spec(model_details.model_details, runtime_options)
 
     return _V1ContainerFactory.get_container_spec(model_details.model_details)
 

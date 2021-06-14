@@ -1,0 +1,14 @@
+- op: add
+  path: /spec/predictors/0/componentSpecs
+  value:
+    - spec:
+        containers:
+        - name: classifier
+          resources:
+            requests:
+              cpu: 500m
+              memory: 500Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+                    

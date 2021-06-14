@@ -4,15 +4,13 @@ import time
 from typing import Optional, Sequence, Tuple
 
 import docker
-from docker.client import DockerClient
-from docker.errors import NotFound
 from docker.models.containers import Container
 
+from tempo.docker.constants import DefaultNetworkName
+from tempo.docker.utils import create_network
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.metadata import RuntimeOptions
-
-DefaultNetworkName = "tempo"
 
 
 class SeldonDockerRuntime(Runtime):
@@ -66,7 +64,7 @@ class SeldonDockerRuntime(Runtime):
         container_index = self._get_port_index()
         model_folder = model_details.model_details.local_folder
         container_spec = get_container_spec(model_details)
-        self._create_network(docker_client)
+        create_network(docker_client)
 
         docker_client.containers.run(
             name=self._get_container_name(model_details),
@@ -77,12 +75,6 @@ class SeldonDockerRuntime(Runtime):
             user=uid,
             **container_spec,
         )
-
-    def _create_network(self, docker_client: DockerClient, network_name=DefaultNetworkName):
-        try:
-            docker_client.networks.get(network_id=network_name)
-        except NotFound:
-            docker_client.networks.create(name=DefaultNetworkName)
 
     def _get_port_index(self):
         return f"{DefaultHTTPPort}/tcp"

@@ -14,11 +14,19 @@ from pydantic import validator
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
+from ..insights.context import insights_context
+from ..insights.manager import InsightsManager
 from ..utils import logger
 from .args import infer_args, process_datatypes
-from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
+from .constants import (
+    ENV_K8S_SERVICE_HOST,
+    DefaultCondaFile,
+    DefaultEnvFilename,
+    DefaultInsightsLocalEndpoint,
+    DefaultModelFilename,
+)
 from .loader import load_custom, save_custom, save_environment
-from .metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from .metadata import InsightRequestModes, ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from .typing import fullname
@@ -67,6 +75,9 @@ class BaseModel:
                 description=description,
             )
 
+            if isinstance(runtime_options, dict):
+                runtime_options = RuntimeOptions.parse_obj(runtime_options)
+
             self.model_spec = ModelSpec(
                 model_details=self.details,
                 protocol=protocol,
@@ -75,6 +86,15 @@ class BaseModel:
 
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
+
+        # TODO: This could leave ghost message dumper containers running if changed
+        self.deploy_message_dumper = not runtime_options.insights_options.worker_endpoint
+
+        insights_params = runtime_options.insights_options.dict()
+        if self.deploy_message_dumper:
+            insights_params["worker_endpoint"] = DefaultInsightsLocalEndpoint
+
+        self.insights_manager = InsightsManager(**insights_params)
 
         # K holds the wrapped class (if any)
         self._K: Optional[Type] = None
@@ -127,6 +147,8 @@ class BaseModel:
         """
         state = self.__dict__.copy()
         state["context"] = SimpleNamespace()
+        # Remove the insights manager from the cloudpickle context
+        state["insights_manager"] = SimpleNamespace()
 
         return state
 
@@ -210,6 +232,9 @@ class BaseModel:
         cls: Any = locate(cls_path)
         return cls()
 
+    def get_insights_mode(self) -> InsightRequestModes:
+        return self.model_spec.runtime_options.insights_options.mode_type
+
     def predict(self, *args, **kwargs):
         # TODO: Decouple to support multiple transports (e.g. Kafka, gRPC)
         model_spec = self._get_model_spec(None)
@@ -266,6 +291,12 @@ class BaseModel:
 
         if self.use_remote:
             return self.predict(*args, **kwargs)
+
+        # When calling the method from outside mlserver the context is not set
+        # In this situation the context has to be set manually to the local created
+        if not insights_context.get():
+            logger.debug("Setting context to context for insights manager")
+            insights_context.set(self.insights_manager)
 
         return self._user_func(*args, **kwargs)
 
