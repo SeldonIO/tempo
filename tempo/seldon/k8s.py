@@ -11,13 +11,6 @@ from tempo.k8s.utils import create_k8s_client
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
-from tempo.serve.constants import ENV_K8S_SERVICE_HOST
-from tempo.serve.metadata import RuntimeOptions
-from tempo.serve.stub import deserialize
-from tempo.utils import logger
-from tempo.serve.constants import (
-    ENV_K8S_SERVICE_HOST,
-)
 from tempo.serve.metadata import RuntimeOptions
 from tempo.serve.stub import deserialize
 from tempo.utils import logger

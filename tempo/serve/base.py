@@ -30,8 +30,6 @@ from .metadata import InsightRequestModes, ModelDataArg, ModelDataArgs, ModelDet
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from .typing import fullname
-from ..insights.manager import InsightsManager
-from ..insights.context import insights_context
 
 
 class BaseModel:

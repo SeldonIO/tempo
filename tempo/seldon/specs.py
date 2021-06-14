@@ -4,16 +4,10 @@ from tempo.k8s.constants import TempoK8sDescriptionAnnotation, TempoK8sLabel, Te
 from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.serve.base import ModelSpec
-from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
-from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions, DockerOptions, KubernetesOptions
 from tempo.serve.constants import (
     ENV_TEMPO_RUNTIME_OPTIONS,
-    DefaultInsightsDockerEndpoint,
-    DefaultInsightsK8sEndpoint,
-    DefaultInsightsLocalEndpoint,
 )
-from tempo.utils import logger
-from tempo.serve.metadata import KubernetesOptions, ModelDetails, ModelFramework, RuntimeOptions
+from tempo.serve.metadata import ModelDetails, ModelFramework, RuntimeOptions
 
 DefaultHTTPPort = "9000"
 DefaultGRPCPort = "9500"
