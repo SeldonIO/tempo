@@ -4,6 +4,7 @@ from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.serve.metadata import KubernetesOptions, ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
+import yaml
 
 
 @pytest.mark.parametrize(
@@ -14,16 +15,6 @@ kind: SeldonDeployment
 metadata:
   annotations:
     seldon.io/tempo-description: ''
-    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-sklearn", "local_folder":
-      "/tmp/model", "uri": "gs://seldon-models/sklearn/iris", "platform": "sklearn",
-      "inputs": {"args": [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args":
-      [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.seldon.protocol.SeldonProtocol",
-      "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
-      {"runtime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime":
-      "tempo.seldon.SeldonKubernetesRuntime", "replicas": 1, "minReplicas": null,
-      "maxReplicas": null, "authSecretName": null, "serviceAccountName": null, "namespace":
-      "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
-      "ssl": false, "verify_ssl": true}}}'
   labels:
     seldon.io/tempo: 'true'
   name: test-iris-sklearn
@@ -50,7 +41,11 @@ def test_seldon_sklearn_model_yaml(expected):
         protocol=SeldonProtocol(),
     )
     runtime = SeldonKubernetesRuntime()
-    assert runtime.manifest(m) == expected
+    yaml_str = runtime.to_k8s_yaml(m)
+    yaml_obj = yaml.safe_load(yaml_str)
+    yaml_obj_expected = yaml.safe_load(expected)
+    del yaml_obj["metadata"]["annotations"]["seldon.io/tempo-model"]
+    assert yaml_obj == yaml_obj_expected
 
 
 @pytest.mark.parametrize(
@@ -61,16 +56,6 @@ kind: SeldonDeployment
 metadata:
   annotations:
     seldon.io/tempo-description: ''
-    seldon.io/tempo-model: '{"model_details": {"name": "test-iris-xgboost", "local_folder":
-      "/tmp/model", "uri": "gs://seldon-models/xgboost/iris", "platform": "xgboost",
-      "inputs": {"args": [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args":
-      [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.seldon.protocol.SeldonProtocol",
-      "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "docker_options":
-      {"runtime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime":
-      "tempo.seldon.SeldonKubernetesRuntime", "replicas": 1, "minReplicas": null,
-      "maxReplicas": null, "authSecretName": null, "serviceAccountName": null, "namespace":
-      "default"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
-      "ssl": false, "verify_ssl": true}}}'
   labels:
     seldon.io/tempo: 'true'
   name: test-iris-xgboost
@@ -97,7 +82,11 @@ def test_seldon_xgboost_model_yaml(expected):
         local_folder="/tmp/model",
     )
     runtime = SeldonKubernetesRuntime()
-    assert runtime.manifest(m) == expected
+    yaml_str = runtime.to_k8s_yaml(m)
+    yaml_obj = yaml.safe_load(yaml_str)
+    yaml_obj_expected = yaml.safe_load(expected)
+    del yaml_obj["metadata"]["annotations"]["seldon.io/tempo-model"]
+    assert yaml_obj == yaml_obj_expected
 
 
 @pytest.mark.parametrize(
