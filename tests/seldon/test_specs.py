@@ -1,3 +1,4 @@
+from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec, get_container_spec
 from tempo.serve.base import ModelSpec
@@ -26,7 +27,6 @@ def test_kubernetes_spec(sklearn_model):
     }
 
     assert k8s_object.spec["spec"] == expected["spec"]
-
 
 def test_tensorflow_spec():
     md = ModelDetails(
