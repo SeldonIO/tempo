@@ -77,7 +77,7 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
 
 def _bind_tempo_interface(artifact: Any, model: BaseModel) -> Any:
     setattr(artifact, "request", model.request)
-    setattr(artifact, "remote", model.predict)
+    setattr(artifact, "predict", model.predict)
     setattr(artifact, "get_tempo", model.get_tempo)
 
     return artifact
