@@ -32,7 +32,9 @@ def deploy_insights_message_dumper():
             DefaultInsightsServiceName,
             DefaultSeldonSystemNamespace,
         )
-        logger.debug(f"Pod with name {DefaultInsightsServiceName} in namespace {DefaultSeldonSystemNamespace} already exists")
+        logger.debug(
+            f"Pod with name {DefaultInsightsServiceName} in namespace {DefaultSeldonSystemNamespace} already exists"
+        )
     except ApiException as e:
         if e.status != 404:
             raise e
@@ -64,7 +66,9 @@ def deploy_insights_message_dumper():
             DefaultInsightsServiceName,
             DefaultSeldonSystemNamespace,
         )
-        logger.debug(f"Service with name {DefaultInsightsServiceName} in namespace {DefaultSeldonSystemNamespace} already exists")
+        logger.debug(
+            f"Service with name {DefaultInsightsServiceName} in namespace {DefaultSeldonSystemNamespace} already exists"
+        )
     except ApiException as e:
         if e.status != 404:
             raise e
@@ -104,6 +108,7 @@ def undeploy_insights_message_dumper():
     except ApiException as e:
         if e.status != 404:
             raise e
+
 
 def get_logs_insights_message_dumper():
     create_k8s_client()
