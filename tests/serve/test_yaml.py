@@ -1,10 +1,10 @@
 import pytest
+import yaml
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.protocol import SeldonProtocol
 from tempo.serve.metadata import KubernetesOptions, ModelFramework, RuntimeOptions
 from tempo.serve.model import Model
-import yaml
 
 
 @pytest.mark.parametrize(
