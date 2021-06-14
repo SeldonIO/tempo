@@ -73,14 +73,6 @@ class Runtime(abc.ABC, Deployer):
     def undeploy_spec(self, model_spec: ModelSpec):
         pass
 
-    @abc.abstractclassmethod
-    def deploy_insights_message_dumper(self):
-        pass
-
-    @abc.abstractclassmethod
-    def undeploy_insights_message_dumper(self):
-        pass
-
     @abc.abstractmethod
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         pass

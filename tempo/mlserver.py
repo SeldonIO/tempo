@@ -14,6 +14,7 @@ from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
 from .serve.metadata import InsightRequestModes, ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
+from tempo.utils import logger
 
 
 def _needs_init(model: BaseModel):

@@ -4,17 +4,17 @@ import time
 from typing import Optional, Sequence, Tuple
 
 import docker
-from docker.client import DockerClient
-from docker.errors import NotFound
 from docker.models.containers import Container
 
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.constants import DefaultInsightsImage, DefaultInsightsPort, DefaultInsightsServiceName
 from tempo.serve.metadata import RuntimeOptions
+from tempo.docker.constants import DefaultNetworkName
+from tempo.docker.utils import create_network
+from tempo.serve.runtime import ModelSpec, Runtime
 from tempo.utils import logger
 
-DefaultNetworkName = "tempo"
 
 
 class SeldonDockerRuntime(Runtime):
@@ -61,26 +61,6 @@ class SeldonDockerRuntime(Runtime):
         except docker.errors.NotFound:
             self._run_container(model_details)
 
-    def deploy_insights_message_dumper(self):
-        docker_client = docker.from_env()
-        try:
-            docker_client.containers.get(DefaultInsightsServiceName)
-        except docker.errors.NotFound:
-            pass
-        else:
-            logger.info("Attempted to deploy message dumper but already deployed")
-            return
-        uid = os.getuid()
-        self._create_network(docker_client)
-        docker_client.containers.run(
-            name=DefaultInsightsServiceName,
-            ports={f"{DefaultInsightsPort}/tcp": DefaultInsightsPort},
-            image=DefaultInsightsImage,
-            detach=True,
-            network=DefaultNetworkName,
-            user=uid,
-        )
-
     def _run_container(self, model_details: ModelSpec):
         docker_client = docker.from_env()
         uid = os.getuid()
@@ -88,7 +68,7 @@ class SeldonDockerRuntime(Runtime):
         container_index = self._get_port_index()
         model_folder = model_details.model_details.local_folder
         container_spec = get_container_spec(model_details)
-        self._create_network(docker_client)
+        create_network(docker_client)
 
         docker_client.containers.run(
             name=self._get_container_name(model_details),
@@ -99,12 +79,6 @@ class SeldonDockerRuntime(Runtime):
             user=uid,
             **container_spec,
         )
-
-    def _create_network(self, docker_client: DockerClient, network_name=DefaultNetworkName):
-        try:
-            docker_client.networks.get(network_id=network_name)
-        except NotFound:
-            docker_client.networks.create(name=DefaultNetworkName)
 
     def _get_port_index(self):
         return f"{DefaultHTTPPort}/tcp"
@@ -147,16 +121,6 @@ class SeldonDockerRuntime(Runtime):
 
     def undeploy_spec(self, model_spec: ModelSpec):
         container = self._get_container(model_spec)
-        container.remove(force=True)
-
-    def undeploy_insights_message_dumper(self):
-        docker_client = docker.from_env()
-        # TODO: Get from constant
-        try:
-            container = docker_client.containers.get(DefaultInsightsServiceName)
-        except docker.errors.NotFound:
-            logger.info("Attempted to undeploy insights dumper but container not running")
-            return
         container.remove(force=True)
 
     def _get_container(self, model_details: ModelSpec) -> Container:
