@@ -105,6 +105,8 @@ def start_insights_worker_from_sync(
     )
     logger.debug(f"Insights Worker starting insights worker from sync with params {args}")
     thread = threading.Thread(target=sync_init_loop_queue, args=args)
+    # Setting daemon to avoid hanging when process killed
+    thread.setDaemon(True)
     thread.start()
     event.wait()
 
