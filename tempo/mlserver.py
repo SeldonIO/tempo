@@ -85,9 +85,10 @@ class InferenceRuntime(MLModel):
         if self._model.get_insights_mode == InsightRequestModes.ALL:
             self.insights_manager.log(request_dict)
             self.insights_manager.log(response_dict)
-        elif self._model.get_insights_mode == InsightRequestModes.REQUEST or insights_wrapper.set_log_request:
-            self.insights_manager.log(request_dict)
-        elif self._model.get_insights_mode == InsightRequestModes.RESPONSE or insights_wrapper.set_log_response:
-            self.insights_manager.log(response_dict)
+        else:
+            if self._model.get_insights_mode == InsightRequestModes.REQUEST or insights_wrapper.set_log_request:
+                self.insights_manager.log(request_dict)
+            if self._model.get_insights_mode == InsightRequestModes.RESPONSE or insights_wrapper.set_log_response:
+                self.insights_manager.log(response_dict)
 
         return InferenceResponse(**response_dict)
