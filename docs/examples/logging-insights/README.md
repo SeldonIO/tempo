@@ -1,9 +1,6 @@
-# Serving a Custom Model
+# Sending Insights to Remote Server
 
-This example walks you through how to deploy a custom model with Tempo.
-In particular, we will walk you through how to write custom logic to run inference on a [numpyro model](http://num.pyro.ai/en/stable/).
-
-Note that we've picked `numpyro` for this example simply because it's not supported out of the box, but it should be possible to adapt this example easily to any other custom model.
+This example walks you through the API for sending insights to remote metrics servers.
 
 ## Prerequisites
 
@@ -13,196 +10,201 @@ This notebooks needs to be run in the `tempo-examples` conda environment defined
 conda env create --name tempo-examples --file conda/tempo-examples.yaml
 ```
 
-## Project Structure
-
 
 ```python
-!tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
-```
+from IPython.core.magic import register_line_cell_magic
 
-## Training
-
-The first step will be to train our model.
-This will be a very simple bayesian regression model, based on an example provided in the [`numpyro` docs](https://nbviewer.jupyter.org/github/pyro-ppl/numpyro/blob/master/notebooks/source/bayesian_regression.ipynb).
-
-Since this is a probabilistic model, during training we will compute an approximation to the posterior distribution of our model using MCMC.
-
-
-```python
-# %load  src/train.py
-# Original source code and more details can be found in:
-# https://nbviewer.jupyter.org/github/pyro-ppl/numpyro/blob/master/notebooks/source/bayesian_regression.ipynb
-
-
-import numpy as np
-import pandas as pd
-from jax import random
-from numpyro.infer import MCMC, NUTS
-from src.tempo import model_function
-
-
-def train():
-    DATASET_URL = "https://raw.githubusercontent.com/rmcelreath/rethinking/master/data/WaffleDivorce.csv"
-    dset = pd.read_csv(DATASET_URL, sep=";")
-
-    def standardize(x):
-        (x - x.mean()) / x.std()
-
-    dset["AgeScaled"] = dset.MedianAgeMarriage.pipe(standardize)
-    dset["MarriageScaled"] = dset.Marriage.pipe(standardize)
-    dset["DivorceScaled"] = dset.Divorce.pipe(standardize)
-
-    # Start from this source of randomness. We will split keys for subsequent operations.
-    rng_key = random.PRNGKey(0)
-    rng_key, rng_key_ = random.split(rng_key)
-
-    num_warmup, num_samples = 1000, 2000
-
-    # Run NUTS.
-    kernel = NUTS(model_function)
-    mcmc = MCMC(kernel, num_warmup, num_samples)
-    mcmc.run(rng_key_, marriage=dset.MarriageScaled.values, divorce=dset.DivorceScaled.values)
-    mcmc.print_summary()
-    return mcmc
-
-
-def save(mcmc, folder: str):
-    import json
-
-    samples = mcmc.get_samples()
-    serialisable = {}
-    for k, v in samples.items():
-        serialisable[k] = np.asarray(v).tolist()
-
-    model_file_name = f"{folder}/numpyro-divorce.json"
-    with open(model_file_name, "w") as model_file:
-        json.dump(serialisable, model_file)
-
+@register_line_cell_magic
+def writetemplate(line, cell):
+    with open(line, 'w') as f:
+        f.write(cell.format(**globals()))
 ```
 
 
 ```python
 import os
-from tempo.utils import logger
-import logging
-import numpy as np
-logger.setLevel(logging.ERROR)
-logging.basicConfig(level=logging.ERROR)
+
 ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
-from src.train import train, save, model_function
-mcmc = train()
+TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
 ```
-
-### Saving trained model
-
-Now that we have _trained_ our model, the next step will be to save it so that it can be loaded afterwards at serving-time.
-Note that, since this is a probabilistic model, we will only need to save the traces that approximate the posterior distribution over latent parameters.
-
-This will get saved in a `numpyro-divorce.json` file.
-
-
-```python
-save(mcmc, ARTIFACTS_FOLDER)
-```
-
-## Serving
-
-The next step will be to serve our model through Tempo. 
-For that, we will implement a custom model to perform inference using our custom `numpyro` model.
-Once our custom model is defined, we will be able to deploy it on any of the available runtimes using the same environment that we used for training.
 
 ### Custom inference logic 
 
-Our custom model will be responsible of:
+Our custom model will be very simple to focus the logic on the insights functionality.
 
-- Loading the model from the set samples we saved previously.
-- Running inference using our model structure, and the posterior approximated from the samples.
-
-With Tempo, this can be achieved as:
 
 
 ```python
-# %load src/tempo.py
-import os
-import json
 import numpy as np
-import numpyro
-from numpyro import distributions as dist
-from numpyro.infer import Predictive
-from jax import random
-from tempo import model, ModelFramework
+from tempo.serve.utils import pipeline, predictmethod
+from tempo.serve.metadata import RuntimeOptions, InsightRequestModes
 
-def model_function(marriage : np.ndarray = None, age : np.ndarray = None, divorce : np.ndarray = None):
-    a = numpyro.sample('a', dist.Normal(0., 0.2))
-    M, A = 0., 0.
-    if marriage is not None:
-        bM = numpyro.sample('bM', dist.Normal(0., 0.5))
-        M = bM * marriage
-    if age is not None:
-        bA = numpyro.sample('bA', dist.Normal(0., 0.5))
-        A = bA * age
-    sigma = numpyro.sample('sigma', dist.Exponential(1.))
-    mu = a + M + A
-    numpyro.sample('obs', dist.Normal(mu, sigma), obs=divorce)
+from tempo.insights.context import insights
 
-
-def get_tempo_artifact(local_folder: str):
-    @model(
-        name='numpyro-divorce',
-        platform=ModelFramework.Custom,
-        local_folder=local_folder,
-        uri="s3://tempo/divorce",
-    )
-    def numpyro_divorce(marriage: np.ndarray, age: np.ndarray) -> np.ndarray:
-        rng_key = random.PRNGKey(0)
-        predictions = numpyro_divorce.context.predictive_dist(
-            rng_key=rng_key,
-            marriage=marriage,
-            age=age
-        )
-
-        mean = predictions['obs'].mean(axis=0)
-        return np.asarray(mean)
-
-    @numpyro_divorce.loadmethod
-    def load_numpyro_divorce():
-        model_uri = os.path.join(
-            numpyro_divorce.details.local_folder,
-            "numpyro-divorce.json"
-        )
-
-        with open(model_uri) as model_file:
-            raw_samples = json.load(model_file)
-
-        samples = {}
-        for k, v in raw_samples.items():
-            samples[k] = np.array(v)
-
-        print(model_function.__module__)
-        numpyro_divorce.context.predictive_dist = Predictive(model_function, samples)
-
-    return numpyro_divorce
-
-
+@pipeline(
+    name='insights-pipeline',
+    uri="s3://tempo/insights-pipeline/resources",
+    local_folder=ARTIFACTS_FOLDER,
+)
+class Pipeline:
+    
+    @predictmethod
+    def predict(self, data: np.ndarray, parameters: dict) -> np.ndarray:
+        if parameters.get("log"):
+            insights.log_request()
+            insights.log_response()
+            insights.log(parameters)
+        return data
 
 ```
 
+## Create pipeline
+
 
 ```python
-from src.tempo import get_tempo_artifact
-numpyro_divorce = get_tempo_artifact(ARTIFACTS_FOLDER)
+pipeline = Pipeline()
 ```
 
-We can now test our custom logic by running inference locally.
+## Deploy Docker Insights Dumper
 
 
 ```python
-marriage = np.array([28.0])
-age = np.array([63])
-pred = numpyro_divorce(marriage=marriage, age=age)
+from tempo.docker.utils import deploy_insights_message_dumper
 
+deploy_insights_message_dumper()
+```
+
+## Print logs to make sure there's none
+
+
+```python
+from tempo.docker.utils import get_logs_insights_message_dumper
+
+print(get_logs_insights_message_dumper())
+```
+
+    
+
+
+### Explicitly Log Insights 
+We explicitly request to log by passing the parameters
+
+
+```python
+params = { "log": "value" }
+data = np.array([63])
+pred = pipeline(data, params)
 print(pred)
 ```
+
+    Attempted to log request but called manager directly, see documentation [TODO]
+    Attempted to log response but called manager directly, see documentation [TODO]
+
+
+    [63]
+
+
+## Check the logs
+
+We can see that only the params has been logged. 
+
+This is because even we are passing an input to our model, there is still no request or response. 
+
+To log HTTP request/response, this is relevant when the model is deployed.
+
+
+```python
+print(get_logs_insights_message_dumper())
+```
+
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "0.0.0.0:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.6.2",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "0.0.0.0",
+        "ip": "::ffff:172.18.0.1",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:172.18.0.1 - - [14/Jun/2021:07:02:58 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    
+
+
+### Don't log insights
+
+We are now going to send the values with the blank parameters to avoid passing through the branch that explicitly logs the insights.
+
+
+```python
+params = { }
+data = np.array([63])
+pred = pipeline(data, params)
+print(pred)
+```
+
+    [63]
+
+
+## Check logs again
+We can see that now new logs have been added
+
+
+```python
+print(get_logs_insights_message_dumper())
+```
+
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "0.0.0.0:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.6.2",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "0.0.0.0",
+        "ip": "::ffff:172.18.0.1",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:172.18.0.1 - - [14/Jun/2021:07:02:58 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    
+
 
 ### Deploy the  Model to Docker
 
@@ -212,39 +214,377 @@ We'll deploy first to Docker to test.
 
 
 ```python
-!cat artifacts/conda.yaml
+%%writetemplate $ARTIFACTS_FOLDER/conda.yaml
+name: tempo-insights
+channels:
+  - defaults
+dependencies:
+  - pip=21.0.1
+  - python=3.7.9
+  - pip:
+    - mlops-tempo @ file://{TEMPO_DIR}
+    - mlserver==0.3.1.dev7
 ```
 
 
 ```python
 from tempo.serve.loader import save
-save(numpyro_divorce)
+save(pipeline, save_env=True)
 ```
+
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-1c4d287f-867f-4eb6-8385-84335f546e28' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/logging-insights/artifacts/environment.tar.gz'
+    [########################################] | 100% Completed | 10.0s
+
 
 
 ```python
 from tempo.seldon import SeldonDockerRuntime
 
 docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(numpyro_divorce)
-docker_runtime.wait_ready(numpyro_divorce)
+docker_runtime.deploy(pipeline)
+docker_runtime.wait_ready(pipeline)
 ```
+
+    getting container spec model_details=ModelDetails(name='insights-pipeline', local_folder='/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/logging-insights/artifacts', uri='s3://tempo/insights-pipeline/resources', platform=<ModelFramework.TempoPipeline: 'tempo'>, inputs=ModelDataArgs(args=[ModelDataArg(ty=<class 'numpy.ndarray'>, name='data'), ModelDataArg(ty=<class 'dict'>, name='parameters')]), outputs=ModelDataArgs(args=[ModelDataArg(ty=<class 'numpy.ndarray'>, name=None)]), description='') protocol=KFServingV2Protocol() runtime_options=RuntimeOptions(runtime=None, docker_options=DockerOptions(defaultRuntime='tempo.seldon.SeldonDockerRuntime'), k8s_options=KubernetesOptions(replicas=1, minReplicas=None, maxReplicas=None, authSecretName=None, serviceAccountName=None, defaultRuntime='tempo.seldon.SeldonKubernetesRuntime', namespace='default'), ingress_options=IngressOptions(ingress='tempo.ingress.istio.IstioIngress', ssl=False, verify_ssl=True), insights_options=InsightsOptions(worker_endpoint='', batch_size=1, parallelism=1, retries=3, window_time=0, mode_type=<InsightRequestModes.NONE: 'NONE'>, in_asyncio=False))
+
 
 We can now test our model deployed in Docker as:
 
+## Log insights
+
 
 ```python
-numpyro_divorce.remote(marriage=marriage, age=age)
+params = { "log": "value" }
+data = np.array([63])
+pipeline.remote(data=data, parameters=params)
+```
+
+
+
+
+    array([63])
+
+
+
+## Check that all logs are now present
+Now we can see that in our model running in docker, the request and response were also logged as per our code logic
+
+
+```python
+print(get_logs_insights_message_dumper())
+```
+
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "0.0.0.0:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.6.2",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "0.0.0.0",
+        "ip": "::ffff:172.18.0.1",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:172.18.0.1 - - [14/Jun/2021:07:02:58 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "insights-dumper",
+        "ip": "::ffff:172.18.0.3",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:172.18.0.3 - - [14/Jun/2021:07:04:42 +0000] "POST / HTTP/1.1" 200 575 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "345",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"id\": \"dca5eb4c-0707-4eae-ac9d-7e7880c97214\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "fresh": false,
+        "hostname": "insights-dumper",
+        "ip": "::ffff:172.18.0.3",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "id": "dca5eb4c-0707-4eae-ac9d-7e7880c97214",
+            "parameters": null,
+            "inputs": [
+                {
+                    "name": "data",
+                    "shape": [
+                        1
+                    ],
+                    "datatype": "INT64",
+                    "parameters": null,
+                    "data": [
+                        63
+                    ]
+                },
+                {
+                    "name": "parameters",
+                    "shape": [
+                        16
+                    ],
+                    "datatype": "BYTES",
+                    "parameters": null,
+                    "data": [
+                        123,
+                        39,
+                        108,
+                        111,
+                        103,
+                        39,
+                        58,
+                        32,
+                        39,
+                        118,
+                        97,
+                        108,
+                        117,
+                        101,
+                        39,
+                        125
+                    ]
+                }
+            ],
+            "outputs": null
+        }
+    }
+    ::ffff:172.18.0.3 - - [14/Jun/2021:07:04:42 +0000] "POST / HTTP/1.1" 200 1624 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    
+
+
+## Don't log
+
+
+```python
+params = { }
+data = np.array([63])
+pipeline.remote(data=data, parameters=params)
+```
+
+
+
+
+    array([63])
+
+
+
+## Also we can see logs are not present when requested
+
+When providing the explicit configuration the logs are not sent, and this can be seen in the insights logger container logs
+
+
+```python
+print(get_logs_insights_message_dumper())
+```
+
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "0.0.0.0:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.6.2",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "0.0.0.0",
+        "ip": "::ffff:172.18.0.1",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:172.18.0.1 - - [14/Jun/2021:07:02:58 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "insights-dumper",
+        "ip": "::ffff:172.18.0.3",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:172.18.0.3 - - [14/Jun/2021:07:04:42 +0000] "POST / HTTP/1.1" 200 575 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "345",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"id\": \"dca5eb4c-0707-4eae-ac9d-7e7880c97214\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "fresh": false,
+        "hostname": "insights-dumper",
+        "ip": "::ffff:172.18.0.3",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "8dc66c87aa13"
+        },
+        "connection": {},
+        "json": {
+            "id": "dca5eb4c-0707-4eae-ac9d-7e7880c97214",
+            "parameters": null,
+            "inputs": [
+                {
+                    "name": "data",
+                    "shape": [
+                        1
+                    ],
+                    "datatype": "INT64",
+                    "parameters": null,
+                    "data": [
+                        63
+                    ]
+                },
+                {
+                    "name": "parameters",
+                    "shape": [
+                        16
+                    ],
+                    "datatype": "BYTES",
+                    "parameters": null,
+                    "data": [
+                        123,
+                        39,
+                        108,
+                        111,
+                        103,
+                        39,
+                        58,
+                        32,
+                        39,
+                        118,
+                        97,
+                        108,
+                        117,
+                        101,
+                        39,
+                        125
+                    ]
+                }
+            ],
+            "outputs": null
+        }
+    }
+    ::ffff:172.18.0.3 - - [14/Jun/2021:07:04:42 +0000] "POST / HTTP/1.1" 200 1624 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    
+
+
+## Now undeploy to move to Kubernetes
+
+
+```python
+docker_runtime.undeploy(pipeline)
 ```
 
 
 ```python
-docker_runtime.undeploy(numpyro_divorce)
+from tempo.docker.utils import undeploy_insights_message_dumper
+
+undeploy_insights_message_dumper()
 ```
 
-## Production Option 1 (Deploy to Kubernetes with Tempo)
+## Deploy to Kubernetes with Tempo
 
- * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
+ * Here we illustrate how the same workflow applies in kubernetes
  
 ### Prerequisites
  
@@ -259,6 +599,12 @@ docker_runtime.undeploy(numpyro_divorce)
 !kubectl apply -f k8s/rbac -n production
 ```
 
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+
+
 
 ```python
 from tempo.examples.minio import create_minio_rclone
@@ -269,62 +615,314 @@ create_minio_rclone(os.getcwd()+"/rclone.conf")
 
 ```python
 from tempo.serve.loader import upload
-upload(numpyro_divorce)
+upload(pipeline)
 ```
+
+    2021/06/14 13:04:19 Failed to create file system for "s3://tempo/insights-pipeline/resources": didn't find section in config file
+    
+
 
 
 ```python
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
+from tempo.serve.metadata import RuntimeOptions, KubernetesOptions, InsightsOptions
 runtime_options = RuntimeOptions(
         k8s_options=KubernetesOptions(
             namespace="production",
             authSecretName="minio-secret"
+        ),
+        insights_options=InsightsOptions(
+            worker_endpoint="http://insights-dumper.seldon-system:8080"
         )
     )
 ```
+
+
+```python
+from tempo.k8s.utils import deploy_insights_message_dumper
+
+deploy_insights_message_dumper()
+```
+
+
+```python
+from tempo.k8s.utils import get_logs_insights_message_dumper
+
+print(get_logs_insights_message_dumper())
+```
+
+    
+
 
 
 ```python
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-k8s_runtime.deploy(numpyro_divorce)
-k8s_runtime.wait_ready(numpyro_divorce)
+k8s_runtime.deploy(pipeline)
+k8s_runtime.wait_ready(pipeline)
+```
+
+## Log insights
+
+
+```python
+params = { "log": "value" }
+data = np.array([63])
+pipeline.remote(data=data, parameters=params)
+```
+
+
+
+
+    array([63])
+
+
+
+
+```python
+from tempo.k8s.utils import get_logs_insights_message_dumper
+
+print(get_logs_insights_message_dumper())
+```
+
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper.seldon-system:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "insights-dumper.seldon-system",
+        "ip": "::ffff:10.1.1.168",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "insights-dumper"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:10.1.1.168 - - [14/Jun/2021:12:31:47 +0000] "POST / HTTP/1.1" 200 606 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper.seldon-system:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "345",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"id\": \"8c5c847b-d5ff-460d-a6d7-7c037943f725\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "fresh": false,
+        "hostname": "insights-dumper.seldon-system",
+        "ip": "::ffff:10.1.1.168",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "insights-dumper"
+        },
+        "connection": {},
+        "json": {
+            "id": "8c5c847b-d5ff-460d-a6d7-7c037943f725",
+            "parameters": null,
+            "inputs": [
+                {
+                    "name": "data",
+                    "shape": [
+                        1
+                    ],
+                    "datatype": "INT64",
+                    "parameters": null,
+                    "data": [
+                        63
+                    ]
+                },
+                {
+                    "name": "parameters",
+                    "shape": [
+                        16
+                    ],
+                    "datatype": "BYTES",
+                    "parameters": null,
+                    "data": [
+                        123,
+                        39,
+                        108,
+                        111,
+                        103,
+                        39,
+                        58,
+                        32,
+                        39,
+                        118,
+                        97,
+                        108,
+                        117,
+                        101,
+                        39,
+                        125
+                    ]
+                }
+            ],
+            "outputs": null
+        }
+    }
+    ::ffff:10.1.1.168 - - [14/Jun/2021:12:31:47 +0000] "POST / HTTP/1.1" 200 1655 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    
+
+
+## Don't log
+
+
+```python
+params = {  }
+data = np.array([63])
+pipeline.remote(data=data, parameters=params)
+```
+
+
+
+
+    array([63])
+
+
+
+
+```python
+print(get_logs_insights_message_dumper())
+```
+
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper.seldon-system:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "insights-dumper.seldon-system",
+        "ip": "::ffff:10.1.1.168",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "insights-dumper"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:10.1.1.168 - - [14/Jun/2021:12:31:47 +0000] "POST / HTTP/1.1" 200 606 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper.seldon-system:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "345",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"id\": \"8c5c847b-d5ff-460d-a6d7-7c037943f725\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "fresh": false,
+        "hostname": "insights-dumper.seldon-system",
+        "ip": "::ffff:10.1.1.168",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "insights-dumper"
+        },
+        "connection": {},
+        "json": {
+            "id": "8c5c847b-d5ff-460d-a6d7-7c037943f725",
+            "parameters": null,
+            "inputs": [
+                {
+                    "name": "data",
+                    "shape": [
+                        1
+                    ],
+                    "datatype": "INT64",
+                    "parameters": null,
+                    "data": [
+                        63
+                    ]
+                },
+                {
+                    "name": "parameters",
+                    "shape": [
+                        16
+                    ],
+                    "datatype": "BYTES",
+                    "parameters": null,
+                    "data": [
+                        123,
+                        39,
+                        108,
+                        111,
+                        103,
+                        39,
+                        58,
+                        32,
+                        39,
+                        118,
+                        97,
+                        108,
+                        117,
+                        101,
+                        39,
+                        125
+                    ]
+                }
+            ],
+            "outputs": null
+        }
+    }
+    ::ffff:10.1.1.168 - - [14/Jun/2021:12:31:47 +0000] "POST / HTTP/1.1" 200 1655 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    
+
+
+
+```python
+k8s_runtime.undeploy(pipeline)
 ```
 
 
 ```python
-numpyro_divorce.remote(marriage=marriage, age=age)
-```
+from tempo.k8s.utils import undeploy_insights_message_dumper
 
-
-```python
-k8s_runtime.undeploy(numpyro_divorce)
-```
-
-## Production Option 2 (Gitops)
-
- * We create yaml to provide to our DevOps team to deploy to a production cluster
- * We add Kustomize patches to modify the base Kubernetes yaml created by Tempo
-
-
-```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options = RuntimeOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
-k8s_runtime = SeldonKubernetesRuntime()
-yaml_str = k8s_runtime.to_k8s_yaml(numpyro_divorce)
-with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
-    f.write(yaml_str)
-```
-
-
-```python
-!kustomize build k8s
+undeploy_insights_message_dumper()
 ```
 
 
