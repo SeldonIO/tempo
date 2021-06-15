@@ -7,4 +7,4 @@ dependencies:
     - alibi
     - dill
     - mlops-tempo
-    - mlserver==0.3.1.dev7
+    - mlserver==0.3.2

@@ -44,7 +44,7 @@ spec:
           null, "maxReplicas": null, "authSecretName": null, "serviceAccountName":
           "kf-tempo", "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
           "ssl": false, "verify_ssl": true}}'
-      image: seldonio/mlserver:0.3.1.dev7
+      image: seldonio/mlserver:0.3.2
       name: mlserver
     serviceAccountName: kf-tempo
 

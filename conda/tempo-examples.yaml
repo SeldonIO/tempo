@@ -14,7 +14,7 @@ dependencies:
       - alibi==0.5.7
       - alibi-detect==0.6.0
       - dill
-      - mlserver==0.3.1.dev7
+      - mlserver==0.3.2
       - xgboost
       - ansible
       - openshift
