@@ -1,5 +1,5 @@
 import contextvars
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -34,10 +34,10 @@ class tempo:
 
 
 class PayloadContext(BaseModel):
-    request_id: str = None
-    request_headers: dict = None
-    request: dict = None
-    response_headers: dict = None
+    request_id: Optional[str] = None
+    request_headers: Optional[dict] = None
+    request: Optional[dict] = None
+    response_headers: Optional[dict] = None
 
 
 class TempoContextWrapper:
