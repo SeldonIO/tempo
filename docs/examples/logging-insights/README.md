@@ -37,25 +37,27 @@ Our custom model will be very simple to focus the logic on the insights function
 ```python
 import numpy as np
 from tempo.serve.utils import pipeline, predictmethod
-from tempo.serve.metadata import RuntimeOptions, InsightRequestModes
-from tempo.serve.constants import DefaultInsightsDockerEndpoint
+from tempo.serve.metadata import InsightRequestModes, RuntimeOptions
+from tempo.serve.constants import DefaultInsightsLocalEndpoint
 
-from tempo.insights.context import insights
+from tempo.magic import tempo
+
+local_options = RuntimeOptions(**{"insights_options": {"worker_endpoint": DefaultInsightsLocalEndpoint }})
 
 @pipeline(
     name='insights-pipeline',
     uri="s3://tempo/insights-pipeline/resources",
     local_folder=ARTIFACTS_FOLDER,
-    runtime_options={"runtime_options": {"insights_options": {"worker_endpoint": DefaultInsightsDockerEndpoint}}},
+    runtime_options=local_options,
 )
 class Pipeline:
     
     @predictmethod
     def predict(self, data: np.ndarray, parameters: dict) -> np.ndarray:
         if parameters.get("log"):
-            insights.log_request()
-            insights.log_response()
-            insights.log(parameters)
+            tempo.insights.log_request()
+            tempo.insights.log_response()
+            tempo.insights.log(parameters)
         return data
 
 ```
@@ -141,14 +143,14 @@ print(get_logs_insights_message_dumper())
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "6ba982998341"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [14/Jun/2021:15:40:43 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.18.0.1 - - [15/Jun/2021:13:12:35 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
     
 
 
@@ -197,14 +199,14 @@ print(get_logs_insights_message_dumper())
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "9083a4fb61f9"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [14/Jun/2021:14:19:33 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.18.0.1 - - [15/Jun/2021:13:12:35 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
     
 
 
@@ -235,17 +237,23 @@ save(pipeline, save_env=True)
 ```
 
     Collecting packages...
-    Packing environment at '/home/alejandro/miniconda3/envs/tempo-5a1ef0c3-b31e-490d-af98-8fc8cc7c0f6b' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/logging-insights/artifacts/environment.tar.gz'
-    [########################################] | 100% Completed | 18.6s
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-424eb275-589f-421f-acc3-6dba9d7f803e' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/logging-insights/artifacts/environment.tar.gz'
+    [########################################] | 100% Completed | 16.1s
 
 
 
 ```python
-from tempo.seldon import SeldonDockerRuntime
+from tempo.serve.constants import DefaultInsightsDockerEndpoint
+from tempo.serve.metadata import RuntimeOptions
+from tempo import deploy
 
-docker_runtime = SeldonDockerRuntime()
-docker_runtime.deploy(pipeline)
-docker_runtime.wait_ready(pipeline)
+docker_options = RuntimeOptions(**{
+    "insights_options": {
+        "worker_endpoint": DefaultInsightsDockerEndpoint 
+    }
+})
+
+remote_model = deploy(pipeline, docker_options)
 ```
 
 We can now test our model deployed in Docker as:
@@ -256,7 +264,7 @@ We can now test our model deployed in Docker as:
 ```python
 params = { "log": "value" }
 data = np.array([63])
-pipeline.remote(data=data, parameters=params)
+remote_model.predict(data=data, parameters=params)
 ```
 
 
@@ -296,14 +304,14 @@ print(get_logs_insights_message_dumper())
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "9083a4fb61f9"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [14/Jun/2021:14:19:33 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.18.0.1 - - [15/Jun/2021:13:12:35 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
     -----------------
     {
         "path": "/",
@@ -319,21 +327,21 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.4",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "9083a4fb61f9"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.4 - - [14/Jun/2021:14:21:35 +0000] "POST / HTTP/1.1" 200 575 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [15/Jun/2021:13:16:15 +0000] "POST / HTTP/1.1" 200 575 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
@@ -346,21 +354,21 @@ print(get_logs_insights_message_dumper())
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"id\": \"078d5729-e886-4164-89a1-a4f78515abf4\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "body": "{\"id\": \"da612e20-63bd-498a-88ff-48f1474c93cc\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.4",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "9083a4fb61f9"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
-            "id": "078d5729-e886-4164-89a1-a4f78515abf4",
+            "id": "da612e20-63bd-498a-88ff-48f1474c93cc",
             "parameters": null,
             "inputs": [
                 {
@@ -404,7 +412,7 @@ print(get_logs_insights_message_dumper())
             "outputs": null
         }
     }
-    ::ffff:172.18.0.4 - - [14/Jun/2021:14:21:35 +0000] "POST / HTTP/1.1" 200 1624 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [15/Jun/2021:13:16:15 +0000] "POST / HTTP/1.1" 200 1624 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
@@ -420,14 +428,14 @@ print(get_logs_insights_message_dumper())
         "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}]}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.4",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "9083a4fb61f9"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
@@ -446,7 +454,7 @@ print(get_logs_insights_message_dumper())
             ]
         }
     }
-    ::ffff:172.18.0.4 - - [14/Jun/2021:14:21:35 +0000] "POST / HTTP/1.1" 200 890 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [15/Jun/2021:13:16:15 +0000] "POST / HTTP/1.1" 200 890 "-" "Python/3.7 aiohttp/3.7.4.post0"
     
 
 
@@ -456,7 +464,7 @@ print(get_logs_insights_message_dumper())
 ```python
 params = { }
 data = np.array([63])
-pipeline.remote(data=data, parameters=params)
+remote_model.predict(data=data, parameters=params)
 ```
 
 
@@ -497,14 +505,14 @@ print(get_logs_insights_message_dumper())
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "59b433f2b61e"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [14/Jun/2021:13:56:44 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.18.0.1 - - [15/Jun/2021:13:12:35 +0000] "POST / HTTP/1.1" 200 553 "-" "Python/3.7 aiohttp/3.6.2"
     -----------------
     {
         "path": "/",
@@ -520,21 +528,21 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.4",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "59b433f2b61e"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.4 - - [14/Jun/2021:14:02:46 +0000] "POST / HTTP/1.1" 200 575 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [15/Jun/2021:13:16:15 +0000] "POST / HTTP/1.1" 200 575 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
@@ -547,21 +555,21 @@ print(get_logs_insights_message_dumper())
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"id\": \"10810ef2-b954-42b2-a84c-9554927bf75d\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "body": "{\"id\": \"da612e20-63bd-498a-88ff-48f1474c93cc\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.4",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "59b433f2b61e"
+            "hostname": "54e1c9dd991e"
         },
         "connection": {},
         "json": {
-            "id": "10810ef2-b954-42b2-a84c-9554927bf75d",
+            "id": "da612e20-63bd-498a-88ff-48f1474c93cc",
             "parameters": null,
             "inputs": [
                 {
@@ -605,7 +613,49 @@ print(get_logs_insights_message_dumper())
             "outputs": null
         }
     }
-    ::ffff:172.18.0.4 - - [14/Jun/2021:14:02:46 +0000] "POST / HTTP/1.1" 200 1624 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [15/Jun/2021:13:16:15 +0000] "POST / HTTP/1.1" 200 1624 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper:8080",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "118",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}]}",
+        "fresh": false,
+        "hostname": "insights-dumper",
+        "ip": "::ffff:172.18.0.3",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "54e1c9dd991e"
+        },
+        "connection": {},
+        "json": {
+            "model_name": "insights-pipeline",
+            "outputs": [
+                {
+                    "name": "output0",
+                    "datatype": "INT64",
+                    "data": [
+                        63
+                    ],
+                    "shape": [
+                        1
+                    ]
+                }
+            ]
+        }
+    }
+    ::ffff:172.18.0.3 - - [15/Jun/2021:13:16:15 +0000] "POST / HTTP/1.1" 200 890 "-" "Python/3.7 aiohttp/3.7.4.post0"
     
 
 
@@ -613,7 +663,7 @@ print(get_logs_insights_message_dumper())
 
 
 ```python
-docker_runtime.undeploy(pipeline)
+remote_model.undeploy()
 ```
 
 

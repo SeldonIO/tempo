@@ -14,17 +14,11 @@ from pydantic import validator
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
-from ..insights.context import insights_context
 from ..insights.manager import InsightsManager
+from ..magic import PayloadContext, TempoContextWrapper, tempo_context
 from ..utils import logger
 from .args import infer_args, process_datatypes
-from .constants import (
-    ENV_K8S_SERVICE_HOST,
-    DefaultCondaFile,
-    DefaultEnvFilename,
-    DefaultInsightsLocalEndpoint,
-    DefaultModelFilename,
-)
+from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
 from .loader import load_custom, save_custom, save_environment
 from .metadata import InsightRequestModes, ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 from .protocol import Protocol
@@ -75,9 +69,6 @@ class BaseModel:
                 description=description,
             )
 
-            if isinstance(runtime_options, dict):
-                runtime_options = RuntimeOptions.parse_obj(runtime_options)
-
             self.model_spec = ModelSpec(
                 model_details=self.details,
                 protocol=protocol,
@@ -87,13 +78,7 @@ class BaseModel:
         self.use_remote: bool = False
         self.runtime_options_override: Optional[RuntimeOptions] = None
 
-        # TODO: This could leave ghost message dumper containers running if changed
-        self.deploy_message_dumper = not runtime_options.insights_options.worker_endpoint
-
         insights_params = runtime_options.insights_options.dict()
-        if self.deploy_message_dumper:
-            insights_params["worker_endpoint"] = DefaultInsightsLocalEndpoint
-
         self.insights_manager = InsightsManager(**insights_params)
 
         # K holds the wrapped class (if any)
@@ -294,9 +279,10 @@ class BaseModel:
 
         # When calling the method from outside mlserver the context is not set
         # In this situation the context has to be set manually to the local created
-        if not insights_context.get():
+        if not tempo_context.get():
             logger.debug("Setting context to context for insights manager")
-            insights_context.set(self.insights_manager)
+            tempo_wrapper = TempoContextWrapper(PayloadContext(), self.insights_manager)
+            tempo_context.set(tempo_wrapper)
 
         return self._user_func(*args, **kwargs)
 
