@@ -48,7 +48,7 @@ local_options = RuntimeOptions(**{"insights_options": {"worker_endpoint": Defaul
     name='insights-pipeline',
     uri="s3://tempo/insights-pipeline/resources",
     local_folder=ARTIFACTS_FOLDER,
-    runtime_options=runtime_options,
+    runtime_options=local_options,
 )
 class Pipeline:
     
