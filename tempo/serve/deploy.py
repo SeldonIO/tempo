@@ -1,5 +1,6 @@
 from pydoc import locate
 from typing import Any
+from tempo.utils import logger
 
 from .base import BaseModel, ModelSpec, Runtime
 from .metadata import RuntimeOptions
