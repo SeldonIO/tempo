@@ -14,15 +14,14 @@ from pydantic import validator
 
 from ..conf import settings
 from ..errors import UndefinedCustomImplementation
-from ..magic import tempo_context, TempoContextWrapper, PayloadContext
 from ..insights.manager import InsightsManager
+from ..magic import PayloadContext, TempoContextWrapper, tempo_context
 from ..utils import logger
 from .args import infer_args, process_datatypes
 from .constants import (
     ENV_K8S_SERVICE_HOST,
     DefaultCondaFile,
     DefaultEnvFilename,
-    DefaultInsightsLocalEndpoint,
     DefaultModelFilename,
 )
 from .loader import load_custom, save_custom, save_environment

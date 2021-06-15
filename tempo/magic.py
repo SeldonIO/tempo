@@ -1,9 +1,10 @@
-from typing import Any
 import contextvars
+from typing import Any
 
 from pydantic import BaseModel
 
 tempo_context: Any = contextvars.ContextVar("tempo_context", default=None)
+
 
 class classproperty(object):
     """
@@ -16,6 +17,7 @@ class classproperty(object):
 
     def __get__(self, obj, owner):
         return self.f(owner)
+
 
 class tempo:
     @classproperty
@@ -30,15 +32,15 @@ class tempo:
     def context(cls):  # pylint: disable=no-self-argument
         return tempo_context.get()
 
+
 class PayloadContext(BaseModel):
     request_id: str = None
     request_headers: dict = None
     request: dict = None
     response_headers: dict = None
 
+
 class TempoContextWrapper:
     def __init__(self, payload_context, insights_worker):
         self.payload = payload_context
         self.insights = insights_worker
-
-

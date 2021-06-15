@@ -6,6 +6,8 @@ from mlserver import MLModel
 from mlserver.types import InferenceRequest, InferenceResponse
 from mlserver.utils import get_model_uri
 
+from tempo.magic import PayloadContext, TempoContextWrapper, tempo_context
+
 from .insights.manager import InsightsManager
 from .insights.wrapper import InsightsWrapper
 from .serve.base import BaseModel
@@ -13,7 +15,6 @@ from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
 from .serve.metadata import InsightRequestModes, ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
-from tempo.magic import tempo_context, TempoContextWrapper, PayloadContext
 
 
 def _needs_init(model: BaseModel):
@@ -95,4 +96,3 @@ class InferenceRuntime(MLModel):
                 self.insights_manager.log(response_dict)
 
         return InferenceResponse(**response_dict)
-
