@@ -40,7 +40,7 @@ ansible-galaxy collection install git+https://github.com/SeldonIO/ansible-k8s-co
 To create a Kind cluster with istio, Seldon-Core and Minio run:
 ```bash
 cd ansible
-ansible-playbook playbooks/seldon_core.yaml.yaml
+ansible-playbook playbooks/seldon_core.yaml
 ```
 
 ### Kubernetes Cluster with KFServing
