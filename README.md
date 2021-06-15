@@ -88,27 +88,27 @@ def get_tempo_artifacts(artifacts_folder: str) -> Tuple[Pipeline, Model, Model]:
 
 Save the pipeline code.
 
-```
+```python
 from tempo.serve.loader import save
 save(classifier)
 ```
 
 Deploy locally to docker.
 
-```
+```python
 from tempo import deploy
 remote_model = deploy(classifier)
 ```
 
 Make predictions on containerized servers that would be used in production.
 
-```
+```python
 remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 Deploy to Kubernetes for production.
 
-```
+```python
 from tempo.serve.metadata import KubernetesOptions
 from tempo.seldon.k8s import SeldonCoreOptions
 runtime_options = SeldonCoreOptions(
