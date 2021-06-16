@@ -218,7 +218,7 @@ remote_model.undeploy()
  
 ### Prerequisites
  
-Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible as described [here](../../overview/quickstart.md#kubernetes-cluster-with-seldon-core).
+Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible as described [here](../../overview/quickstart.html#kubernetes-cluster-with-seldon-core).
 
 
 ```python
