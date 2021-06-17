@@ -13,8 +13,10 @@ Subpackages
    :maxdepth: 6
 
    tempo.aio
+   tempo.docker
    tempo.examples
    tempo.ingress
+   tempo.insights
    tempo.k8s
    tempo.kfserving
    tempo.seldon
@@ -28,6 +30,7 @@ Submodules
 
    tempo.conf
    tempo.errors
+   tempo.magic
    tempo.mlserver
    tempo.utils
    tempo.version
