@@ -127,6 +127,11 @@ if html_theme == "sphinx_material":
                 "title": "Seldon Documentation Homepage",
             },
             {
+                "href": "https://docs.seldon.io/projects/seldon-core/en/latest/",
+                "internal": False,
+                "title": "Seldon Core",
+            },
+            {
                 "href": "https://docs.seldon.io/projects/alibi/en/stable/",
                 "internal": False,
                 "title": "Alibi Explain",
