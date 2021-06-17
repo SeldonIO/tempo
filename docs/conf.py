@@ -122,9 +122,9 @@ if html_theme == "sphinx_material":
         "repo_type": "github",
         "nav_links": [
             {
-                "href": "https://docs.seldon.io/",
+                "href": "https://docs.seldon.io/projects/seldon-core/en/latest/",
                 "internal": False,
-                "title": "Seldon Documentation Homepage",
+                "title": "🚀 Our Other Projects & Products:",
             },
             {
                 "href": "https://docs.seldon.io/projects/seldon-core/en/latest/",

@@ -1,4 +1,9 @@
 
+/* Hide first elem of nav bar */
+.md-tabs__list > li:first-child {
+    display: none;
+}
+
 dt {
     display: table;
     margin: 6px 0;
