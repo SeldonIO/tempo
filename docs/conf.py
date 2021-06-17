@@ -122,9 +122,39 @@ if html_theme == "sphinx_material":
         "repo_type": "github",
         "nav_links": [
             {
-                "href": "https://github.com/SeldonIO/tempo",
+                "href": "https://docs.seldon.io/projects/seldon-core/en/latest/",
                 "internal": False,
-                "title": "Tempo Repo",
+                "title": "🚀 Our Other Projects & Products:",
+            },
+            {
+                "href": "https://docs.seldon.io/projects/seldon-core/en/latest/",
+                "internal": False,
+                "title": "Seldon Core",
+            },
+            {
+                "href": "https://docs.seldon.io/projects/alibi/en/stable/",
+                "internal": False,
+                "title": "Alibi Explain",
+            },
+            {
+                "href": "https://docs.seldon.io/projects/alibi-detect/en/stable/",
+                "internal": False,
+                "title": "Alibi Detect",
+            },
+            {
+                "href": "https://github.com/SeldonIO/mlserver",
+                "internal": False,
+                "title": "MLServer",
+            },
+            {
+                "href": "https://deploy.seldon.io/docs/about/",
+                "internal": False,
+                "title": "Seldon Deploy (Enterprise)",
+            },
+            {
+                "href": "https://github.com/SeldonIO/seldon-deploy-sdk#seldon-deploy-sdk",
+                "internal": False,
+                "title": "Seldon Deploy SDK (Enterprise)",
             },
         ],
     }
