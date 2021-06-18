@@ -13,3 +13,4 @@ Submodules
    :maxdepth: 6
 
    tempo.k8s.constants
+   tempo.k8s.utils
