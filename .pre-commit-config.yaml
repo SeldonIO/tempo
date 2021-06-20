@@ -1,8 +1,11 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/psf/black
-    rev: stable
+  - repo: local
     hooks:
-      - id: black
-        args: ['make', 'lint']
+      - id: lint
+        name: lint
+        entry: 'make'
+        args:
+          - lint
+        language: system
