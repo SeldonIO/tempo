@@ -85,6 +85,9 @@ class InferenceRuntime(MLModel):
         if self._is_coroutine:
             response_dict = await response_dict  # type: ignore
 
+        # TODO: Ensure model_version is added by mlserver
+        response_dict["model_version"] = "NOTIMPLEMENTED"
+
         # TODO: Move to functions declared upfront with logic contained to avoid if
         if self._model.get_insights_mode == InsightRequestModes.ALL:
             insights_wrapper.log(request_dict, insights_type=InsightsTypes.INFER_REQUEST)

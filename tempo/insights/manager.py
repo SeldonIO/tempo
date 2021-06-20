@@ -3,7 +3,7 @@ from typing import Any
 
 from tempo.magic import t
 
-from ..serve.metadata import DEFAULT_INSIGHTS_TYPE, InsightsPayload, InsightsTypes
+from ..serve.metadata import DEFAULT_INSIGHTS_TYPE, InsightRequestModes, InsightsPayload, InsightsTypes
 from ..utils import logger
 from .worker import start_insights_worker_from_async, start_insights_worker_from_sync
 
@@ -17,7 +17,9 @@ class InsightsManager:
         retries: int = 3,
         window_time: int = None,
         in_asyncio: bool = False,
+        mode_type: InsightRequestModes = None,
     ):
+        self._mode_type = mode_type
         args = (
             worker_endpoint,
             batch_size,
@@ -51,7 +53,6 @@ class InsightsManager:
             logger.warning("Insights Manager not initialised as empty URL provided.")
 
     def _to_payload(self, data: Any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE) -> InsightsPayload:
-        logger.warning(f"NOW SETTING: {insights_type}")
         return InsightsPayload(
             data=data,
             request_id=t.payload.request_id,  # pylint: disable=no-member
