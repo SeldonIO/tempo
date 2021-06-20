@@ -1,15 +1,18 @@
 from enum import Enum
 from pydoc import locate
-from typing import List, Optional, Type, Union, Any
+from typing import Any, List, Optional, Type, Union
 
 from pydantic import BaseModel, validator
+
 
 class InsightsTypes(Enum):
     INFER_REQUEST: str = "io.seldon.serving.inference.request"
     INFER_RESPONSE: str = "io.seldon.serving.inference.response"
     CUSTOM_INSIGHT: str = "io.seldon.serving.inference.custominsight"
 
+
 DEFAULT_INSIGHTS_TYPE = InsightsTypes.CUSTOM_INSIGHT
+
 
 class ModelFramework(Enum):
     SKLearn = "sklearn"
@@ -126,7 +129,7 @@ class InsightsOptions(BaseModel):
 class InsightsPayload(BaseModel):
     request_id: str = ""
     data: Any = None
-    cloudevent_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE
+    insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE
 
     class Config:
         use_enum_values = True

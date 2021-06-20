@@ -1,9 +1,12 @@
 import asyncio
+from typing import Any
 
-from ..serve.metadata import DEFAULT_INSIGHTS_REQUEST_MODES, InsightRequestModes, InsightsPayload, InsightsTypes, DEFAULT_INSIGHTS_TYPE
+from tempo.magic import t
+
+from ..serve.metadata import DEFAULT_INSIGHTS_TYPE, InsightsPayload, InsightsTypes
 from ..utils import logger
 from .worker import start_insights_worker_from_async, start_insights_worker_from_sync
-from tempo.magic import t
+
 
 class InsightsManager:
     def __init__(
@@ -13,7 +16,6 @@ class InsightsManager:
         parallelism: int = 1,
         retries: int = 3,
         window_time: int = None,
-        mode_type: InsightRequestModes = DEFAULT_INSIGHTS_REQUEST_MODES,
         in_asyncio: bool = False,
     ):
         args = (
@@ -29,33 +31,34 @@ class InsightsManager:
                 logger.debug("Initialising async insights worker")
                 self._q = start_insights_worker_from_async(*args)
 
-                def log(self, data: any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):
+                def log(self, data: Any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):
                     payload = self._to_payload(data, insights_type=insights_type)
                     asyncio.create_task(self._q.put(payload))
 
-                self.log = log.__get__(self, self.__class__)  # type: ignore # pylint: disable=E1120,E1111
+                self.log = log.__get__(self, self.__class__)  # type: ignore
                 logger.debug("Async worker set up")
             else:
                 logger.debug("Initialising sync insights worker")
                 self._q = start_insights_worker_from_sync(*args)  # type: ignore
 
-                def log(self, data, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):
+                def log(self, data: Any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):
                     payload = self._to_payload(data, insights_type=insights_type)
                     self._q.put(payload)
 
-                self.log = log.__get__(self, self.__class__)  # type: ignore # pylint: disable=E1120,E1111
+                self.log = log.__get__(self, self.__class__)  # type: ignore
                 logger.debug("Sync worker set up")
         else:
             logger.warning("Insights Manager not initialised as empty URL provided.")
 
-    def _to_payload(self, data: any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE) -> InsightsPayload:
+    def _to_payload(self, data: Any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE) -> InsightsPayload:
+        logger.warning(f"NOW SETTING: {insights_type}")
         return InsightsPayload(
             data=data,
             request_id=t.payload.request_id,  # pylint: disable=no-member
             insights_type=insights_type,
         )
 
-    def log(self, data, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):  # pylint: disable=E0202
+    def log(self, data, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):
         """
         By default function doesn't have any logic unless an endpoint is provided.
         """

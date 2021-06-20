@@ -1,4 +1,5 @@
-from ..serve.metadata import InsightsTypes, DEFAULT_INSIGHTS_TYPE
+from ..serve.metadata import DEFAULT_INSIGHTS_TYPE, InsightsTypes
+
 
 class InsightsWrapper:
     def __init__(self, manager):

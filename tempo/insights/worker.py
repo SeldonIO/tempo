@@ -4,9 +4,8 @@ import threading
 import aiohttp
 import janus
 
-from ..utils import logger
 from ..serve.metadata import InsightsPayload
-
+from ..utils import logger
 from .cloudevents import get_cloudevent_headers
 
 

@@ -5,6 +5,7 @@ repos:
     hooks:
       - id: lint
         name: lint
-        entry: 'make lint'
-        language: script
-        files: Makefile
+        entry: 'make'
+        args:
+          - lint
+        language: system

@@ -13,9 +13,8 @@ from .insights.wrapper import InsightsWrapper
 from .serve.base import BaseModel
 from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
-from .serve.metadata import InsightRequestModes, ModelFramework, RuntimeOptions, InsightsTypes
+from .serve.metadata import InsightRequestModes, InsightsTypes, ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
-from .utils import logger
 
 
 def _needs_init(model: BaseModel):
@@ -88,12 +87,12 @@ class InferenceRuntime(MLModel):
 
         # TODO: Move to functions declared upfront with logic contained to avoid if
         if self._model.get_insights_mode == InsightRequestModes.ALL:
-            self.insights_manager.log(request_dict, insights_type=InsightsTypes.INFER_REQUEST)
-            self.insights_manager.log(response_dict, insights_type=InsightsTypes.INFER_RESPONSE)
+            insights_wrapper.log(request_dict, insights_type=InsightsTypes.INFER_REQUEST)
+            insights_wrapper.log(response_dict, insights_type=InsightsTypes.INFER_RESPONSE)
         else:
             if self._model.get_insights_mode == InsightRequestModes.REQUEST or insights_wrapper.set_log_request:
-                self.insights_manager.log(request_dict, insights_type=InsightsTypes.INFER_REQUEST)
+                insights_wrapper.log(request_dict, insights_type=InsightsTypes.INFER_REQUEST)
             if self._model.get_insights_mode == InsightRequestModes.RESPONSE or insights_wrapper.set_log_response:
-                self.insights_manager.log(response_dict, insights_type=InsightsTypes.INFER_RESPONSE)
+                insights_wrapper.log(response_dict, insights_type=InsightsTypes.INFER_RESPONSE)
 
         return InferenceResponse(**response_dict)
