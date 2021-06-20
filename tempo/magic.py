@@ -19,14 +19,14 @@ class classproperty(object):
         return self.f(owner)
 
 
-class tempo:
+class t:
     @classproperty
     def insights(cls):  # pylint: disable=no-self-argument
-        return tempo.context.insights  # pylint: disable=no-member
+        return t.context.insights  # pylint: disable=no-member
 
     @classproperty
     def payload(cls):  # pylint: disable=no-self-argument
-        return tempo.context.payload  # pylint: disable=no-member
+        return t.context.payload  # pylint: disable=no-member
 
     @classproperty
     def context(cls):  # pylint: disable=no-self-argument

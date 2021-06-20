@@ -5,6 +5,9 @@ import aiohttp
 import janus
 
 from ..utils import logger
+from ..serve.metadata import InsightsPayload
+
+from .cloudevents import get_cloudevent_headers
 
 
 async def start_worker(
@@ -20,9 +23,10 @@ async def start_worker(
     async def _start_request_worker():
         async with aiohttp.ClientSession() as session:
             while True:
-                data = await q_in.get()
+                payload: InsightsPayload = await q_in.get()
+                headers = get_cloudevent_headers(payload.request_id, payload.cloudevent_type)
                 try:
-                    async with session.post(worker_endpoint, json=data) as response:
+                    async with session.post(worker_endpoint, json=payload.data, headers=headers) as response:
                         if response.status != 200:
                             logger.error("Error code {response.status} sending payload to insights URI")
                 except aiohttp.ClientConnectorError:

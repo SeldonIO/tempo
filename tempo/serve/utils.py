@@ -1,3 +1,5 @@
+import os
+from enum import Enum
 import copy
 from inspect import getmembers, isclass, isfunction
 from types import SimpleNamespace
@@ -252,33 +254,3 @@ def model(
         return model
 
     return _model
-
-
-CLOUDEVENTS_HEADER_ID_NAME             = "Ce-Id"
-CLOUDEVENTS_HEADER_SPECVERSION_NAME    = "Ce-Specversion"
-CLOUDEVENTS_HEADER_SOURCE_NAME         = "Ce-Source"
-CLOUDEVENTS_HEADER_TYPE_NAME           = "Ce-Type"
-CLOUDEVENTS_HEADER_SPECVERSION_DEFAULT = "0.3"
-
-CLOUDEVENTS_HEADER_REQUEST_ID             = "requestid"
-CLOUDEVENTS_HEADER_MODEL_ID               = "modelid"
-CLOUDEVENTS_HEADER_INFERENCE_SERVICE_NAME = "inferenceservicename"
-CLOUDEVENTS_HEADER_NAMESPACE              = "namespace"
-CLOUDEVENTS_HEADER_ENDPOINT               = "endpoint"
-
-
-def cloudevent_headers_from_model(model, payload_context, ce_type):
-    ce_type = 
-
-    ce = {
-        CLOUDEVENTS_HEADER_ID_NAME                : payload_context.request_id,
-        CLOUDEVENTS_HEADER_SPECVERSION_NAME       : CLOUDEVENTS_HEADER_SPECVERSION_DEFAULT,
-        CLOUDEVENTS_HEADER_SOURCE_NAME            : ce_source,
-        CLOUDEVENTS_HEADER_TYPE_NAME              : ce_type,
-        CLOUDEVENTS_HEADER_REQUEST_ID             : payload_context.request_id,
-        CLOUDEVENTS_HEADER_MODEL_ID               : model_name,
-        CLOUDEVENTS_HEADER_INFERENCE_SERVICE_NAME : sdep_name,
-        CLOUDEVENTS_HEADER_NAMESPACE              : namespace,
-        CLOUDEVENTS_HEADER_ENDPOINT               : predictor_name,
-    }
-    return ce
