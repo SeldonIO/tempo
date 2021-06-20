@@ -19,7 +19,7 @@
     # Verify Install does not work with 1.7.x on k8s 1.18.x
     istio_verify_install: false
 
-    seldon_core_version: v1.8.0
+    seldon_core_version: v1.9.0
 
     seldon_core_values:
       istio:

@@ -1,17 +1,22 @@
 from tempo.seldon.protocol import SeldonProtocol
+from tempo.seldon.runtime import SeldonCoreOptions
 from tempo.seldon.specs import KubernetesSpec, get_container_spec
 from tempo.serve.base import ModelSpec
 from tempo.serve.metadata import KubernetesOptions, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
 
 
 def test_kubernetes_spec(sklearn_model):
-    k8s_object = KubernetesSpec(sklearn_model.model_spec)
+
+    k8s_object = KubernetesSpec(sklearn_model.model_spec, SeldonCoreOptions())
 
     expected = {
         "spec": {
             "protocol": "seldon",
             "predictors": [
                 {
+                    "annotations" : {
+                        "seldon.io/no-engine": "true"
+                    },
                     "graph": {
                         "modelUri": sklearn_model.details.uri,
                         "name": "test-iris-sklearn",
