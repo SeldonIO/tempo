@@ -13,7 +13,7 @@ from .insights.wrapper import InsightsWrapper
 from .serve.base import BaseModel
 from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
-from .serve.metadata import InsightRequestModes, ModelFramework, RuntimeOptions
+from .serve.metadata import InsightRequestModes, InsightsTypes, ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
 
 
@@ -77,7 +77,7 @@ class InferenceRuntime(MLModel):
 
         insights_wrapper = InsightsWrapper(self.insights_manager)
         # TODO: Add request_id, response_headers, request_headers, etc
-        payload_context = PayloadContext(request=request_dict)
+        payload_context = PayloadContext(request_id=request.id, request=request_dict)
         tempo_wrapper = TempoContextWrapper(payload_context, insights_wrapper)
         tempo_context.set(tempo_wrapper)
 
@@ -85,14 +85,17 @@ class InferenceRuntime(MLModel):
         if self._is_coroutine:
             response_dict = await response_dict  # type: ignore
 
+        # TODO: Ensure model_version is added by mlserver
+        response_dict["model_version"] = "NOTIMPLEMENTED"
+
         # TODO: Move to functions declared upfront with logic contained to avoid if
         if self._model.get_insights_mode == InsightRequestModes.ALL:
-            self.insights_manager.log(request_dict)
-            self.insights_manager.log(response_dict)
+            insights_wrapper.log(request_dict, insights_type=InsightsTypes.INFER_REQUEST)
+            insights_wrapper.log(response_dict, insights_type=InsightsTypes.INFER_RESPONSE)
         else:
             if self._model.get_insights_mode == InsightRequestModes.REQUEST or insights_wrapper.set_log_request:
-                self.insights_manager.log(request_dict)
+                insights_wrapper.log(request_dict, insights_type=InsightsTypes.INFER_REQUEST)
             if self._model.get_insights_mode == InsightRequestModes.RESPONSE or insights_wrapper.set_log_response:
-                self.insights_manager.log(response_dict)
+                insights_wrapper.log(response_dict, insights_type=InsightsTypes.INFER_RESPONSE)
 
         return InferenceResponse(**response_dict)

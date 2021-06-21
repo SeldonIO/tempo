@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 import os
 import tempfile
+import uuid
 from pydoc import locate
 from types import SimpleNamespace
 from typing import Any, Dict, Optional, Sequence, Tuple, Type
@@ -281,7 +282,9 @@ class BaseModel:
         # In this situation the context has to be set manually to the local created
         if not tempo_context.get():
             logger.debug("Setting context to context for insights manager")
-            tempo_wrapper = TempoContextWrapper(PayloadContext(), self.insights_manager)
+            # Initialising with unique ID as request not provided by server
+            payload_context = PayloadContext(request_id=str(uuid.uuid4()))
+            tempo_wrapper = TempoContextWrapper(payload_context, self.insights_manager)
             tempo_context.set(tempo_wrapper)
 
         return self._user_func(*args, **kwargs)
