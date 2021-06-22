@@ -2,9 +2,9 @@ import pytest
 import yaml
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.seldon.runtime import SeldonCoreOptions
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.serve.metadata import KubernetesOptions, ModelFramework, RuntimeOptions
+from tempo.seldon.runtime import SeldonCoreOptions
+from tempo.serve.metadata import KubernetesOptions, ModelFramework
 from tempo.serve.model import Model
 
 

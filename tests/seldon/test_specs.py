@@ -14,9 +14,7 @@ def test_kubernetes_spec(sklearn_model):
             "protocol": "seldon",
             "predictors": [
                 {
-                    "annotations" : {
-                        "seldon.io/no-engine": "true"
-                    },
+                    "annotations": {"seldon.io/no-engine": "true"},
                     "graph": {
                         "modelUri": sklearn_model.details.uri,
                         "name": "test-iris-sklearn",
