@@ -110,7 +110,7 @@ html_theme = "sphinx_material"
 
 if html_theme == "sphinx_material":
     html_theme_options = {
-        "google_analytics_account": "",
+        "google_analytics_account": "UA-54780881-2",
         "base_url": "https://tempo.seldon.io",
         "color_primary": "teal",
         "color_accent": "light-blue",
