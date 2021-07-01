@@ -3,7 +3,8 @@ import yaml
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.serve.metadata import KubernetesOptions, ModelFramework, RuntimeOptions
+from tempo.seldon.runtime import SeldonCoreOptions
+from tempo.serve.metadata import KubernetesOptions, ModelFramework
 from tempo.serve.model import Model
 
 
@@ -21,7 +22,9 @@ metadata:
   namespace: default
 spec:
   predictors:
-  - graph:
+  - annotations:
+      seldon.io/no-engine: 'true'
+    graph:
       implementation: SKLEARN_SERVER
       modelUri: gs://seldon-models/sklearn/iris
       name: test-iris-sklearn
@@ -62,7 +65,9 @@ metadata:
   namespace: default
 spec:
   predictors:
-  - graph:
+  - annotations:
+      seldon.io/no-engine: 'true'
+    graph:
       implementation: XGBOOST_SERVER
       modelUri: gs://seldon-models/xgboost/iris
       name: test-iris-xgboost
@@ -103,7 +108,9 @@ metadata:
   namespace: default
 spec:
   predictors:
-  - graph:
+  - annotations:
+      seldon.io/no-engine: 'true'
+    graph:
       envSecretRefName: auth
       implementation: XGBOOST_SERVER
       modelUri: gs://seldon-models/xgboost/iris
@@ -124,7 +131,7 @@ def test_seldon_model_yaml_auth(expected):
         local_folder="/tmp/model",
     )
     runtime = SeldonKubernetesRuntime(
-        runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(authSecretName="auth"))
+        runtime_options=SeldonCoreOptions(k8s_options=KubernetesOptions(authSecretName="auth"))
     )
     yaml_str = runtime.manifest(m)
     yaml_obj = yaml.safe_load(yaml_str)

@@ -216,7 +216,7 @@ class BaseModel:
             cls_path = model_spec.runtime_options.docker_options.runtime
         logger.debug("Using remote class %s", cls_path)
         cls: Any = locate(cls_path)
-        return cls()
+        return cls(model_spec.runtime_options)
 
     def get_insights_mode(self) -> InsightRequestModes:
         return self.model_spec.runtime_options.insights_options.mode_type
