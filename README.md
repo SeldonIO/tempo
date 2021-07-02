@@ -1,7 +1,7 @@
 
-![GitHub](https://img.shields.io/badge/Version-0.1.0-green.svg)
-![GitHub](https://img.shields.io/badge/Python-3.5—3.8-blue.svg)
-![GitHub](https://img.shields.io/badge/License-Apache-black.svg)
+[![Version](https://badge.fury.io/py/mlops-tempo.svg)](https://badge.fury.io/py/mlops-tempo)
+![Python version](https://img.shields.io/badge/Python-3.5—3.8-blue.svg)
+![License](https://img.shields.io/badge/License-Apache-black.svg)
 
 # ⏳ Tempo: The MLOps Software Development Kit
 
