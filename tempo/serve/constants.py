@@ -27,9 +27,9 @@ DefaultInsightsK8sEndpoint = f"http://{DefaultInsightsServiceName}.{DefaultSeldo
 
 
 DefaultRedisServiceName = "redis-master"
-DefaultRedisPort = 6379
 DefaultRedisImage = "docker.io/redis:6.0.5"
 
-DefaultRedisLocalEndpoint = f"http://0.0.0.0:{DefaultRedisPort}"
-DefaultRedisDockerEndpoint = f"http://{DefaultRedisServiceName}:{DefaultRedisPort}"
-DefaultRedisK8sEndpoint = f"http://{DefaultRedisServiceName}.{DefaultSeldonSystemNamespace}:{DefaultRedisPort}"
+DefaultRedisPort = 6379
+DefaultRedisLocalHost = "0.0.0.0"
+DefaultRedisDockerHost = f"{DefaultRedisServiceName}"
+DefaultRedisK8sHost = f"{DefaultRedisServiceName}.{DefaultSeldonSystemNamespace}"

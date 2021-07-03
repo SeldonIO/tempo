@@ -141,7 +141,7 @@ class StateTypes(Enum):
 
 
 class StateOptions(BaseModel):
-    state_type: Optional[StateTypes] = None
+    state_type: Optional[StateTypes] = StateTypes.LOCAL
     key_prefix: str = ""
     host: str = ""
     port: str = ""
