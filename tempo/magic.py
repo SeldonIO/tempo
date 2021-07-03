@@ -29,6 +29,10 @@ class t:
         return t.context.payload  # pylint: disable=no-member
 
     @classproperty
+    def state(cls):  # pylint: disable=no-self-argument
+        return t.context.state  # pylint: disable=no-member
+
+    @classproperty
     def context(cls):  # pylint: disable=no-self-argument
         return tempo_context.get()
 
@@ -41,6 +45,7 @@ class PayloadContext(BaseModel):
 
 
 class TempoContextWrapper:
-    def __init__(self, payload_context, insights_worker):
+    def __init__(self, payload_context, insights_worker, state):
         self.payload = payload_context
         self.insights = insights_worker
+        self.state = state

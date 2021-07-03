@@ -15,6 +15,7 @@ from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
 from .serve.metadata import InsightRequestModes, InsightsTypes, ModelFramework, RuntimeOptions
 from .serve.utils import PredictMethodAttr
+from .state.state import BaseState
 
 
 def _needs_init(model: BaseModel):
@@ -30,6 +31,7 @@ class InferenceRuntime(MLModel):
         self._model = await self._load_model()
         await self._load_runtime()
         await self._load_insights()
+        await self._load_state()
 
         self._is_coroutine = iscoroutinefunction(self._model.request)
 
@@ -57,6 +59,13 @@ class InferenceRuntime(MLModel):
 
         return model
 
+    async def _load_state(self):
+        runtime_options = self._model.runtime_options_override
+        if not runtime_options:
+            runtime_options = self._model.model_spec.runtime_options
+
+        self.state = BaseState.from_conf(runtime_options.state_options)
+
     async def _load_insights(self):
         runtime_options = self._model.runtime_options_override
         if not runtime_options:
@@ -78,7 +87,7 @@ class InferenceRuntime(MLModel):
         insights_wrapper = InsightsWrapper(self.insights_manager)
         # TODO: Add request_id, response_headers, request_headers, etc
         payload_context = PayloadContext(request_id=request.id, request=request_dict)
-        tempo_wrapper = TempoContextWrapper(payload_context, insights_wrapper)
+        tempo_wrapper = TempoContextWrapper(payload_context, insights_wrapper, self.state)
         tempo_context.set(tempo_wrapper)
 
         response_dict = self._model.request(request_dict)

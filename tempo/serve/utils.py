@@ -62,7 +62,9 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
 
         # The copy() function calls __getstate__ so we need to set insights as it's set to SimpleNamespace otheriwse
         setattr(self, "insights_manager", class_model.insights_manager)
+        setattr(self, "state", class_model.state)
         setattr(instance_model, "insights_manager", class_model.insights_manager)
+        setattr(instance_model, "state", class_model.state)
 
         # We bind the __getstate__ function to the current object so it also is used when exporting the object
         def __getstate__(self):
@@ -70,6 +72,8 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
             state["context"] = SimpleNamespace()
             # Remove the insights manager from the cloudpickle context
             state["insights_manager"] = SimpleNamespace()
+            # Remove the state from cloudpickle context
+            state["state"] = SimpleNamespace()
             return state
 
         self.__getstate__ = _bind(self, __getstate__)
