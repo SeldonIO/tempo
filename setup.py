@@ -56,6 +56,7 @@ setup(
         "mlserver",
         "janus",
         "aiohttp",
+        "redis",
     ],
     tests_require=["pytest", "pytest-cov", "pytest-xdist", "pytest-lazy-fixture"],
     zip_safe=False,
