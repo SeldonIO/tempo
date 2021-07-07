@@ -13,7 +13,7 @@ def test_bind_init(inference_pipeline_class):
     user_func = inference_pipeline_class.pipeline._user_func
 
     assert user_func.__self__ == inference_pipeline_class
-    assert user_func == inference_pipeline_class.p
+    assert user_func.__name__ == inference_pipeline_class.__class__.p.__name__
 
 
 def test_K_reference(inference_pipeline_class):
