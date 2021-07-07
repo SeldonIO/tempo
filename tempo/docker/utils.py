@@ -73,7 +73,7 @@ def deploy_redis(name=DefaultRedisServiceName, image=DefaultRedisImage, port=Def
     except docker.errors.NotFound:
         pass
     else:
-        logger.info("Attempted to deploy message dumper but already deployed")
+        logger.info("Attempted to deploy redis but already deployed")
         return
     uid = os.getuid()
     create_network(docker_client)
@@ -95,6 +95,6 @@ def undeploy_redis(name=DefaultRedisServiceName):
     try:
         container = docker_client.containers.get(name)
     except docker.errors.NotFound:
-        logger.info("Attempted to undeploy insights dumper but container not running")
+        logger.info("Attempted to redis dumper but container not running")
         return
     container.remove(force=True)
