@@ -12,7 +12,7 @@ rules:
   - apiGroups:
       - machinelearning.seldon.io
     resources:
-      - seldondeployments/status
+      - seldondeployments
     verbs:
       - get
   - apiGroups:
