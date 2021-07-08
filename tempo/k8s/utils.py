@@ -8,6 +8,9 @@ from tempo.serve.constants import (
     DefaultInsightsImage,
     DefaultInsightsPort,
     DefaultInsightsServiceName,
+    DefaultRedisImage,
+    DefaultRedisPort,
+    DefaultRedisServiceName,
     DefaultSeldonSystemNamespace,
 )
 from tempo.utils import logger
@@ -115,3 +118,90 @@ def get_logs_insights_message_dumper():
     api_instance = client.CoreV1Api()
     response = api_instance.read_namespaced_pod_log(DefaultInsightsServiceName, DefaultSeldonSystemNamespace)
     return response
+
+
+def deploy_redis():
+    create_k8s_client()
+    api_instance = client.CoreV1Api()
+
+    try:
+        api_instance.read_namespaced_pod(
+            DefaultRedisServiceName,
+            DefaultSeldonSystemNamespace,
+        )
+        logger.debug(
+            f"Pod with name {DefaultRedisServiceName} in namespace {DefaultSeldonSystemNamespace} already exists"
+        )
+    except ApiException as e:
+        if e.status != 404:
+            raise e
+
+        k8s_pod_spec = {
+            "apiVersion": "v1",
+            "kind": "Pod",
+            "metadata": {
+                "name": DefaultRedisServiceName,
+                "labels": {
+                    "app": DefaultRedisServiceName,
+                },
+            },
+            "spec": {
+                "containers": [
+                    {
+                        "name": "default",
+                        "image": DefaultRedisImage,
+                        "ports": [{"containerPort": DefaultRedisPort}],
+                    }
+                ]
+            },
+        }
+        logger.debug(f"Creating kubernetes redis pod: {k8s_pod_spec}")
+        api_instance.create_namespaced_pod(DefaultSeldonSystemNamespace, k8s_pod_spec)
+
+    try:
+        api_instance.read_namespaced_service(
+            DefaultRedisServiceName,
+            DefaultSeldonSystemNamespace,
+        )
+        logger.debug(
+            f"Service with name {DefaultRedisServiceName} in namespace {DefaultSeldonSystemNamespace} already exists"
+        )
+    except ApiException as e:
+        if e.status != 404:
+            raise e
+
+        k8s_svc_spec = {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "metadata": {
+                "name": DefaultRedisServiceName,
+            },
+            "spec": {
+                "selector": {"app": DefaultRedisServiceName},
+                "ports": [
+                    {
+                        "port": DefaultRedisPort,
+                        "targetPort": DefaultRedisPort,
+                    }
+                ],
+            },
+        }
+
+        logger.debug(f"Creating kubernetes redis pod: {k8s_svc_spec}")
+        api_instance.create_namespaced_service(DefaultSeldonSystemNamespace, k8s_svc_spec)
+
+
+def undeploy_redis():
+    create_k8s_client()
+    api_instance = client.CoreV1Api()
+    try:
+        api_instance.delete_namespaced_pod(DefaultRedisServiceName, DefaultSeldonSystemNamespace)
+    except ApiException as e:
+        if e.status != 404:
+            raise e
+
+    try:
+        api_instance.delete_namespaced_service(DefaultRedisServiceName, DefaultSeldonSystemNamespace)
+    except ApiException as e:
+        if e.status != 404:
+            raise e

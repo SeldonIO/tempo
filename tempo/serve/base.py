@@ -17,6 +17,7 @@ from ..conf import settings
 from ..errors import UndefinedCustomImplementation
 from ..insights.manager import InsightsManager
 from ..magic import PayloadContext, TempoContextWrapper, tempo_context
+from ..state.state import BaseState
 from ..utils import logger
 from .args import infer_args, process_datatypes
 from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
@@ -82,6 +83,8 @@ class BaseModel:
         insights_params = runtime_options.insights_options.dict()
         self.insights_manager = InsightsManager(**insights_params)
 
+        self.state = BaseState.from_conf(runtime_options.state_options)
+
         # K holds the wrapped class (if any)
         self._K: Optional[Type] = None
 
@@ -135,6 +138,7 @@ class BaseModel:
         state["context"] = SimpleNamespace()
         # Remove the insights manager from the cloudpickle context
         state["insights_manager"] = SimpleNamespace()
+        state["state"] = SimpleNamespace()
 
         return state
 
@@ -284,7 +288,7 @@ class BaseModel:
             logger.debug("Setting context to context for insights manager")
             # Initialising with unique ID as request not provided by server
             payload_context = PayloadContext(request_id=str(uuid.uuid4()))
-            tempo_wrapper = TempoContextWrapper(payload_context, self.insights_manager)
+            tempo_wrapper = TempoContextWrapper(payload_context, self.insights_manager, self.state)
             tempo_context.set(tempo_wrapper)
 
         return self._user_func(*args, **kwargs)

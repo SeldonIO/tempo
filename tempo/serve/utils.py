@@ -39,6 +39,14 @@ def _get_predict_method(K: Type) -> Optional[Callable]:
     return None
 
 
+def _get_predict_method_name(K: Type) -> str:
+    for name, func in getmembers(K, isfunction):
+        if hasattr(func, PredictMethodAttr):
+            return name
+
+    return ""
+
+
 def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
     setattr(K, field_name, model)
     model._K = K
@@ -57,12 +65,18 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
         instance_model = copy.copy(class_model)
         setattr(self, field_name, instance_model)
 
+        # Set predict function name to have same behaviour as __call__
+        predictmethod_name = _get_predict_method_name(K)
+        setattr(self, predictmethod_name, instance_model.__call__)
+
         # We bind _user_func so that `self` is passed implicitly
         instance_model._user_func = _bind(self, instance_model._user_func)
 
         # The copy() function calls __getstate__ so we need to set insights as it's set to SimpleNamespace otheriwse
         setattr(self, "insights_manager", class_model.insights_manager)
+        setattr(self, "state", class_model.state)
         setattr(instance_model, "insights_manager", class_model.insights_manager)
+        setattr(instance_model, "state", class_model.state)
 
         # We bind the __getstate__ function to the current object so it also is used when exporting the object
         def __getstate__(self):
@@ -70,6 +84,8 @@ def _wrap_class(K: Type, model: BaseModel, field_name: str = "model") -> Type:
             state["context"] = SimpleNamespace()
             # Remove the insights manager from the cloudpickle context
             state["insights_manager"] = SimpleNamespace()
+            # Remove the state from cloudpickle context
+            state["state"] = SimpleNamespace()
             return state
 
         self.__getstate__ = _bind(self, __getstate__)

@@ -135,9 +135,25 @@ class InsightsPayload(BaseModel):
         use_enum_values = True
 
 
+class StateTypes(Enum):
+    LOCAL = "LOCAL"
+    REDIS = "REDIS"
+
+
+class StateOptions(BaseModel):
+    state_type: Optional[StateTypes] = StateTypes.LOCAL
+    key_prefix: str = ""
+    host: str = ""
+    port: str = ""
+
+    class Config:
+        use_enum_values = True
+
+
 class RuntimeOptions(BaseModel):
     runtime: str = "tempo.seldon.SeldonDockerRuntime"
     docker_options: DockerOptions = DockerOptions()
     k8s_options: KubernetesOptions = KubernetesOptions()
     ingress_options: IngressOptions = IngressOptions()
     insights_options: InsightsOptions = InsightsOptions()
+    state_options: StateOptions = StateOptions()
