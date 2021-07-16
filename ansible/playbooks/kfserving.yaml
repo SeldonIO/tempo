@@ -17,7 +17,7 @@
     kind_config_file: files/kind_config.yaml
     kind_kubectl_default_namespace: seldon
 
-    istio_version: 1.7.6
+    istio_version: 1.9.0
 
     # Verify Install does not work with 1.7.x on k8s 1.18.x
     istio_verify_install: false
