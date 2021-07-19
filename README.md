@@ -2,8 +2,11 @@
 [![Version](https://badge.fury.io/py/mlops-tempo.svg)](https://badge.fury.io/py/mlops-tempo)
 ![Python version](https://img.shields.io/badge/Python-3.5—3.8-blue.svg)
 ![License](https://img.shields.io/badge/License-Apache-black.svg)
+[![Documentation Status](https://readthedocs.org/projects/tempo/badge/?version=latest)](https://tempo.readthedocs.io/en/latest/)
 
-# ⏳ Tempo: The MLOps Software Development Kit [Read Documentation](https://tempo.readthedocs.io/en/latest/)
+# Tempo: The MLOps Software Development Kit
+
+[Documentation](https://tempo.readthedocs.io/en/latest/)
 
 An open source framework to enable data scientists to productionise, test and deploy models with simple workflows that abstract the underlying complexity of scalable MLOps platforms.
 
