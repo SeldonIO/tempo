@@ -3,13 +3,11 @@
 ![Python version](https://img.shields.io/badge/Python-3.5—3.8-blue.svg)
 ![License](https://img.shields.io/badge/License-Apache-black.svg)
 
-# ⏳ Tempo: The MLOps Software Development Kit
+# ⏳ Tempo: The MLOps Software Development Kit [Read Documentation](https://tempo.readthedocs.io/en/latest/)
 
-## Vision
+An open source framework to enable data scientists to productionise, test and deploy models with simple workflows that abstract the underlying complexity of scalable MLOps platforms.
 
-*Enable data scientists to see a productionised machine learning model within moments, not months. Easy to work with locally and also in kubernetes, whatever your preferred data science tools*
-
-[Documentation](https://tempo.readthedocs.io/en/latest/)
+![](https://raw.githubusercontent.com/SeldonIO/tempo/master/docs/assets/tempo-logo.png)
 
 ## Highlights
 
