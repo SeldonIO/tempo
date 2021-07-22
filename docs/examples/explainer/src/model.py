@@ -11,10 +11,18 @@ from src.data import AdultData
 
 def train_model(artifacts_folder: str, data: AdultData):
     ordinal_features = [x for x in range(len(data.feature_names)) if x not in list(data.category_map.keys())]
-    ordinal_transformer = Pipeline(steps=[("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())])
+    ordinal_transformer = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+        ]
+    )
     categorical_features = list(data.category_map.keys())
     categorical_transformer = Pipeline(
-        steps=[("imputer", SimpleImputer(strategy="median")), ("onehot", OneHotEncoder(handle_unknown="ignore"))]
+        steps=[
+            ("imputer", SimpleImputer(strategy="median")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore")),
+        ]
     )
     preprocessor = ColumnTransformer(
         transformers=[
