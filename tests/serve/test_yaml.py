@@ -47,6 +47,8 @@ def test_seldon_sklearn_model_yaml(expected):
     yaml_obj = yaml.safe_load(yaml_str)
     yaml_obj_expected = yaml.safe_load(expected)
     del yaml_obj["metadata"]["annotations"]["seldon.io/tempo-model"]
+    print("\n\n" + str(yaml_obj))
+    print("\n\n" + str(yaml_obj_expected))
     assert yaml_obj == yaml_obj_expected
 
 
@@ -90,6 +92,8 @@ def test_seldon_xgboost_model_yaml(expected):
     yaml_obj = yaml.safe_load(yaml_str)
     yaml_obj_expected = yaml.safe_load(expected)
     del yaml_obj["metadata"]["annotations"]["seldon.io/tempo-model"]
+    print("\n\n" + str(yaml_obj))
+    print("\n\n" + str(yaml_obj_expected))
     assert yaml_obj == yaml_obj_expected
 
 
@@ -134,4 +138,6 @@ def test_seldon_model_yaml_auth(expected):
     yaml_obj = yaml.safe_load(yaml_str)
     yaml_obj_expected = yaml.safe_load(expected)
     del yaml_obj["metadata"]["annotations"]["seldon.io/tempo-model"]
+    print("\n\n" + str(yaml_obj))
+    print("\n\n" + str(yaml_obj_expected))
     assert yaml_obj == yaml_obj_expected

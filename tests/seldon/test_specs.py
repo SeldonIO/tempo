@@ -21,7 +21,7 @@ def test_kubernetes_spec(sklearn_model):
                         "implementation": KubernetesSpec.Implementations[sklearn_model.details.platform],
                     },
                     "name": "default",
-                    "replicas": sklearn_model.model_spec.runtime_options.k8s_options.replicas,
+                    "replicas": sklearn_model.model_spec.runtime_options.replicas,
                 }
             ],
         },

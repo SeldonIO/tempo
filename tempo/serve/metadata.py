@@ -189,7 +189,7 @@ class KubernetesRuntimeOptions(_BaseRuntimeOptions):
     authSecretName: Optional[str] = None
     serviceAccountName: Optional[str] = None
     # TODO move to separate seldonkubernetesruntime
-    add_svc_orchestrator: bool = True
+    add_svc_orchestrator: bool = False
 
 
 class DockerOptions(_BaseRuntimeOptions):
