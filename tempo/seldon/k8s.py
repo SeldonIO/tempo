@@ -9,20 +9,20 @@ from kubernetes.client.rest import ApiException
 from tempo.k8s.constants import TempoK8sLabel, TempoK8sModelSpecAnnotation
 from tempo.k8s.utils import create_k8s_client
 from tempo.seldon.endpoint import Endpoint
-from tempo.seldon.runtime import SeldonCoreOptions
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
+from tempo.serve.metadata import KubernetesRuntimeOptions
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
 
 
 class SeldonKubernetesRuntime(Runtime):
-    def __init__(self, runtime_options: Optional[SeldonCoreOptions] = None):
+    def __init__(self, runtime_options: Optional[KubernetesRuntimeOptions] = None):
         if runtime_options is None:
-            runtime_options = SeldonCoreOptions()
+            runtime_options = KubernetesRuntimeOptions()
         runtime_options.runtime = "tempo.seldon.SeldonKubernetesRuntime"
         super().__init__(runtime_options)
-        self.seldon_core_options: SeldonCoreOptions = runtime_options
+        self.seldon_core_options: KubernetesRuntimeOptions = runtime_options
 
     def get_endpoint_spec(self, model_spec: ModelSpec) -> str:
         create_k8s_client()
@@ -35,7 +35,7 @@ class SeldonKubernetesRuntime(Runtime):
         api_instance.delete_namespaced_custom_object(
             "machinelearning.seldon.io",
             "v1",
-            model_spec.runtime_options.k8s_options.namespace,
+            model_spec.runtime_options.namespace,  # type: ignore
             "seldondeployments",
             model_spec.model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
@@ -53,7 +53,7 @@ class SeldonKubernetesRuntime(Runtime):
             existing = api_instance.get_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "seldondeployments",
                 model_spec.model_details.name,
             )
@@ -61,7 +61,7 @@ class SeldonKubernetesRuntime(Runtime):
             api_instance.replace_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "seldondeployments",
                 model_spec.model_details.name,
                 k8s_spec,
@@ -71,7 +71,7 @@ class SeldonKubernetesRuntime(Runtime):
                 api_instance.create_namespaced_custom_object(
                     "machinelearning.seldon.io",
                     "v1",
-                    model_spec.runtime_options.k8s_options.namespace,
+                    model_spec.runtime_options.namespace,  # type: ignore
                     "seldondeployments",
                     k8s_spec,
                 )
@@ -87,7 +87,7 @@ class SeldonKubernetesRuntime(Runtime):
             existing = api_instance.get_namespaced_custom_object(
                 "machinelearning.seldon.io",
                 "v1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "seldondeployments",
                 model_spec.model_details.name,
             )
@@ -108,7 +108,7 @@ class SeldonKubernetesRuntime(Runtime):
         api_instance = client.CustomObjectsApi()
 
         if namespace is None and self.runtime_options is not None:
-            namespace = self.runtime_options.k8s_options.namespace
+            namespace = self.runtime_options.namespace  # type: ignore
 
         if namespace is None:
             return []

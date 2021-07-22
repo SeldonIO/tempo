@@ -13,7 +13,7 @@ from .insights.wrapper import InsightsWrapper
 from .serve.base import BaseModel
 from .serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from .serve.loader import load
-from .serve.metadata import InsightRequestModes, InsightsTypes, ModelFramework, RuntimeOptions
+from .serve.metadata import InsightRequestModes, InsightsTypes, ModelFramework, dict_to_runtime
 from .serve.utils import PredictMethodAttr
 from .state.state import BaseState
 
@@ -77,7 +77,7 @@ class InferenceRuntime(MLModel):
     async def _load_runtime(self):
         rt_options_str = os.getenv(ENV_TEMPO_RUNTIME_OPTIONS)
         if rt_options_str:
-            rt_options = RuntimeOptions(**json.loads(rt_options_str))
+            rt_options = dict_to_runtime(json.loads(rt_options_str))
             self._model.set_runtime_options_override(rt_options)
 
     async def predict(self, request: InferenceRequest) -> InferenceResponse:

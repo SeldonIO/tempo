@@ -1,10 +1,8 @@
 import os
 import time
-from enum import Enum
 from http import cookies
 from typing import Dict, Sequence
 
-from pydantic import BaseModel
 from seldon_deploy_sdk import ApiClient, Configuration, EnvironmentApi, SeldonDeploymentsApi
 from seldon_deploy_sdk.auth import OIDCAuthenticator, SessionAuthenticator
 from seldon_deploy_sdk.models.object_meta import ObjectMeta
@@ -17,25 +15,10 @@ from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.specs import KubernetesSpec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
+from tempo.serve.metadata import EnterpriseRuntimeAuthType, EnterpriseRuntimeOptions
 
 
-class SeldonDeployAuthType(Enum):
-    session_cookie = "session_cookie"
-    oidc = "oidc"
-
-
-class SeldonDeployConfig(BaseModel):
-
-    host: str
-    user: str
-    password: str
-    auth_type: SeldonDeployAuthType = SeldonDeployAuthType.session_cookie
-    oidc_client_id: str
-    oidc_server: str
-    verify_ssl: bool = True
-
-
-# FIXME: Needs updating for runtime options to include SeldonDeployConfig
+# FIXME: Needs updating for runtime options to include EnterpriseRuntimeOptions
 class SeldonDeployRuntime(Runtime):
     def list_models(self) -> Sequence[DeployedModel]:
         pass
@@ -43,11 +26,11 @@ class SeldonDeployRuntime(Runtime):
     def __init__(self):
         self.api_client = None
 
-    def authenticate(self, settings: SeldonDeployConfig):
+    def authenticate(self, settings: EnterpriseRuntimeOptions):
         config = Configuration()
         config.host = settings.host
         config.verify_ssl = settings.verify_ssl
-        if settings.auth_type == SeldonDeployAuthType.session_cookie:
+        if settings.auth_type == EnterpriseRuntimeAuthType.session_cookie:
             auth = SessionAuthenticator(config)
             # TODO can we use just cookie_str in API client
             cookie_str = auth.authenticate(settings.user, settings.password)
@@ -57,7 +40,7 @@ class SeldonDeployRuntime(Runtime):
             cookie_str = f"authservice_session={token}"
             api_client = ApiClient(config, cookie=cookie_str)
             self.api_client = api_client
-        elif settings.auth_type == SeldonDeployAuthType.oidc:
+        elif settings.auth_type == EnterpriseRuntimeAuthType.oidc:
             if not settings.verify_ssl:
                 os.environ["CURL_CA_BUNDLE"] = ""
             config.oidc_client_id = settings.oidc_client_id
@@ -89,7 +72,7 @@ class SeldonDeployRuntime(Runtime):
             api_version="machinelearning.seldon.io/v1",
             metadata=ObjectMeta(
                 name=model_spec.model_details.name,
-                namespace=model_spec.runtime_options.k8s_options.namespace,
+                namespace=model_spec.runtime_options.namespace,  # type: ignore
             ),
             spec=SeldonDeploymentSpec(
                 predictors=[
@@ -100,14 +83,14 @@ class SeldonDeployRuntime(Runtime):
                             name="model",
                         ),
                         name="default",
-                        replicas=model_spec.runtime_options.k8s_options.replicas,
+                        replicas=model_spec.runtime_options.replicas,  # type: ignore
                     )
                 ]
             ),
         )
 
         dep_instance = SeldonDeploymentsApi(self.api_client)
-        dep_instance.create_seldon_deployment(model_spec.runtime_options.k8s_options.namespace, sd)
+        dep_instance.create_seldon_deployment(model_spec.runtime_options.namespace, sd)  # type: ignore
 
     def wait_ready_spec(self, model_spec: ModelSpec, timeout_secs=None) -> bool:
         self._create_api_client()
@@ -117,7 +100,7 @@ class SeldonDeployRuntime(Runtime):
         while not ready:
             sdep: SeldonDeployment = dep_instance.read_seldon_deployment(
                 model_spec.model_details.name,
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
             )
             sdep_dict = sdep.to_dict()
             ready = sdep_dict["status"]["state"] == "Available"
@@ -132,7 +115,7 @@ class SeldonDeployRuntime(Runtime):
         dep_instance = SeldonDeploymentsApi(self.api_client)
         dep_instance.delete_seldon_deployment(
             model_spec.model_details.name,
-            model_spec.runtime_options.k8s_options.namespace,
+            model_spec.runtime_options.namespace,  # type: ignore
             _preload_content=False,
         )
 

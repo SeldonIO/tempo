@@ -22,7 +22,9 @@ def create_network(docker_client: docker.client.DockerClient, network_name=Defau
 
 
 def deploy_insights_message_dumper(
-    name=DefaultInsightsServiceName, image=DefaultInsightsImage, port=DefaultInsightsPort
+    name=DefaultInsightsServiceName,
+    image=DefaultInsightsImage,
+    port=DefaultInsightsPort,
 ):
     docker_client = docker.from_env()
     try:
