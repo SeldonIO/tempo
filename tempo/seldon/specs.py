@@ -77,32 +77,36 @@ class _V2ContainerFactory:
 
     @classmethod
     def get_container_spec(cls, model_details: ModelDetails, runtime_options: RuntimeOptions) -> dict:
-        if model_details.platform == ModelFramework.PyTorch or \
-         model_details.platform == ModelFramework.TensorRT or \
-         model_details.platform == ModelFramework.ONNX:
+        if (
+            model_details.platform == ModelFramework.PyTorch
+            or model_details.platform == ModelFramework.TensorRT
+            or model_details.platform == ModelFramework.ONNX
+        ):
             return {
                 "image": cls.TritonImage,
-                "command": ["/opt/tritonserver/bin/tritonserver",
-                            f"--grpc-port={DefaultGRPCPort}",
-                            f"--http-port={DefaultHTTPPort}",
-                            f"--model-repository={DefaultModelsPath}",
-                            "--strict-model-config=false"]
+                "command": [
+                    "/opt/tritonserver/bin/tritonserver",
+                    f"--grpc-port={DefaultGRPCPort}",
+                    f"--http-port={DefaultHTTPPort}",
+                    f"--model-repository={DefaultModelsPath}",
+                    "--strict-model-config=false",
+                ],
             }
         else:
             mlserver_runtime = cls.MLServerRuntimes[model_details.platform]
 
             env = {
-               "MLSERVER_HTTP_PORT": DefaultHTTPPort,
-               "MLSERVER_GRPC_PORT": DefaultGRPCPort,
-               "MLSERVER_MODEL_IMPLEMENTATION": mlserver_runtime,
-               "MLSERVER_MODEL_NAME": model_details.name,
-               "MLSERVER_MODEL_URI": DefaultModelsPath,
-               ENV_TEMPO_RUNTIME_OPTIONS: json.dumps(runtime_options.dict()),
+                "MLSERVER_HTTP_PORT": DefaultHTTPPort,
+                "MLSERVER_GRPC_PORT": DefaultGRPCPort,
+                "MLSERVER_MODEL_IMPLEMENTATION": mlserver_runtime,
+                "MLSERVER_MODEL_NAME": model_details.name,
+                "MLSERVER_MODEL_URI": DefaultModelsPath,
+                ENV_TEMPO_RUNTIME_OPTIONS: json.dumps(runtime_options.dict()),
             }
 
             return {
-               "image": cls.MLServerImage,
-               "environment": env,
+                "image": cls.MLServerImage,
+                "environment": env,
             }
 
 
