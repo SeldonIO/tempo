@@ -1,0 +1,17 @@
+# Adds namespace to all resources.
+namespace: production
+    
+resources:
+- tempo.yaml
+
+
+patchesJson6902:
+- target:
+    group: machinelearning.seldon.io
+    version: v1
+    kind: SeldonDeployment
+    name: classifier
+  path: patch_resources.yaml
+
+
+
