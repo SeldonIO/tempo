@@ -1,2 +1,4 @@
 model.bst
 model.joblib
+kubeconfig.yaml
+gsa-key.json

@@ -10,27 +10,31 @@ SKLearnTag = "sklearn prediction"
 XGBoostTag = "xgboost prediction"
 
 
-def get_tempo_artifacts(sklearn_location:str, xgboost_location: str) -> Tuple[Pipeline, Model, Model]:
+def get_tempo_artifacts(sklearn_local_path:str,
+                        sklearn_uri: str,
+                        xgboost_local_path: str,
+                        xgboost_uri: str,
+                        classifier_uri: str) -> Tuple[Pipeline, Model, Model]:
 
     sklearn_model = Model(
         name="test-iris-sklearn",
         platform=ModelFramework.SKLearn,
-        local_folder=sklearn_location,
-        uri="s3://tempo/basic/sklearn",
+        local_folder=sklearn_local_path,
+        uri=sklearn_uri,
         description="An SKLearn Iris classification model",
     )
 
     xgboost_model = Model(
         name="test-iris-xgboost",
         platform=ModelFramework.XGBoost,
-        local_folder=xgboost_location,
-        uri="s3://tempo/basic/xgboost",
+        local_folder=xgboost_local_path,
+        uri=xgboost_uri,
         description="An XGBoost Iris classification model",
     )
 
     @pipeline(
         name="classifier",
-        uri="s3://tempo/basic/pipeline",
+        uri=classifier_uri,
         models=PipelineModels(sklearn=sklearn_model, xgboost=xgboost_model),
         description="A pipeline to use either an sklearn or xgboost model for Iris classification",
     )
