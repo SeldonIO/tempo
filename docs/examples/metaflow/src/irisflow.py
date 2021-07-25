@@ -1,7 +1,7 @@
 import functools
 from typing import Any
 
-from metaflow import S3, FlowSpec, IncludeFile, Parameter, Task, conda, step
+from metaflow import S3, FlowSpec, IncludeFile, Parameter, conda, step
 
 
 def script_path(filename):
@@ -36,7 +36,6 @@ def pip(libraries):
 
 def save_bytes_local(model: Any, model_name: str):
     import os
-    import shutil
     import tempfile
 
     folder = tempfile.mkdtemp()
@@ -85,8 +84,6 @@ class IrisFlow(FlowSpec):
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
     def train_sklearn(self):
-        from io import BytesIO
-
         from joblib import dump
         from sklearn.linear_model import LogisticRegression
 
@@ -94,7 +91,6 @@ class IrisFlow(FlowSpec):
         lr.fit(self.X, self.y)
         dump(lr, script_path("model.joblib"))
         with open(script_path("model.joblib"), "rb") as fh:
-            # self.buffered_lr_model = BytesIO(fh.read())
             self.buffered_lr_model = fh.read()
 
         self.next(self.join)
@@ -102,8 +98,6 @@ class IrisFlow(FlowSpec):
     @conda(libraries={"xgboost": "1.4.0"})
     @step
     def train_xgboost(self):
-        from io import BytesIO
-
         from xgboost import XGBClassifier
 
         xgb = XGBClassifier()
