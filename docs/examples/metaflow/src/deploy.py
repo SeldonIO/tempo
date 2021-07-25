@@ -1,5 +1,7 @@
 from typing import Tuple
+
 import numpy as np
+
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
@@ -10,11 +12,9 @@ SKLearnTag = "sklearn prediction"
 XGBoostTag = "xgboost prediction"
 
 
-def get_tempo_artifacts(sklearn_local_path:str,
-                        sklearn_uri: str,
-                        xgboost_local_path: str,
-                        xgboost_uri: str,
-                        classifier_uri: str) -> Tuple[Pipeline, Model, Model]:
+def get_tempo_artifacts(
+    sklearn_local_path: str, sklearn_uri: str, xgboost_local_path: str, xgboost_uri: str, classifier_uri: str
+) -> Tuple[Pipeline, Model, Model]:
 
     sklearn_model = Model(
         name="test-iris-sklearn",
