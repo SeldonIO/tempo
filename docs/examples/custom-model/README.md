@@ -17,8 +17,27 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 
 
 ```python
+!ls artifacts
+```
+
+    model.pickle  numpyro-divorce.json
+
+
+
+```python
 !tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
+
+    [01;34m.[00m
+    ├── [01;34martifacts[00m
+    ├── [01;34mk8s[00m
+    │   └── [01;34mrbac[00m
+    └── [01;34msrc[00m
+        ├── tempo.py
+        └── train.py
+    
+    4 directories, 2 files
+
 
 ## Training
 
@@ -92,6 +111,18 @@ ARTIFACTS_FOLDER = os.getcwd()+"/artifacts"
 from src.train import train, save, model_function
 mcmc = train()
 ```
+
+    sample: 100%|██████████| 3000/3000 [00:06<00:00, 433.57it/s, 3 steps of size 7.77e-01. acc. prob=0.91]
+
+
+    
+                    mean       std    median      5.0%     95.0%     n_eff     r_hat
+             a     -0.00      0.11     -0.00     -0.17      0.17   1794.52      1.00
+            bM      0.35      0.13      0.35      0.14      0.56   1748.73      1.00
+         sigma      0.94      0.10      0.94      0.77      1.09   2144.79      1.00
+    
+    Number of divergences: 0
+
 
 ### Saving trained model
 
@@ -204,6 +235,9 @@ pred = numpyro_divorce(marriage=marriage, age=age)
 print(pred)
 ```
 
+    [9.673733]
+
+
 ### Deploy the  Model to Docker
 
 Finally, we'll be able to deploy our model using Tempo against one of the available runtimes (i.e. Kubernetes, Docker or Seldon Deploy).
@@ -212,8 +246,20 @@ We'll deploy first to Docker to test.
 
 
 ```python
-!cat artifacts/conda.yaml
+%%writefile artifacts/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python=3.7.9
+  - pip:
+    - mlops-tempo
+    - mlserver==0.3.2
+    - numpyro==0.6.0
 ```
+
+    Overwriting artifacts/conda.yaml
+
 
 
 ```python
@@ -221,10 +267,15 @@ from tempo.serve.loader import save
 save(numpyro_divorce)
 ```
 
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-da8e3d00-850c-4235-b8c4-f2ddcd0f6b41' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/custom-model/artifacts/environment.tar.gz'
+    [########################################] | 100% Completed | 17.4s
+
+
 
 ```python
-from tempo import deploy
-remote_model = deploy(numpyro_divorce)
+from tempo import deploy_local
+remote_model = deploy_local(numpyro_divorce)
 ```
 
 We can now test our model deployed in Docker as:
@@ -233,6 +284,13 @@ We can now test our model deployed in Docker as:
 ```python
 remote_model.predict(marriage=marriage, age=age)
 ```
+
+
+
+
+    array([9.673733], dtype=float32)
+
+
 
 
 ```python
@@ -252,6 +310,12 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 !kubectl apply -f k8s/rbac -n production
 ```
 
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+
+
 
 ```python
 from tempo.examples.minio import create_minio_rclone
@@ -267,26 +331,32 @@ upload(numpyro_divorce)
 
 
 ```python
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
 ```
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(numpyro_divorce, options=runtime_options)
+from tempo import deploy_remote
+remote_model = deploy_remote(numpyro_divorce, options=runtime_options)
 ```
 
 
 ```python
 remote_model.predict(marriage=marriage, age=age)
 ```
+
+
+
+
+    array([9.673733], dtype=float32)
+
+
 
 
 ```python
