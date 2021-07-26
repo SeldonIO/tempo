@@ -4,7 +4,8 @@ Tempo runtimes provide the core functionality to deploy a tempo Model. They must
 
 | Method | Action  |
 |--------|---------|
-| deploy | deploy a model |
+| deploy_local | deploy a model to the product's local runtime |
+| deploy_remote | deploy a model to the product's remote runtime |
 | undeploy | undeploy a model |
 | wait_ready | wait for a deployed model to be ready |
 | endpoint | get the URL for the deployed model so it can be called |

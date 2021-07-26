@@ -24,14 +24,14 @@ Tempo provides a unified interface to multiple MLOps projects that enable data s
      * Outlier detectors with Alibi-Detect.
      * Explainers with Alibi-Explain.
  * Test Locally - Deploy to Production
-     * Run with local unit tests.     
+     * Run with local unit tests.
      * Deploy locally to Docker to test with Docker runtimes.
      * Deploy to production on Kubernetes
-     * Extract declarative Kubernetes yaml to follow GitOps workflows.     
+     * Extract declarative Kubernetes yaml to follow GitOps workflows.
  * Supporting a wide range of production runtimes
      * Seldon Core open source
      * KFServing open source
-     * Seldon Deploy enterprise     
+     * Seldon Deploy enterprise
  * Create stateful services. Examples:
     * Multi-Armed Bandits.
 
@@ -97,8 +97,8 @@ save(classifier)
 Deploy locally to docker.
 
 ```python
-from tempo import deploy
-remote_model = deploy(classifier)
+from tempo import deploy_local
+remote_model = deploy_local(classifier)
 ```
 
 Make predictions on containerized servers that would be used in production.
@@ -110,15 +110,16 @@ remote_model.predict(np.array([[1, 2, 3, 4]]))
 Deploy to Kubernetes for production.
 
 ```python
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-	    namespace="production",
-            authSecretName="minio-secret"
-	)
-)	
-remote_model = deploy(classifier, options=runtime_options)
+from tempo.serve.metadata import SeldonCoreOptions
+from tempo import deploy_remote
+
+runtime_options = SeldonCoreOptions(**{
+    "remote_options": {
+        "namespace": "production",
+        "authSecretName": "minio-secret"
+    }
+})	
+remote_model = deploy_remote(classifier, options=runtime_options)
 ```
 
 This is an extract from the [multi-model introduction](https://tempo.readthedocs.io/en/latest/examples/multi-model/README.html) demo.
