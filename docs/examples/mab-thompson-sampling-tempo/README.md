@@ -13,31 +13,11 @@ logging.info("test")
 
 
 ```python
-!kubectl create ns production
-```
-
-    namespace/production created
-
-
-
-```python
-!kubectl apply -f ../tempo/tests/testdata/tempo-pipeline-rbac.yaml -n production
-```
-
-    serviceaccount/tempo-pipeline unchanged
-    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
-    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
-
-
-
-```python
 !kaggle datasets download -d uciml/default-of-credit-card-clients-dataset
 !unzip -o default-of-credit-card-clients-dataset.zip
 ```
 
-    Downloading default-of-credit-card-clients-dataset.zip to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo
-    100%|██████████████████████████████████████| 0.98M/0.98M [00:00<00:00, 2.46MB/s]
-    100%|██████████████████████████████████████| 0.98M/0.98M [00:00<00:00, 2.46MB/s]
+    default-of-credit-card-clients-dataset.zip: Skipping, found more recently modified local copy (use --force to force download)
     Archive:  default-of-credit-card-clients-dataset.zip
       inflating: UCI_Credit_Card.csv     
 
@@ -180,15 +160,17 @@ xgboost_tempo = Model(
         local_folder=os.getcwd()+"/artifacts/mab/xgboost/")
 ```
 
-    Insights Manager not initialised as empty URL provided.
-    Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
 
 
 
 ```python
-from tempo import deploy
-remote_sklearn = deploy(sklearn_tempo)
-remote_xgboost = deploy(xgboost_tempo)
+from tempo import deploy_local
+remote_sklearn = deploy_local(sklearn_tempo)
+remote_xgboost = deploy_local(xgboost_tempo)
 ```
 
 
@@ -222,31 +204,37 @@ from tempo.docker.utils import deploy_redis
 deploy_redis()
 ```
 
-    INFO:tempo:Attempted to deploy message dumper but already deployed
-
-
 
 ```python
 import logging
 
 import numpy as np
 from tempo.serve.utils import pipeline, predictmethod
-from tempo.serve.metadata import InsightRequestModes, RuntimeOptions, StateTypes
-from tempo.serve.constants import DefaultRedisLocalHost, DefaultRedisPort
+from tempo.serve.metadata import InsightRequestModes, SeldonCoreOptions, StateTypes
+from tempo.serve.constants import DefaultRedisLocalHost, DefaultRedisPort, DefaultRedisK8sHost
 from tempo.serve.pipeline import PipelineModels
 
 from tempo.magic import t
 
-local_options = RuntimeOptions(**{
-    "state_options": {
-        "state_type": StateTypes.REDIS,
-        "host": DefaultRedisLocalHost,
-        "port": DefaultRedisPort,
+runtime_options = SeldonCoreOptions(**{
+    "local_options": {
+        "state_options": {
+            "state_type": StateTypes.REDIS,
+            "host": DefaultRedisLocalHost,
+            "port": DefaultRedisPort,
+        }
+    },
+    "remote_options": {
+        "state_options": {
+            "state_type": StateTypes.REDIS,
+            "host": DefaultRedisK8sHost,
+            "port": DefaultRedisPort,
+        }
     }
 })
 
 @pipeline(name="mab-router",
-          runtime_options=local_options,
+          runtime_options=runtime_options.local_options,
           uri="s3://tempo/mab/route",
           local_folder=os.getcwd()+"/artifacts/mab/router/",
           models=PipelineModels(sklearn=sklearn_tempo, xgboost=xgboost_tempo))
@@ -293,42 +281,34 @@ mab_router = MABRouter()
 
 ```python
 for i in range(10):
-    print(mab_router(X_test2[0:1]))
+    print(mab_router.predict(X_test2[0:1]))
 ```
 
     INFO:root:routing to branch: 0
     INFO:root:routing to branch: 1
+    INFO:root:routing to branch: 1
     INFO:root:routing to branch: 0
-    INFO:root:routing to branch: 1
-
-
-    [0.0865844]
-    [0.]
-    [0.0865844]
-
-
-    INFO:root:routing to branch: 1
-    INFO:root:routing to branch: 1
-
-
-    [0.]
-    [0.]
-
-
-    INFO:root:routing to branch: 1
-    INFO:root:routing to branch: 1
-    INFO:root:routing to branch: 1
-
-
-    [0.]
-    [0.]
-    [0.]
-
-
+    INFO:root:routing to branch: 0
     INFO:root:routing to branch: 0
 
 
     [0.]
+    [0.0865844]
+    [0.0865844]
+    [0.]
+    [0.]
+
+
+    INFO:root:routing to branch: 1
+    INFO:root:routing to branch: 1
+    INFO:root:routing to branch: 1
+    INFO:root:routing to branch: 1
+
+
+    [0.]
+    [0.0865844]
+    [0.0865844]
+    [0.0865844]
     [0.0865844]
 
 
@@ -369,30 +349,33 @@ from tempo.serve.loader import save
 save(mab_router, save_env=True)
 ```
 
-    Insights Manager not initialised as empty URL provided.
-    Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Saving environment
+    INFO:tempo:Saving tempo model to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/router/model.pickle
+    INFO:tempo:Using found conda.yaml
+    INFO:tempo:Creating conda env with: conda env create --name tempo-19693e41-b72f-4055-b068-f31ad3b6b72a --file /tmp/tmpuq95cahi.yml
+    INFO:tempo:packing conda environment from tempo-19693e41-b72f-4055-b068-f31ad3b6b72a
 
 
     Collecting packages...
-    Packing environment at '/home/alejandro/miniconda3/envs/tempo-4885c0a3-34a2-4686-ba64-f90e31b1593d' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/router/environment.tar.gz'
-    [########################################] | 100% Completed | 18.2s
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-19693e41-b72f-4055-b068-f31ad3b6b72a' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/router/environment.tar.gz'
+    [########################################] | 100% Completed | 10.8s
+
+
+    INFO:tempo:Removing conda env with: conda remove --name tempo-19693e41-b72f-4055-b068-f31ad3b6b72a --all --yes
 
 
 
 ```python
-from tempo import deploy
-from tempo.serve.constants import DefaultRedisDockerHost, DefaultRedisPort
-from tempo.serve.metadata import RuntimeOptions
+from tempo import deploy_local
+from tempo.serve.constants import DefaultRedisDockerHost
 
-docker_options = RuntimeOptions(**{
-    "state_options": {
-        "state_type": StateTypes.REDIS,
-        "host": DefaultRedisDockerHost,
-        "port": DefaultRedisPort,
-    }
-})
+runtime_options.local_options.state_options.host = DefaultRedisDockerHost
 
-remote_mab_router = deploy(mab_router, docker_options)
+remote_mab_router = deploy_local(mab_router, runtime_options)
 ```
 
 
@@ -402,21 +385,21 @@ for i in range(10):
 ```
 
     [0.0865844]
-    [0.0865844]
+    [0.]
     [0.]
     [0.0865844]
     [0.0865844]
     [0.0865844]
     [0.0865844]
-    [0.0865844]
     [0.]
+    [0.0865844]
     [0.0865844]
 
 
 
 ```python
 @pipeline(name="mab-feedback",
-          runtime_options=local_options,
+          runtime_options=runtime_options.local_options,
           uri="s3://tempo/mab/feedback",
           local_folder=os.getcwd()+"/artifacts/mab/feedback/")
 class MABFeedback(object):
@@ -461,122 +444,6 @@ class MABFeedback(object):
 mab_feedback = MABFeedback()
 ```
 
-## Send feedback showing that route sklearn model performs better
-
-
-```python
-for i in range(10):
-    print(mab_feedback(payload=X_rest[0:1], parameters={ "reward": 1, "routing": 0}))
-```
-
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-
-
-    [1 0]
-    [1 0]
-    [1 0]
-    [1 0]
-    [1 0]
-    [1 0]
-    [1 0]
-    [1 0]
-
-
-    INFO:root:Feedback method with truth [[ 2.8590e+03  5.0000e+05  1.0000e+00  1.0000e+00  1.0000e+00  4.0000e+01
-      -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00 -2.0000e+00
-       5.2550e+03  7.2100e+02  1.7252e+04  7.3880e+03  6.0690e+03  0.0000e+00
-       7.2100e+02  1.7252e+04  7.4210e+03  6.0690e+03  0.0000e+00  0.0000e+00]] and parameters {'reward': 1, 'routing': 0}
-    INFO:root:Sending feedback with route 0 reward 1
-    INFO:root:n_success: 1, n_failures: 0
-    INFO:root:LINDEX key beta_params on index 0
-
-
-    [1 0]
-    [1 0]
-
-
-## See now most requests being sent to sklearn model
-
-
-```python
-for i in range(10):
-    print(remote_mab_router.predict(X_test2[0:1]))
-```
-
-    [0.0865844]
-    [0.0865844]
-    [0.0865844]
-    [0.0865844]
-    [0.0865844]
-    [0.]
-    [0.0865844]
-    [0.0865844]
-    [0.0865844]
-    [0.0865844]
-
-
 ### Deploy Feedback Pipeline
 
 
@@ -601,22 +468,62 @@ save(mab_feedback, save_env=True)
     INFO:tempo:Saving environment
     INFO:tempo:Saving tempo model to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/feedback/model.pickle
     INFO:tempo:Using found conda.yaml
-    INFO:tempo:Creating conda env with: conda env create --name tempo-a70b0c73-effa-4859-b53a-130341b07f76 --file /tmp/tmpcixe4n_l.yml
-    INFO:tempo:packing conda environment from tempo-a70b0c73-effa-4859-b53a-130341b07f76
+    INFO:tempo:Creating conda env with: conda env create --name tempo-f6af8217-c4f4-4ca4-be58-f90623d6e72d --file /tmp/tmp84yifu3l.yml
+    INFO:tempo:packing conda environment from tempo-f6af8217-c4f4-4ca4-be58-f90623d6e72d
 
 
     Collecting packages...
-    Packing environment at '/home/alejandro/miniconda3/envs/tempo-a70b0c73-effa-4859-b53a-130341b07f76' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/feedback/environment.tar.gz'
-    [########################################] | 100% Completed | 24.1s
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-f6af8217-c4f4-4ca4-be58-f90623d6e72d' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/feedback/environment.tar.gz'
+    [########################################] | 100% Completed | 11.0s
 
 
-    INFO:tempo:Removing conda env with: conda remove --name tempo-a70b0c73-effa-4859-b53a-130341b07f76 --all --yes
+    INFO:tempo:Removing conda env with: conda remove --name tempo-f6af8217-c4f4-4ca4-be58-f90623d6e72d --all --yes
 
 
 
 ```python
-remote_mab_feedback = deploy(mab_feedback, docker_options)
+remote_mab_feedback = deploy_local(mab_feedback, runtime_options)
 ```
+
+## Send feedback showing that route sklearn model performs better
+
+
+```python
+for i in range(10):
+    print(remote_mab_feedback.predict(payload=X_rest[0:1], parameters={ "reward": 1, "routing": 0}))
+```
+
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+
+
+## See now most requests being sent to sklearn model
+
+
+```python
+for i in range(10):
+    print(remote_mab_router.predict(X_test2[0:1]))
+```
+
+    [0.]
+    [0.]
+    [0.]
+    [0.]
+    [0.]
+    [0.]
+    [0.]
+    [0.]
+    [0.]
+    [0.]
+
 
 ### Now send 20 positive requests showing xgboost performing better
 
@@ -657,14 +564,14 @@ for i in range(10):
 ```
 
     [0.]
-    [0.]
     [0.0865844]
-    [0.]
     [0.0865844]
-    [0.]
     [0.0865844]
-    [0.]
-    [0.]
+    [0.0865844]
+    [0.0865844]
+    [0.0865844]
+    [0.0865844]
+    [0.0865844]
     [0.]
 
 
@@ -700,12 +607,12 @@ undeploy_redis()
 
 
 ```python
-!kubectl apply -f k8s/rbac -n production
+!kubectl apply -f k8s/rbac -n default
 ```
 
     secret/minio-secret configured
     serviceaccount/tempo-pipeline unchanged
-    role.rbac.authorization.k8s.io/tempo-pipeline configured
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
     rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
 
 
@@ -736,28 +643,9 @@ deploy_redis()
 
 
 ```python
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions, StateOptions, StateTypes
-from tempo.serve.constants import DefaultRedisK8sHost, DefaultRedisPort
-from tempo.seldon.k8s import SeldonCoreOptions
-
-kubernetes_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        ),
-        state_options=StateOptions(
-            state_type=StateTypes.REDIS,
-            host=DefaultRedisK8sHost,
-            port=DefaultRedisPort
-        )
-    )
-```
-
-
-```python
-from tempo import deploy
-k8s_mab_router = deploy(mab_router, options=kubernetes_options)
-k8s_mab_feedback = deploy(mab_feedback, options=kubernetes_options)
+from tempo import deploy_remote
+k8s_mab_router = deploy_remote(mab_router, options=runtime_options)
+k8s_mab_feedback = deploy_remote(mab_feedback, options=runtime_options)
 ```
 
 
@@ -766,9 +654,35 @@ k8s_mab_router.predict(payload=X_rest[0:1])
 ```
 
 
+
+
+    array([0.0865844], dtype=float32)
+
+
+
+
 ```python
-k8s_mab_router.predict(payload=X_rest[0:1], parameters={"reward":0.0,"routing":0} )
+k8s_mab_feedback.predict(payload=X_rest[0:1], parameters={"reward":0.0,"routing":0} )
 ```
+
+
+
+
+    array([0, 1])
+
+
+
+
+```python
+k8s_mab_router.undeploy()
+k8s_mab_feedback.undeploy()
+```
+
+    INFO:tempo:Undeploying mab-router
+    INFO:tempo:Undeploying test-iris-sklearn
+    INFO:tempo:Undeploying test-iris-xgboost
+    INFO:tempo:Undeploying mab-feedback
+
 
 
 ```python
