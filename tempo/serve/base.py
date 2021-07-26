@@ -239,6 +239,7 @@ class BaseModel:
         endpoint = remoter.get_endpoint_spec(model_spec)
         headers = remoter.get_headers(model_spec)
         response_raw = requests.post(endpoint, json=req, headers=headers, verify=ingress_options.verify_ssl)
+        print(response_raw.content)
 
         response_raw.raise_for_status()
 
