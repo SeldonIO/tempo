@@ -28,6 +28,22 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 !tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
+    [01;34m.[00m
+    ├── [01;34martifacts[00m
+    │   ├── [01;34mexplainer[00m
+    │   └── [01;34mmodel[00m
+    ├── [01;34mk8s[00m
+    │   └── [01;34mrbac[00m
+    └── [01;34msrc[00m
+        ├── constants.py
+        ├── data.py
+        ├── explainer.py
+        ├── model.py
+        └── tempo.py
+    
+    6 directories, 5 files
+
+
 ## Train Models
 
  * This section is where as a data scientist you do your work of training models and creating artfacts.
@@ -63,12 +79,28 @@ from src.model import train_model
 adult_model = train_model(ARTIFACTS_FOLDER, data)
 ```
 
+    Train accuracy:  0.9656333333333333
+    Test accuracy:  0.854296875
+
+
 
 ```python
 from src.explainer import train_explainer
 
 train_explainer(ARTIFACTS_FOLDER, data, adult_model)
 ```
+
+
+
+
+    AnchorTabular(meta={
+      'name': 'AnchorTabular',
+      'type': ['blackbox'],
+      'explanations': ['local'],
+      'params': {'disc_perc': (25, 50, 75), 'seed': 1}}
+    )
+
+
 
 ## Create Tempo Artifacts
 
@@ -152,13 +184,31 @@ def create_explainer(model: Model) -> Tuple[Model, Any]:
 
 
 ```python
-!cat artifacts/explainer/conda.yaml
+%%writefile artifacts/explainer/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python=3.7.9
+  - pip:
+    - alibi==0.5.8
+    - dill
+    - mlops-tempo @ file:///home/alejandro/Programming/kubernetes/seldon/tempo
+    - mlserver==0.3.2
 ```
+
+    Overwriting artifacts/explainer/conda.yaml
+
 
 
 ```python
 tempo.save(Explainer)
 ```
+
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-56577a22-797a-479e-a1f7-d01eabf38dcb' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/explainer/artifacts/explainer/environment.tar.gz'
+    [########################################] | 100% Completed |  1min 12.1s
+
 
 ## Test Locally on Docker
 
@@ -166,8 +216,8 @@ Here we test our models using production images but running locally on Docker. T
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(explainer)
+from tempo import deploy_local
+remote_model = deploy_local(explainer)
 ```
 
 
@@ -176,11 +226,17 @@ r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"thres
 print(r["data"]["anchor"])
 ```
 
+    ['Marital Status = Separated']
+
+
 
 ```python
 r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
+
+    ['Relationship = Unmarried', 'Sex = Female', 'Capital Gain <= 0.00', 'Marital Status = Separated', 'Education = Associates']
+
 
 
 ```python
@@ -200,6 +256,12 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 !kubectl apply -f k8s/rbac -n production
 ```
 
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+
+
 
 ```python
 from tempo.examples.minio import create_minio_rclone
@@ -215,20 +277,19 @@ tempo.upload(explainer)
 
 
 ```python
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
 ```
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(explainer, options=runtime_options)
+from tempo import deploy_remote
+remote_model = deploy_remote(explainer, options=runtime_options)
 ```
 
 
@@ -236,6 +297,9 @@ remote_model = deploy(explainer, options=runtime_options)
 r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"threshold":0.95}))
 print(r["data"]["anchor"])
 ```
+
+    ['Marital Status = Separated', 'Sex = Female', 'Capital Gain <= 0.00']
+
 
 
 ```python
