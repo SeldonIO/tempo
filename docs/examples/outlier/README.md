@@ -28,6 +28,25 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 !tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
+    [01;34m.[00m
+    ├── [01;34martifacts[00m
+    │   ├── [01;34mmodel[00m
+    │   ├── [01;34moutlier[00m
+    │   └── [01;34msvc[00m
+    ├── [01;34mk8s[00m
+    │   └── [01;34mrbac[00m
+    ├── [01;34msrc[00m
+    │   ├── constants.py
+    │   ├── data.py
+    │   ├── outlier.py
+    │   ├── tempo.py
+    │   └── utils.py
+    └── [01;34mtests[00m
+        └── test_tempo.py
+    
+    8 directories, 6 files
+
+
 ## Train Models
 
  * This section is where as a data scientist you do your work of training models and creating artfacts.
@@ -52,6 +71,9 @@ logging.basicConfig(level=logging.ERROR)
 from src.data import Cifar10
 data = Cifar10()
 ```
+
+    (50000, 32, 32, 3) (50000, 1) (10000, 32, 32, 3) (10000, 1)
+
 
 Download pretrained Resnet32 Tensorflow model for CIFAR10
 
@@ -85,6 +107,12 @@ outlier = OutlierModel()
 Cifar10Svc = create_svc_cls(outlier, cifar10_model)
 svc = Cifar10Svc()
 ```
+
+    ERROR:fbprophet:Importing plotly failed. Interactive plots will not work.
+
+
+    Loading from /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/outlier/artifacts/outlier
+
 
 
 ```python
@@ -210,24 +238,383 @@ def test_svc_inlier():
 !python -m pytest tests/
 ```
 
+    [1mTest session starts (platform: linux, Python 3.7.10, pytest 5.3.1, pytest-sugar 0.9.4)[0m
+    rootdir: /home/alejandro/Programming/kubernetes/seldon/tempo, inifile: setup.cfg
+    plugins: cases-3.4.6, sugar-0.9.4, xdist-1.30.0, anyio-3.2.1, requests-mock-1.7.0, django-3.8.0, forked-1.1.3, flaky-3.6.1, asyncio-0.14.0, celery-4.4.0, cov-2.8.1
+    [1mcollecting ... [0m
+     [36mdocs/examples/outlier/tests/[0mtest_tempo.py[0m [32m✓[0m[32m✓[0m                    [32m100% [0m[40m[32m█[0m[40m[32m████[0m[40m[32m█[0m[40m[32m████[0m
+    [33m=============================== warnings summary ===============================[0m
+    /home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/autograph/impl/api.py:22
+      /home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/autograph/impl/api.py:22: DeprecationWarning: the imp module is deprecated in favour of importlib; see the module's documentation for alternative uses
+        import imp
+    
+    /home/alejandro/miniconda3/lib/python3.7/site-packages/packaging/version.py:130
+      /home/alejandro/miniconda3/lib/python3.7/site-packages/packaging/version.py:130: DeprecationWarning: Creating a LegacyVersion has been deprecated and will be removed in the next major release
+        DeprecationWarning,
+    
+    -- Docs: https://docs.pytest.org/en/latest/warnings.html
+    
+    Results (5.21s):
+    [32m       2 passed[0m
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 169, in __del__
+        "A checkpoint was restored (e.g. tf.train.Checkpoint.restore or "
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/matplotlib/_pylab_helpers.py", line 77, in destroy_all
+        gc.collect(1)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 169, in __del__
+        "A checkpoint was restored (e.g. tf.train.Checkpoint.restore or "
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_mean.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.kernel'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 161, in __del__
+        .format(pretty_printer.node_names[node_id]))
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'Unresolved object in checkpoint: (root).encoder.fc_log_var.bias'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 169, in __del__
+        "A checkpoint was restored (e.g. tf.train.Checkpoint.restore or "
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.'
+    Arguments: ()
+    --- Logging error ---
+    Traceback (most recent call last):
+      File "/home/alejandro/miniconda3/lib/python3.7/logging/__init__.py", line 1028, in emit
+        stream.write(msg + self.terminator)
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/_pytest/capture.py", line 427, in write
+        self.buffer.write(obj)
+    ValueError: I/O operation on closed file
+    Call stack:
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/training/tracking/util.py", line 169, in __del__
+        "A checkpoint was restored (e.g. tf.train.Checkpoint.restore or "
+      File "/home/alejandro/miniconda3/lib/python3.7/site-packages/tensorflow/python/platform/tf_logging.py", line 178, in warning
+        get_logger().warning(msg, *args, **kwargs)
+    Message: 'A checkpoint was restored (e.g. tf.train.Checkpoint.restore or tf.keras.Model.load_weights) but not all checkpointed values were used. See above for specific issues. Use expect_partial() on the load status object, e.g. tf.train.Checkpoint.restore(...).expect_partial(), to silence these warnings, or use assert_consumed() to make the check explicit. See https://www.tensorflow.org/guide/checkpoint#loading_mechanics for details.'
+    Arguments: ()
+
+
 ## Save Outlier and Svc Environments
 
 
 
 ```python
-!cat artifacts/outlier/conda.yaml
+%%writefile artifacts/outlier/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python=3.7.9
+  - pip:
+    - alibi-detect==0.6.2
+    - dill==0.3.2
+    - opencv-python-headless
+    - mlops-tempo @ file:///home/alejandro/Programming/kubernetes/seldon/tempo
+    - mlserver==0.3.2
 ```
+
+    Overwriting artifacts/outlier/conda.yaml
+
 
 
 ```python
-!cat artifacts/svc/conda.yaml
+%%writefile artifacts/svc/conda.yaml
+name: tempo
+channels:
+  - defaults
+dependencies:
+  - python=3.7.9
+  - pip:
+    - mlops-tempo @ file:///home/alejandro/Programming/kubernetes/seldon/tempo
+    - mlserver==0.3.2
 ```
+
+    Overwriting artifacts/svc/conda.yaml
+
 
 
 ```python
 tempo.save(OutlierModel)
+```
+
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-1142b4d9-c66f-47db-bd1a-1eccad0afc0b' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/outlier/artifacts/outlier/environment.tar.gz'
+    [########################################] | 100% Completed | 56.8s
+
+
+
+```python
 tempo.save(Cifar10Svc)
 ```
+
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-e7f7a0d2-eefe-45cc-8dc9-2be0f74d83a1' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/outlier/artifacts/svc/environment.tar.gz'
+    [########################################] | 100% Completed | 10.6s
+
 
 ## Test Locally on Docker
 
@@ -235,8 +622,8 @@ Here we test our models using production images but running locally on Docker. T
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(svc)
+from tempo import deploy_local
+remote_model = deploy_local(svc)
 ```
 
 
@@ -247,6 +634,24 @@ remote_model.predict(payload=data.X_test[0:1])
 ```
 
 
+    
+![png](README_files/README_24_0.png)
+    
+
+
+    b'{"model_name":"cifar10-service","model_version":"NOTIMPLEMENTED","id":"7bfbc51d-c042-4517-9d62-4a757eeb0a5f","parameters":null,"outputs":[{"name":"output0","shape":[1,10],"datatype":"FP64","parameters":null,"data":[3.92254496e-09,1.2045546e-11,2.66010169e-09,0.999992609,2.52212834e-10,5.40860242e-07,6.75951833e-06,4.75118165e-12,6.90873403e-09,1.07275378e-11]}]}'
+
+
+
+
+
+    array([[3.92254496e-09, 1.20455460e-11, 2.66010169e-09, 9.99992609e-01,
+            2.52212834e-10, 5.40860242e-07, 6.75951833e-06, 4.75118165e-12,
+            6.90873403e-09, 1.07275378e-11]])
+
+
+
+
 ```python
 from src.utils import create_cifar10_outlier
 
@@ -254,6 +659,22 @@ outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
 remote_model.predict(payload=outlier_img)
 ```
+
+
+    
+![png](README_files/README_25_0.png)
+    
+
+
+    b'{"model_name":"cifar10-service","model_version":"NOTIMPLEMENTED","id":"6e0124b8-bbb2-4a82-b167-6008ad17c21a","parameters":null,"outputs":[{"name":"output0","shape":[0],"datatype":"FP64","parameters":null,"data":[]}]}'
+
+
+
+
+
+    array([], dtype=float64)
+
+
 
 
 ```python
@@ -273,6 +694,12 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 !kubectl apply -f k8s/rbac -n production
 ```
 
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+
+
 
 ```python
 from tempo.examples.minio import create_minio_rclone
@@ -290,20 +717,19 @@ tempo.upload(svc)
 
 
 ```python
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
 ```
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(svc, options=runtime_options)
+from tempo import deploy_remote
+remote_model = deploy_remote(svc, options=runtime_options)
 ```
 
 
@@ -315,6 +741,24 @@ remote_model.predict(payload=data.X_test[0:1])
 ```
 
 
+    
+![png](README_files/README_33_0.png)
+    
+
+
+    b'{"model_name":"cifar10-service","model_version":"NOTIMPLEMENTED","id":"0a638833-4691-4368-9934-0a8b2db0d69c","parameters":null,"outputs":[{"name":"output0","shape":[1,10],"datatype":"FP64","parameters":null,"data":[3.92254496e-09,1.2045546e-11,2.66010169e-09,0.999992609,2.52212834e-10,5.40860242e-07,6.75951833e-06,4.75118165e-12,6.90873403e-09,1.07275378e-11]}]}'
+
+
+
+
+
+    array([[3.92254496e-09, 1.20455460e-11, 2.66010169e-09, 9.99992609e-01,
+            2.52212834e-10, 5.40860242e-07, 6.75951833e-06, 4.75118165e-12,
+            6.90873403e-09, 1.07275378e-11]])
+
+
+
+
 ```python
 from src.utils import create_cifar10_outlier
 
@@ -322,6 +766,22 @@ outlier_img = create_cifar10_outlier(data)
 show_image(outlier_img)
 remote_model.predict(payload=outlier_img)
 ```
+
+
+    
+![png](README_files/README_34_0.png)
+    
+
+
+    b'{"model_name":"cifar10-service","model_version":"NOTIMPLEMENTED","id":"4b7a7df0-6f37-4052-b5be-c2cf277bb1ee","parameters":null,"outputs":[{"name":"output0","shape":[0],"datatype":"FP64","parameters":null,"data":[]}]}'
+
+
+
+
+
+    array([], dtype=float64)
+
+
 
 
 ```python
