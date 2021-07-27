@@ -40,6 +40,7 @@ extensions = [
     "m2r2",
     "sphinx.ext.napoleon",
     "sphinxcontrib.apidoc",  # automatically generate API docs, see https://github.com/rtfd/readthedocs.org/issues/1139
+    "sphinx_search.extension",
 ]
 source_suffix = [".rst", ".md"]
 
