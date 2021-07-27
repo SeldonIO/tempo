@@ -1,10 +1,16 @@
 import numpy as np
 import pytest
 
-from tempo.seldon.deploy import SeldonDeployAuthType, SeldonDeployConfig, SeldonDeployRuntime
+from tempo.seldon.deploy import SeldonDeployRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.protocol import SeldonProtocol
-from tempo.serve.metadata import IngressOptions, KubernetesOptions, ModelFramework, RuntimeOptions
+from tempo.serve.metadata import (
+    EnterpriseRuntimeAuthType,
+    EnterpriseRuntimeOptions,
+    IngressOptions,
+    KubernetesRuntimeOptions,
+    ModelFramework,
+)
 from tempo.serve.model import Model
 
 
@@ -12,21 +18,20 @@ from tempo.serve.model import Model
 def test_deploy():
     rt = SeldonDeployRuntime()
 
-    config = SeldonDeployConfig(
+    config = EnterpriseRuntimeOptions(
         host="https://34.78.44.92/seldon-deploy/api/v1alpha1",
         user="admin@seldon.io",
         password="12341234",
         oidc_server="https://34.78.44.92/auth/realms/deploy-realm",
         oidc_client_id="sd-api",
         verify_ssl=False,
-        auth_type=SeldonDeployAuthType.oidc,
+        auth_type=EnterpriseRuntimeAuthType.oidc,
     )
 
     rt.authenticate(settings=config)
 
-    options = RuntimeOptions(
-        runtime="tempo.seldon.SeldonKubernetesRuntime",
-        k8s_options=KubernetesOptions(namespace="seldon"),
+    options = KubernetesRuntimeOptions(
+        namespace="seldon",
         ingress_options=IngressOptions(ssl=True, verify_ssl=False),
     )
 
@@ -46,18 +51,22 @@ def test_deploy():
 
 @pytest.mark.skip("needs deploy cluster")
 def test_deploy_yaml():
-    rt = SeldonDeployRuntime(
-        host="http://34.78.44.92/seldon-deploy/api/v1alpha1",
-        user="admin@kubeflow.org",
-        oidc_server="https://34.78.44.92/auth/realms/deploy-realm",
+    rt = SeldonDeployRuntime()
+
+    config = EnterpriseRuntimeOptions(
+        host="https://34.78.44.92/seldon-deploy/api/v1alpha1",
+        user="admin@seldon.io",
         password="12341234",
+        oidc_server="https://34.78.44.92/auth/realms/deploy-realm",
         oidc_client_id="sd-api",
         verify_ssl=False,
+        auth_type=EnterpriseRuntimeAuthType.oidc,
     )
 
-    options = RuntimeOptions(
-        runtime="tempo.seldon.SeldonKubernetesRuntime",
-        k8s_options=KubernetesOptions(namespace="seldon"),
+    rt.authenticate(settings=config)
+
+    options = KubernetesRuntimeOptions(
+        namespace="seldon",
         ingress_options=IngressOptions(ssl=True, verify_ssl=False),
     )
 

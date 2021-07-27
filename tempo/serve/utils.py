@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional, Type
 
 from ..kfserving.protocol import KFServingV2Protocol
 from .base import BaseModel
-from .metadata import ModelFramework, RuntimeOptions
+from .metadata import BaseRuntimeOptionsType, DockerOptions, ModelFramework
 from .model import Model
 from .pipeline import Pipeline, PipelineModels
 from .protocol import Protocol
@@ -126,7 +126,7 @@ def pipeline(
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
-    runtime_options: RuntimeOptions = RuntimeOptions(),
+    runtime_options: BaseRuntimeOptionsType = DockerOptions(),
     description: str = "",
 ):
     """
@@ -208,7 +208,7 @@ def model(
     outputs: ModelDataType = None,
     conda_env: str = None,
     protocol: Protocol = KFServingV2Protocol(),
-    runtime_options: RuntimeOptions = RuntimeOptions(),
+    runtime_options: BaseRuntimeOptionsType = DockerOptions(),
     description: str = "",
 ):
     """

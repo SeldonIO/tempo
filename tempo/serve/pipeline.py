@@ -2,7 +2,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, Optional
 
 from tempo.serve.base import BaseModel, Runtime
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
+from tempo.serve.metadata import BaseRuntimeOptionsType, DockerOptions, ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.protocol import Protocol
 from tempo.serve.types import ModelDataType
@@ -48,7 +48,7 @@ class Pipeline(BaseModel):
         inputs: ModelDataType = None,
         outputs: ModelDataType = None,
         conda_env: str = None,
-        runtime_options: RuntimeOptions = RuntimeOptions(),
+        runtime_options: BaseRuntimeOptionsType = DockerOptions(),
         description: str = "",
     ):
         super().__init__(
@@ -84,7 +84,7 @@ class Pipeline(BaseModel):
         for model in self.models.values():
             model.get_tempo().set_remote(val)
 
-    def set_runtime_options_override(self, runtime_options: RuntimeOptions):
+    def set_runtime_options_override(self, runtime_options: BaseRuntimeOptionsType):
         for model in self.models.values():
             model.get_tempo().set_runtime_options_override(runtime_options)
         super().set_runtime_options_override(runtime_options)

@@ -8,9 +8,8 @@ from kubernetes import client, config
 from kubernetes.utils.create_from_yaml import create_from_yaml
 
 from tempo import Model, Pipeline
-from tempo.kfserving import KFServingV2Protocol
 from tempo.seldon import SeldonKubernetesRuntime
-from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
+from tempo.serve.metadata import KubernetesRuntimeOptions
 
 from ...conftest import TESTDATA_PATH
 
@@ -40,14 +39,13 @@ def namespace() -> Generator[str, None, None]:
 
 @pytest.fixture
 def runtime(namespace: str) -> SeldonKubernetesRuntime:
-    return SeldonKubernetesRuntime(runtime_options=RuntimeOptions(k8s_options=KubernetesOptions(namespace=namespace)))
+    return SeldonKubernetesRuntime(runtime_options=KubernetesRuntimeOptions(namespace=namespace))
 
 
 @pytest.fixture
 def runtime_v2(namespace: str) -> SeldonKubernetesRuntime:
     return SeldonKubernetesRuntime(
-        k8s_options=KubernetesOptions(namespace=namespace),
-        protocol=KFServingV2Protocol(),
+        KubernetesRuntimeOptions(namespace=namespace),
     )
 
 

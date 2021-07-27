@@ -4,7 +4,7 @@ import numpy as np
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.base import ModelSpec
-from tempo.serve.metadata import ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from tempo.serve.metadata import KFServingOptions, ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework
 
 
 def test_model_data_arg():
@@ -40,7 +40,7 @@ def test_model_spec():
             outputs=ModelDataArgs(args=[]),
         ),
         protocol=KFServingV2Protocol(),
-        runtime_options=RuntimeOptions(),
+        runtime_options=KFServingOptions().local_options,
     )
     s = ms.json()
     j = json.loads(s)

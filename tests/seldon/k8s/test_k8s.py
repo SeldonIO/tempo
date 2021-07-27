@@ -3,11 +3,11 @@ import pytest
 from kubernetes import client
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.serve.metadata import RuntimeOptions
+from tempo.serve.metadata import KubernetesRuntimeOptions
 
 
 def test_create_k8s_runtime():
-    rto = RuntimeOptions()
+    rto = KubernetesRuntimeOptions()
     rt = SeldonKubernetesRuntime(rto)
     assert rt.runtime_options.runtime == "tempo.seldon.SeldonKubernetesRuntime"
 
@@ -18,7 +18,7 @@ def test_deploy_k8s(sklearn_model, runtime: SeldonKubernetesRuntime):
     sdep = crd_api.get_namespaced_custom_object(
         "machinelearning.seldon.io",
         "v1",
-        runtime.k8s_options.namespace,
+        runtime.namespace,
         "seldondeployments",
         sklearn_model.details.name,
     )

@@ -174,8 +174,8 @@ Once saved you can deploy your artifacts using a Runtime.
 By default tempo will deploy to Docker:
 
 ```python
-from tempo import deploy
-remote_model = deploy(classifier)
+from tempo import deploy_local
+remote_model = deploy_local(classifier)
 ```
 
 The returned RemoteModel can be used to get predictions:
@@ -210,22 +210,21 @@ For Kubernetes you can use a Kubernetes Runtime such as [SeldonKubernetesRuntime
 Create appropriate Kubernetes settings as shown below for your use case. This may require creating the appropriate RBAC to allow components to access the remote bucket storage.
 
 ```
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-	    namespace="production",
-            authSecretName="minio-secret"
-	)
-)	
+from tempo.serve.metadata import SeldonCoreOptions
 
+runtime_options = SeldonCoreOptions(**{
+    "remote_options": {
+        "namespace": "production",
+        "authSecretName": "minio-secret"
+    }
+})	
 ```
 
 Then you can deploy directly from tempo:
 
 ```
-from tempo import deploy
-remote_model = deploy(classifier, options=runtime_options)
+from tempo import deploy_remote
+remote_model = deploy_remote(classifier, options=runtime_options)
 ```
 
 And then call prediction as before:

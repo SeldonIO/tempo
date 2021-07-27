@@ -2,7 +2,7 @@ from typing import Any, Callable
 
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.base import BaseModel
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
+from tempo.serve.metadata import BaseRuntimeOptionsType, DockerOptions, ModelFramework
 from tempo.serve.protocol import Protocol
 from tempo.serve.types import ModelDataType
 
@@ -19,7 +19,7 @@ class Model(BaseModel):
         outputs: ModelDataType = None,
         model_func: Callable[..., Any] = None,
         conda_env: str = None,
-        runtime_options: RuntimeOptions = RuntimeOptions(),
+        runtime_options: BaseRuntimeOptionsType = DockerOptions(),
         description: str = "",
     ):
         """

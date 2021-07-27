@@ -35,7 +35,7 @@ class Endpoint(object):
             ingress_host_url = ingress.get_external_host_url(model_spec)
             return (
                 f"{ingress_host_url}"
-                + f"/seldon/{model_spec.runtime_options.k8s_options.namespace}/"
+                + f"/seldon/{model_spec.runtime_options.namespace}/"  # type: ignore
                 + f"{model_spec.model_details.name}"
                 + model_spec.protocol.get_predict_path(model_spec.model_details)
             )
@@ -46,7 +46,7 @@ class Endpoint(object):
             api_response = api_instance.get_namespaced_custom_object_status(
                 "machinelearning.seldon.io",
                 "v1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "seldondeployments",
                 model_spec.model_details.name,
             )

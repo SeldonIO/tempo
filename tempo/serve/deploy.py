@@ -2,7 +2,7 @@ from pydoc import locate
 from typing import Any
 
 from .base import BaseModel, ModelSpec, Runtime
-from .metadata import RuntimeOptions
+from .metadata import BaseProductOptionsType, BaseRuntimeOptionsType, DockerOptions, KubernetesRuntimeOptions
 
 
 class RemoteModel:
@@ -32,15 +32,37 @@ class RemoteModel:
         self.model.undeploy(self.runtime)
 
 
-def _get_runtime(cls_path, options: RuntimeOptions) -> Runtime:
+def _get_runtime(cls_path, options: BaseRuntimeOptionsType) -> Runtime:
     cls: Any = locate(cls_path)
     return cls(options)
 
 
-def deploy(model: Any, options: RuntimeOptions = None) -> RemoteModel:
+def deploy(model: Any, options: BaseRuntimeOptionsType = None) -> RemoteModel:
     if options is None:
-        options = RuntimeOptions()
+        options = DockerOptions()
     rt: Runtime = _get_runtime(options.runtime, options)
+    rm = RemoteModel(model, rt)
+    rm.deploy()
+    return rm
+
+
+def deploy_local(model: Any, options: BaseProductOptionsType = None) -> RemoteModel:
+    if options is None:
+        runtime_options = DockerOptions()
+    else:
+        runtime_options = options.local_options
+    rt: Runtime = _get_runtime(runtime_options.runtime, runtime_options)
+    rm = RemoteModel(model, rt)
+    rm.deploy()
+    return rm
+
+
+def deploy_remote(model: Any, options: BaseProductOptionsType = None) -> RemoteModel:
+    if options is None:
+        runtime_options = KubernetesRuntimeOptions()
+    else:
+        runtime_options = options.remote_options  # type: ignore
+    rt: Runtime = _get_runtime(runtime_options.runtime, runtime_options)
     rm = RemoteModel(model, rt)
     rm.deploy()
     return rm

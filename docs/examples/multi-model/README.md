@@ -26,6 +26,23 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 !tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
+    [01;34m.[00m
+    ├── [01;34martifacts[00m
+    │   ├── [01;34mclassifier[00m
+    │   ├── [01;34msklearn[00m
+    │   └── [01;34mxgboost[00m
+    ├── [01;34mk8s[00m
+    │   └── [01;34mrbac[00m
+    ├── [01;34msrc[00m
+    │   ├── data.py
+    │   ├── tempo.py
+    │   └── train.py
+    └── [01;34mtests[00m
+        └── test_tempo.py
+    
+    8 directories, 4 files
+
+
 ## Train Models
 
  * This section is where as a data scientist you do your work of training models and creating artfacts.
@@ -177,6 +194,16 @@ def test_xgboost_model_used():
 !python -m pytest tests/
 ```
 
+    [1mTest session starts (platform: linux, Python 3.7.10, pytest 5.3.1, pytest-sugar 0.9.4)[0m
+    rootdir: /home/alejandro/Programming/kubernetes/seldon/tempo, inifile: setup.cfg
+    plugins: cases-3.4.6, sugar-0.9.4, xdist-1.30.0, anyio-3.2.1, requests-mock-1.7.0, django-3.8.0, forked-1.1.3, flaky-3.6.1, asyncio-0.14.0, celery-4.4.0, cov-2.8.1
+    [1mcollecting ... [0m
+     [36mdocs/examples/multi-model/tests/[0mtest_tempo.py[0m [32m✓[0m[32m✓[0m                [32m100% [0m[40m[32m█[0m[40m[32m████[0m[40m[32m█[0m[40m[32m████[0m
+    
+    Results (1.26s):
+    [32m       2 passed[0m
+
+
 ## Save Classifier Environment
 
  * In preparation for running our models we save the Python environment needed for the orchestration to run as defined by a `conda.yaml` in our project.
@@ -186,11 +213,26 @@ def test_xgboost_model_used():
 !cat artifacts/classifier/conda.yaml
 ```
 
+    name: tempo
+    channels:
+      - defaults
+    dependencies:
+      - python=3.7.9
+      - pip:
+        - mlops-tempo @ file:///home/alejandro/Programming/kubernetes/seldon/tempo
+        - mlserver==0.3.2
+
+
 
 ```python
 from tempo.serve.loader import save
 save(classifier)
 ```
+
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-88546d85-d920-4ba5-afbf-2bbf88afebf9' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model/artifacts/classifier/environment.tar.gz'
+    [########################################] | 100% Completed | 11.5s
+
 
 ## Test Locally on Docker
 
@@ -198,14 +240,22 @@ save(classifier)
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(classifier)
+from tempo import deploy_local
+remote_model = deploy_local(classifier)
 ```
 
 
 ```python
 remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
+
+
+
+
+    {'output0': array([[0.00745035, 0.03121155, 0.96133804]], dtype=float32),
+     'output1': 'xgboost prediction'}
+
+
 
 
 ```python
@@ -225,6 +275,12 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 !kubectl apply -f k8s/rbac -n production
 ```
 
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+
+
 
 ```python
 from tempo.examples.minio import create_minio_rclone
@@ -242,20 +298,19 @@ upload(classifier)
 
 
 ```python
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
 ```
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(classifier, options=runtime_options)
+from tempo import deploy_remote
+remote_model = deploy_remote(classifier, options=runtime_options)
 ```
 
 
@@ -264,12 +319,16 @@ print(remote_model.predict(payload=np.array([[0, 0, 0, 0]])))
 print(remote_model.predict(payload=np.array([[1, 2, 3, 4]])))
 ```
 
+    {'output0': array([1.], dtype=float32), 'output1': 'sklearn prediction'}
+    {'output0': array([[0.00745035, 0.03121155, 0.96133804]], dtype=float32), 'output1': 'xgboost prediction'}
+
+
 ### Illustrate use of Deployed Model by Remote Client
 
 
 ```python
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+k8s_runtime = SeldonKubernetesRuntime(runtime_options.remote_options)
 models = k8s_runtime.list_models(namespace="production")
 print("Name\tDescription")
 for model in models:
@@ -277,10 +336,24 @@ for model in models:
     print(f"{details.name}\t{details.description}")
 ```
 
+    Name	Description
+    classifier	A pipeline to use either an sklearn or xgboost model for Iris classification
+    test-iris-sklearn	An SKLearn Iris classification model
+    test-iris-xgboost	An XGBoost Iris classification model
+
+
 
 ```python
 models[0].predict(payload=np.array([[1, 2, 3, 4]]))
 ```
+
+
+
+
+    {'output0': array([[0.00745035, 0.03121155, 0.96133804]], dtype=float32),
+     'output1': 'xgboost prediction'}
+
+
 
 
 ```python
@@ -294,15 +367,7 @@ remote_model.undeploy()
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options = RuntimeOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+k8s_runtime = SeldonKubernetesRuntime(runtime_options.remote_options)
 yaml_str = k8s_runtime.manifest(classifier)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
@@ -312,6 +377,129 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
 ```python
 !kustomize build k8s
 ```
+
+    apiVersion: machinelearning.seldon.io/v1
+    kind: SeldonDeployment
+    metadata:
+      annotations:
+        seldon.io/tempo-description: A pipeline to use either an sklearn or xgboost model
+          for Iris classification
+        seldon.io/tempo-model: '{"model_details": {"name": "classifier", "local_folder":
+          "/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model/artifacts/classifier",
+          "uri": "s3://tempo/basic/pipeline", "platform": "tempo", "inputs": {"args":
+          [{"ty": "numpy.ndarray", "name": "payload"}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+          "name": null}, {"ty": "builtins.str", "name": null}]}, "description": "A pipeline
+          to use either an sklearn or xgboost model for Iris classification"}, "protocol":
+          "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+          "tempo.seldon.SeldonKubernetesRuntime", "state_options": {"state_type": "LOCAL",
+          "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
+          "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
+          "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+          "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
+          null, "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
+          false, "namespace": "production"}}'
+      labels:
+        seldon.io/tempo: "true"
+      name: classifier
+      namespace: production
+    spec:
+      predictors:
+      - annotations:
+          seldon.io/no-engine: "true"
+        componentSpecs:
+        - spec:
+            containers:
+            - name: classifier
+              resources:
+                limits:
+                  cpu: 1
+                  memory: 1Gi
+                requests:
+                  cpu: 500m
+                  memory: 500Mi
+        graph:
+          envSecretRefName: minio-secret
+          implementation: TEMPO_SERVER
+          modelUri: s3://tempo/basic/pipeline
+          name: classifier
+          serviceAccountName: tempo-pipeline
+          type: MODEL
+        name: default
+        replicas: 1
+      protocol: kfserving
+    ---
+    apiVersion: machinelearning.seldon.io/v1
+    kind: SeldonDeployment
+    metadata:
+      annotations:
+        seldon.io/tempo-description: An SKLearn Iris classification model
+        seldon.io/tempo-model: '{"model_details": {"name": "test-iris-sklearn", "local_folder":
+          "/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model/artifacts/sklearn",
+          "uri": "s3://tempo/basic/sklearn", "platform": "sklearn", "inputs": {"args":
+          [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+          "name": null}]}, "description": "An SKLearn Iris classification model"}, "protocol":
+          "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+          "tempo.seldon.SeldonKubernetesRuntime", "state_options": {"state_type": "LOCAL",
+          "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
+          "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
+          "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+          "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
+          null, "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
+          false, "namespace": "production"}}'
+      labels:
+        seldon.io/tempo: "true"
+      name: test-iris-sklearn
+      namespace: production
+    spec:
+      predictors:
+      - annotations:
+          seldon.io/no-engine: "true"
+        graph:
+          envSecretRefName: minio-secret
+          implementation: SKLEARN_SERVER
+          modelUri: s3://tempo/basic/sklearn
+          name: test-iris-sklearn
+          type: MODEL
+        name: default
+        replicas: 1
+      protocol: kfserving
+    ---
+    apiVersion: machinelearning.seldon.io/v1
+    kind: SeldonDeployment
+    metadata:
+      annotations:
+        seldon.io/tempo-description: An XGBoost Iris classification model
+        seldon.io/tempo-model: '{"model_details": {"name": "test-iris-xgboost", "local_folder":
+          "/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model/artifacts/xgboost",
+          "uri": "s3://tempo/basic/xgboost", "platform": "xgboost", "inputs": {"args":
+          [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
+          "name": null}]}, "description": "An XGBoost Iris classification model"}, "protocol":
+          "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
+          "tempo.seldon.SeldonKubernetesRuntime", "state_options": {"state_type": "LOCAL",
+          "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
+          "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
+          "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+          "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
+          null, "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
+          false, "namespace": "production"}}'
+      labels:
+        seldon.io/tempo: "true"
+      name: test-iris-xgboost
+      namespace: production
+    spec:
+      predictors:
+      - annotations:
+          seldon.io/no-engine: "true"
+        graph:
+          envSecretRefName: minio-secret
+          implementation: XGBOOST_SERVER
+          modelUri: s3://tempo/basic/xgboost
+          name: test-iris-xgboost
+          type: MODEL
+        name: default
+        replicas: 1
+      protocol: kfserving
+
 
 
 ```python

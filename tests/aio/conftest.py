@@ -10,14 +10,14 @@ from tempo.aio.model import Model
 from tempo.aio.pipeline import Pipeline
 from tempo.aio.utils import model, pipeline
 from tempo.seldon import SeldonDockerRuntime
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
+from tempo.serve.metadata import DockerOptions, ModelFramework
 from tempo.serve.model import Model as _Model
 from tempo.serve.pipeline import PipelineModels
 
 
 @pytest.fixture
 def runtime() -> SeldonDockerRuntime:
-    return SeldonDockerRuntime(RuntimeOptions())
+    return SeldonDockerRuntime(DockerOptions())
 
 
 @pytest.fixture

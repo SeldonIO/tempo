@@ -33,7 +33,11 @@ class InsightsManager:
                 logger.debug("Initialising async insights worker")
                 self._q = start_insights_worker_from_async(*args)
 
-                def log(self, data: Any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):
+                def log(
+                    self,
+                    data: Any,
+                    insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE,
+                ):
                     payload = self._to_payload(data, insights_type=insights_type)
                     asyncio.create_task(self._q.put(payload))
 
@@ -43,7 +47,11 @@ class InsightsManager:
                 logger.debug("Initialising sync insights worker")
                 self._q = start_insights_worker_from_sync(*args)  # type: ignore
 
-                def log(self, data: Any, insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE):
+                def log(
+                    self,
+                    data: Any,
+                    insights_type: InsightsTypes = DEFAULT_INSIGHTS_TYPE,
+                ):
                     payload = self._to_payload(data, insights_type=insights_type)
                     self._q.put(payload)
 

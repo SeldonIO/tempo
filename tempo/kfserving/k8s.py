@@ -14,7 +14,7 @@ from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
-from tempo.serve.metadata import ModelFramework, RuntimeOptions
+from tempo.serve.metadata import KubernetesRuntimeOptions, ModelFramework
 from tempo.serve.stub import deserialize
 from tempo.utils import logger
 
@@ -33,14 +33,10 @@ Implementations = {
 }
 
 
-class KFServingOptions(RuntimeOptions):
-    runtime: str = "tempo.kfserving.KFServingKubernetesRuntime"
-
-
 class KFServingKubernetesRuntime(Runtime):
-    def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
+    def __init__(self, runtime_options: Optional[KubernetesRuntimeOptions] = None):
         if runtime_options is None:
-            runtime_options = RuntimeOptions()
+            runtime_options = KubernetesRuntimeOptions()
         runtime_options.runtime = "tempo.kfserving.KFServingKubernetesRuntime"
         super().__init__(runtime_options)
 
@@ -75,7 +71,7 @@ class KFServingKubernetesRuntime(Runtime):
         api_instance.delete_namespaced_custom_object(
             "serving.kubeflow.org",
             "v1beta1",
-            model_spec.runtime_options.k8s_options.namespace,
+            model_spec.runtime_options.namespace,  # type: ignore
             "inferenceservices",
             model_spec.model_details.name,
             body=client.V1DeleteOptions(propagation_policy="Foreground"),
@@ -91,7 +87,7 @@ class KFServingKubernetesRuntime(Runtime):
             existing = api_instance.get_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "inferenceservices",
                 model_spec.model_details.name,
             )
@@ -99,7 +95,7 @@ class KFServingKubernetesRuntime(Runtime):
             api_instance.replace_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "inferenceservices",
                 model_spec.model_details.name,
                 spec,
@@ -109,7 +105,7 @@ class KFServingKubernetesRuntime(Runtime):
                 api_instance.create_namespaced_custom_object(
                     "serving.kubeflow.org",
                     "v1beta1",
-                    model_spec.runtime_options.k8s_options.namespace,
+                    model_spec.runtime_options.namespace,  # type: ignore
                     "inferenceservices",
                     spec,
                 )
@@ -125,7 +121,7 @@ class KFServingKubernetesRuntime(Runtime):
             existing = api_instance.get_namespaced_custom_object(
                 "serving.kubeflow.org",
                 "v1beta1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "inferenceservices",
                 model_spec.model_details.name,
             )
@@ -153,7 +149,7 @@ class KFServingKubernetesRuntime(Runtime):
 
     def _get_spec(self, model_spec: ModelSpec) -> dict:
         if model_spec.model_details.platform == ModelFramework.TempoPipeline:
-            serviceAccountName = model_spec.runtime_options.k8s_options.serviceAccountName
+            serviceAccountName = model_spec.runtime_options.serviceAccountName  # type: ignore
             if serviceAccountName is None:
                 serviceAccountName = DefaultServiceAccountName
             return {
@@ -161,7 +157,7 @@ class KFServingKubernetesRuntime(Runtime):
                 "kind": "InferenceService",
                 "metadata": {
                     "name": model_spec.model_details.name,
-                    "namespace": model_spec.runtime_options.k8s_options.namespace,
+                    "namespace": model_spec.runtime_options.namespace,  # type: ignore
                     "labels": {
                         TempoK8sLabel: "true",
                     },
@@ -219,7 +215,7 @@ class KFServingKubernetesRuntime(Runtime):
                 "kind": "InferenceService",
                 "metadata": {
                     "name": model_spec.model_details.name,
-                    "namespace": model_spec.runtime_options.k8s_options.namespace,
+                    "namespace": model_spec.runtime_options.namespace,  # type: ignore
                     "labels": {
                         TempoK8sLabel: "true",
                     },
@@ -234,10 +230,10 @@ class KFServingKubernetesRuntime(Runtime):
                     },
                 },
             }
-            if model_spec.runtime_options.k8s_options.serviceAccountName is not None:
+            if model_spec.runtime_options.serviceAccountName is not None:  # type: ignore
                 spec["spec"]["predictor"][
                     "serviceAccountName"
-                ] = model_spec.runtime_options.k8s_options.serviceAccountName
+                ] = model_spec.runtime_options.serviceAccountName  # type: ignore
             if isinstance(model_spec.protocol, KFServingV2Protocol):
                 spec["spec"]["predictor"][model_implementation]["protocolVersion"] = "v2"
             return spec
@@ -256,7 +252,7 @@ class KFServingKubernetesRuntime(Runtime):
         api_instance = client.CustomObjectsApi()
 
         if namespace is None and self.runtime_options is not None:
-            namespace = self.runtime_options.k8s_options.namespace
+            namespace = self.runtime_options.namespace  # type: ignore
 
         if namespace is None:
             return []

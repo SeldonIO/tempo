@@ -8,12 +8,12 @@ from tempo import Model, Pipeline
 from tempo.seldon import SeldonDockerRuntime
 from tempo.serve.deploy import RemoteModel, deploy
 from tempo.serve.loader import save
-from tempo.serve.metadata import RuntimeOptions
+from tempo.serve.metadata import DockerOptions
 
 
 @pytest.fixture
 def runtime() -> SeldonDockerRuntime:
-    return SeldonDockerRuntime(RuntimeOptions())
+    return SeldonDockerRuntime(DockerOptions())
 
 
 @pytest.fixture
