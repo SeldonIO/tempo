@@ -10,7 +10,7 @@
 
 An open source framework to enable data scientists to productionise, test and deploy models with simple workflows that abstract the underlying complexity of scalable MLOps platforms.
 
-![](https://raw.githubusercontent.com/SeldonIO/tempo/master/docs/assets/tempo-logo.png)
+![](https://raw.githubusercontent.com/SeldonIO/tempo/master/docs/assets/tempo-logo.jpg)
 
 ## Highlights
 
