@@ -573,7 +573,7 @@ dependencies:
     - alibi-detect==0.6.2
     - dill==0.3.2
     - opencv-python-headless
-    - mlops-tempo @ file:///home/alejandro/Programming/kubernetes/seldon/tempo
+    - mlops-tempo
     - mlserver==0.3.2
 ```
 
@@ -589,7 +589,7 @@ channels:
 dependencies:
   - python=3.7.9
   - pip:
-    - mlops-tempo @ file:///home/alejandro/Programming/kubernetes/seldon/tempo
+    - mlops-tempo
     - mlserver==0.3.2
 ```
 
