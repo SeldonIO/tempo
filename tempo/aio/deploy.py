@@ -3,7 +3,7 @@ from typing import Any
 
 from tempo.serve.base import Runtime
 from tempo.serve.deploy import RemoteModel
-from tempo.serve.metadata import BaseRuntimeOptionsType, DockerOptions
+from tempo.serve.metadata import BaseProductOptionsType, DockerOptions, KubernetesRuntimeOptions, BaseRuntimeOptionsType
 
 
 class AsyncRemoteModel(RemoteModel):
@@ -19,10 +19,32 @@ def _get_runtime(cls_path, options: BaseRuntimeOptionsType) -> Runtime:
     return cls(options)
 
 
-def deploy(model: Any, options: BaseRuntimeOptionsType = None) -> RemoteModel:
+def deploy(model: Any, options: BaseProductOptionsType = None) -> RemoteModel:
     if options is None:
         options = DockerOptions()
     rt: Runtime = _get_runtime(options.runtime, options)
+    rm = RemoteModel(model, rt)
+    rm.deploy()
+    return rm
+
+
+def deploy_local(model: Any, options: BaseProductOptionsType = None) -> RemoteModel:
+    if options is None:
+        runtime_options = DockerOptions()
+    else:
+        runtime_options = options.local_options
+    rt: Runtime = _get_runtime(runtime_options.runtime, runtime_options)
+    rm = RemoteModel(model, rt)
+    rm.deploy()
+    return rm
+
+
+def deploy_remote(model: Any, options: BaseProductOptionsType = None) -> RemoteModel:
+    if options is None:
+        runtime_options = KubernetesRuntimeOptions()
+    else:
+        runtime_options = options.remote_options  # type: ignore
+    rt: Runtime = _get_runtime(runtime_options.runtime, runtime_options)
     rm = RemoteModel(model, rt)
     rm.deploy()
     return rm

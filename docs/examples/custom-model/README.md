@@ -17,14 +17,6 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 
 
 ```python
-!ls artifacts
-```
-
-    model.pickle  numpyro-divorce.json
-
-
-
-```python
 !tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
@@ -64,8 +56,7 @@ def train():
     DATASET_URL = "https://raw.githubusercontent.com/rmcelreath/rethinking/master/data/WaffleDivorce.csv"
     dset = pd.read_csv(DATASET_URL, sep=";")
 
-    def standardize(x):
-        (x - x.mean()) / x.std()
+    standardize = lambda x: (x - x.mean()) / x.std()  # noqa: E731
 
     dset["AgeScaled"] = dset.MedianAgeMarriage.pipe(standardize)
     dset["MarriageScaled"] = dset.Marriage.pipe(standardize)
@@ -112,7 +103,7 @@ from src.train import train, save, model_function
 mcmc = train()
 ```
 
-    sample: 100%|██████████| 3000/3000 [00:06<00:00, 433.57it/s, 3 steps of size 7.77e-01. acc. prob=0.91]
+    sample: 100%|██████████| 3000/3000 [00:05<00:00, 565.13it/s, 3 steps of size 7.77e-01. acc. prob=0.91]
 
 
     
@@ -246,19 +237,10 @@ We'll deploy first to Docker to test.
 
 
 ```python
-%%writefile artifacts/conda.yaml
-name: tempo
-channels:
-  - defaults
-dependencies:
-  - python=3.7.9
-  - pip:
-    - mlops-tempo
-    - mlserver==0.3.2
-    - numpyro==0.6.0
+!ls artifacts/conda.yaml
 ```
 
-    Overwriting artifacts/conda.yaml
+    artifacts/conda.yaml
 
 
 
@@ -268,8 +250,8 @@ save(numpyro_divorce)
 ```
 
     Collecting packages...
-    Packing environment at '/home/alejandro/miniconda3/envs/tempo-da8e3d00-850c-4235-b8c4-f2ddcd0f6b41' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/custom-model/artifacts/environment.tar.gz'
-    [########################################] | 100% Completed | 17.4s
+    Packing environment at '/home/clive/anaconda3/envs/tempo-792d47bc-3391-4a9b-949b-bc38fe1cd5dd' to '/home/clive/work/mlops/fork-tempo/docs/examples/custom-model/artifacts/environment.tar.gz'
+    [########################################] | 100% Completed | 19.0s
 
 
 
@@ -371,14 +353,7 @@ remote_model.undeploy()
 
 ```python
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions
-runtime_options = RuntimeOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
+k8s_runtime = SeldonKubernetesRuntime(runtime_options.remote_options)
 yaml_str = k8s_runtime.manifest(numpyro_divorce)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
@@ -388,6 +363,54 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
 ```python
 !kustomize build k8s
 ```
+
+    apiVersion: machinelearning.seldon.io/v1
+    kind: SeldonDeployment
+    metadata:
+      annotations:
+        seldon.io/tempo-description: ""
+        seldon.io/tempo-model: '{"model_details": {"name": "numpyro-divorce", "local_folder":
+          "/home/clive/work/mlops/fork-tempo/docs/examples/custom-model/artifacts", "uri":
+          "s3://tempo/divorce", "platform": "custom", "inputs": {"args": [{"ty": "numpy.ndarray",
+          "name": "marriage"}, {"ty": "numpy.ndarray", "name": "age"}]}, "outputs": {"args":
+          [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+          "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "state_options":
+          {"state_type": "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options":
+          {"worker_endpoint": "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time":
+          0, "mode_type": "NONE", "in_asyncio": false}, "ingress_options": {"ingress":
+          "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl": true}, "replicas":
+          1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
+          "serviceAccountName": null, "add_svc_orchestrator": false, "namespace": "production"}}'
+      labels:
+        seldon.io/tempo: "true"
+      name: numpyro-divorce
+      namespace: production
+    spec:
+      predictors:
+      - annotations:
+          seldon.io/no-engine: "true"
+        componentSpecs:
+        - spec:
+            containers:
+            - name: classifier
+              resources:
+                limits:
+                  cpu: 1
+                  memory: 1Gi
+                requests:
+                  cpu: 500m
+                  memory: 500Mi
+        graph:
+          envSecretRefName: minio-secret
+          implementation: TEMPO_SERVER
+          modelUri: s3://tempo/divorce
+          name: numpyro-divorce
+          serviceAccountName: tempo-pipeline
+          type: MODEL
+        name: default
+        replicas: 1
+      protocol: kfserving
+
 
 
 ```python
