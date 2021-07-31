@@ -36,6 +36,11 @@ class IrisFlow(FlowSpec):
     k8s_provider = Parameter(
         "k8s_provider", help="kubernetes provider. Needed for non local run to deploy", default="gke"
     )
+    eks_cluster_name = Parameter('eks_cluster_name',
+        help="AWS EKS cluster name (if using EKS)",
+        default=''
+    )
+
 
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
@@ -133,16 +138,17 @@ class IrisFlow(FlowSpec):
 
     def deploy_tempo_remote(self, classifier):
         import time
-
         import numpy as np
 
         from tempo import deploy_remote
-        from tempo.metaflow.utils import gke_authenticate
+        from tempo.metaflow.utils import gke_authenticate, aws_authenticate
         from tempo.serve.deploy import get_client
         from tempo.serve.metadata import SeldonCoreOptions
 
         if self.k8s_provider == "gke":
             gke_authenticate(self.kubeconfig, self.gsa_key)
+        elif self.k8s_provider == 'aws':
+            aws_authenticate(self.eks_cluster_name)
         else:
             raise Exception(f"Unknown Kubernetes Provider {self.k8s_provider}")
 
@@ -156,7 +162,7 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "0.4.0.dev5", "conda_env": "2.4.2"}, test_index=True)
+    @pip(libraries={"mlops-tempo": "git+https://github.com/oavdeev/tempo-1.git@f307c82938527763cdbec0959e951b9fabade59a", "conda_env": "2.4.2"}, test_index=True)
     @step
     def tempo(self):
         """
