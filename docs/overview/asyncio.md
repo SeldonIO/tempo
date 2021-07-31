@@ -57,4 +57,4 @@ async def classifier(payload: np.ndarray) -> np.ndarray:
 
 ## Example
 
-For more details, check out [this worked out example](../examples/asyncio/README.md).
+For more details, check out [this worked out example](../examples/asyncio/README.html).
