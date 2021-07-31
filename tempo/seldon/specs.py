@@ -80,6 +80,7 @@ class _V2ContainerFactory:
             model_details.platform == ModelFramework.PyTorch
             or model_details.platform == ModelFramework.TensorRT
             or model_details.platform == ModelFramework.ONNX
+            or model_details.platform == ModelFramework.Tensorflow
         ):
             return {
                 "image": cls.TritonImage,

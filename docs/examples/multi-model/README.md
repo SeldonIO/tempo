@@ -94,10 +94,10 @@ train_sklearn(data, ARTIFACTS_FOLDER)
 train_xgboost(data, ARTIFACTS_FOLDER)
 ```
 
-    [16:03:13] WARNING: ../src/learner.cc:1095: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective 'multi:softprob' was changed from 'merror' to 'mlogloss'. Explicitly set eval_metric if you'd like to restore the old behavior.
+    [15:00:25] WARNING: ../src/learner.cc:1095: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective 'multi:softprob' was changed from 'merror' to 'mlogloss'. Explicitly set eval_metric if you'd like to restore the old behavior.
 
 
-    /home/clive/anaconda3/envs/tempo-examples/lib/python3.7/site-packages/xgboost/sklearn.py:1146: UserWarning: The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+    /home/clive/anaconda3/envs/tempo-dev/lib/python3.7/site-packages/xgboost/sklearn.py:1146: UserWarning: The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
       warnings.warn(label_encoder_deprecation_msg, UserWarning)
 
 
@@ -202,14 +202,14 @@ def test_xgboost_model_used():
 ```
 
     [1m============================= test session starts ==============================[0m
-    platform linux -- Python 3.7.9, pytest-6.2.0, py-1.10.0, pluggy-0.13.1
+    platform linux -- Python 3.7.10, pytest-6.2.0, py-1.10.0, pluggy-0.13.1
     rootdir: /home/clive/work/mlops/fork-tempo, configfile: setup.cfg
     plugins: cases-3.4.6, asyncio-0.14.0
     collected 2 items                                                              [0m[1m
     
     tests/test_tempo.py [32m.[0m[32m.[0m[32m                                                   [100%][0m
     
-    [32m============================== [32m[1m2 passed[0m[32m in 1.20s[0m[32m ===============================[0m
+    [32m============================== [32m[1m2 passed[0m[32m in 1.40s[0m[32m ===============================[0m
 
 
 ## Save Classifier Environment
@@ -231,8 +231,8 @@ save(classifier)
 ```
 
     Collecting packages...
-    Packing environment at '/home/clive/anaconda3/envs/tempo-f9a910d4-3d66-4ff9-ba52-f975b5c1323a' to '/home/clive/work/mlops/fork-tempo/docs/examples/multi-model/artifacts/classifier/environment.tar.gz'
-    [########################################] | 100% Completed | 11.8s
+    Packing environment at '/home/clive/anaconda3/envs/tempo-2e9f7838-e194-4a05-ae8f-22a337724906' to '/home/clive/work/mlops/fork-tempo/docs/examples/multi-model/artifacts/classifier/environment.tar.gz'
+    [########################################] | 100% Completed | 12.1s
 
 
 ## Test Locally on Docker
@@ -276,10 +276,10 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 !kubectl apply -f k8s/rbac -n production
 ```
 
-    secret/minio-secret configured
-    serviceaccount/tempo-pipeline unchanged
-    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
-    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+    secret/minio-secret created
+    serviceaccount/tempo-pipeline created
+    role.rbac.authorization.k8s.io/tempo-pipeline created
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding created
 
 
 
@@ -368,8 +368,15 @@ remote_model.undeploy()
 
 
 ```python
-k8s_runtime = SeldonKubernetesRuntime(runtime_options.remote_options)
-yaml_str = k8s_runtime.manifest(classifier)
+from tempo import manifest
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
+yaml_str = manifest(classifier, options=runtime_options)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```

@@ -66,3 +66,13 @@ def deploy_remote(model: Any, options: BaseProductOptionsType = None) -> RemoteM
     rm = RemoteModel(model, rt)
     rm.deploy()
     return rm
+
+
+def manifest(model: Any, options: BaseProductOptionsType = None) -> str:
+    if options is None:
+        runtime_options = KubernetesRuntimeOptions()
+    else:
+        runtime_options = options.remote_options  # type: ignore
+    rt: Runtime = _get_runtime(runtime_options.runtime, runtime_options)
+    rm = RemoteModel(model, rt)
+    return rm.manifest()

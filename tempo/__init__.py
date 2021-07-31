@@ -1,4 +1,4 @@
-from .serve.deploy import deploy_local, deploy_remote
+from .serve.deploy import deploy_local, deploy_remote, manifest
 from .serve.loader import save, upload
 from .serve.metadata import ModelFramework
 from .serve.model import Model
@@ -10,6 +10,7 @@ __all__ = [
     "__version__",
     "deploy_local",
     "deploy_remote",
+    "manifest",
     "ModelFramework",
     "Model",
     "Pipeline",

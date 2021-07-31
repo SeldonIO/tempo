@@ -103,7 +103,7 @@ from src.train import train, save, model_function
 mcmc = train()
 ```
 
-    sample: 100%|██████████| 3000/3000 [00:05<00:00, 565.13it/s, 3 steps of size 7.77e-01. acc. prob=0.91]
+    sample: 100%|██████████| 3000/3000 [00:05<00:00, 547.59it/s, 3 steps of size 7.77e-01. acc. prob=0.91]
 
 
     
@@ -352,9 +352,15 @@ remote_model.undeploy()
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime(runtime_options.remote_options)
-yaml_str = k8s_runtime.manifest(numpyro_divorce)
+from tempo import manifest
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
+yaml_str = manifest(numpyro_divorce, options=runtime_options)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```

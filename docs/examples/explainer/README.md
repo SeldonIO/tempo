@@ -302,10 +302,15 @@ remote_model.undeploy()
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-k8s_runtime = SeldonKubernetesRuntime(runtime_options.remote_options)
-yaml_str = k8s_runtime.manifest(explainer)
-
+from tempo import manifest
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
+yaml_str = manifest(explainer, options=runtime_options)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```
