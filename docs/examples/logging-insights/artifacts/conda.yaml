@@ -1,0 +1,9 @@
+name: tempo-insights
+channels:
+  - defaults
+dependencies:
+  - pip=21.0.1
+  - python=3.7.9
+  - pip:
+    - mlops-tempo @ file:///home/clive/work/mlops/fork-tempo
+    - mlserver==0.3.2

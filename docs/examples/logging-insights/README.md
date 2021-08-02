@@ -35,20 +35,30 @@ Our custom model will be very simple to focus the logic on the insights function
 
 
 ```python
+from tempo.serve.metadata import SeldonCoreOptions
+from tempo.serve.constants import DefaultInsightsLocalEndpoint, DefaultInsightsK8sEndpoint
+
+seldon_options = SeldonCoreOptions(**{
+    "local_options": { "insights_options": { "worker_endpoint": DefaultInsightsLocalEndpoint } },
+    "remote_options": {
+        "insights_options": { "worker_endpoint": DefaultInsightsK8sEndpoint },
+        "namespace": "seldon",
+        "authSecretName": "minio-secret",
+    },
+})
+```
+
+
+```python
 import numpy as np
 from tempo.serve.utils import pipeline, predictmethod
-from tempo.serve.metadata import InsightRequestModes, RuntimeOptions
-from tempo.serve.constants import DefaultInsightsLocalEndpoint
-
 from tempo.magic import t
-
-local_options = RuntimeOptions(**{"insights_options": {"worker_endpoint": DefaultInsightsLocalEndpoint }})
 
 @pipeline(
     name='insights-pipeline',
     uri="s3://tempo/insights-pipeline/resources",
     local_folder=ARTIFACTS_FOLDER,
-    runtime_options=local_options,
+    runtime_options=seldon_options.local_options,
 )
 class Pipeline:
     
@@ -101,7 +111,11 @@ pred = pipeline(data, params)
 print(pred)
 ```
 
-    <function pipeline.<locals>._pipeline at 0x7f8171ca34d0>
+    Attempted to log request but called manager directly, see documentation [TODO]
+    Attempted to log response but called manager directly, see documentation [TODO]
+
+
+    [63]
 
 
 ## Check the logs
@@ -122,18 +136,18 @@ print(get_logs_insights_message_dumper())
         "path": "/",
         "headers": {
             "host": "0.0.0.0:8080",
-            "ce-id": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
+            "ce-id": "f7ad4230-c4b4-4022-aae8-7f8cf0c1f8ee",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "f7ad4230-c4b4-4022-aae8-7f8cf0c1f8ee",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
-            "user-agent": "Python/3.7 aiohttp/3.6.2",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
             "content-length": "16",
             "content-type": "application/json"
         },
@@ -141,21 +155,21 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "0.0.0.0",
-        "ip": "::ffff:172.18.0.1",
+        "ip": "::ffff:172.19.0.1",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "5229eb0f11ce"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [20/Jun/2021:11:53:44 +0000] "POST / HTTP/1.1" 200 979 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.19.0.1 - - [30/Jul/2021:14:43:53 +0000] "POST / HTTP/1.1" 200 1000 "-" "Python/3.7 aiohttp/3.7.4.post0"
     
 
 
@@ -175,7 +189,7 @@ print(pred)
 
 
 ## Check logs again
-We can see that now new logs have been added
+We can see that no new logs have been added
 
 
 ```python
@@ -187,18 +201,18 @@ print(get_logs_insights_message_dumper())
         "path": "/",
         "headers": {
             "host": "0.0.0.0:8080",
-            "ce-id": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
+            "ce-id": "f7ad4230-c4b4-4022-aae8-7f8cf0c1f8ee",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "f7ad4230-c4b4-4022-aae8-7f8cf0c1f8ee",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
-            "user-agent": "Python/3.7 aiohttp/3.6.2",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
             "content-length": "16",
             "content-type": "application/json"
         },
@@ -206,43 +220,37 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "0.0.0.0",
-        "ip": "::ffff:172.18.0.1",
+        "ip": "::ffff:172.19.0.1",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "5229eb0f11ce"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [20/Jun/2021:11:53:44 +0000] "POST / HTTP/1.1" 200 979 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.19.0.1 - - [30/Jul/2021:14:43:53 +0000] "POST / HTTP/1.1" 200 1000 "-" "Python/3.7 aiohttp/3.7.4.post0"
     
 
 
 ### Deploy the  Model to Docker
 
-Finally, we'll be able to deploy our model using Tempo against one of the available runtimes (i.e. Kubernetes, Docker or Seldon Deploy).
+Let's save the model specifying our depenencies in a conda.yaml.
 
 We'll deploy first to Docker to test.
 
 
 ```python
-%%writetemplate $ARTIFACTS_FOLDER/conda.yaml
-name: tempo-insights
-channels:
-  - defaults
-dependencies:
-  - pip=21.0.1
-  - python=3.7.9
-  - pip:
-    - mlops-tempo @ file://{TEMPO_DIR}
-    - mlserver==0.3.1.dev7
+!ls artifacts/conda.yaml
 ```
+
+    artifacts/conda.yaml
+
 
 
 ```python
@@ -251,28 +259,19 @@ save(pipeline, save_env=True)
 ```
 
     Collecting packages...
-    Packing environment at '/home/alejandro/miniconda3/envs/tempo-9b187809-1946-4576-b8fe-38d4fabf3ecf' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/logging-insights/artifacts/environment.tar.gz'
-    [########################################] | 100% Completed | 19.6s
+    Packing environment at '/home/clive/anaconda3/envs/tempo-213a907e-f213-4c52-8f69-0eaeb0a0a132' to '/home/clive/work/mlops/fork-tempo/docs/examples/logging-insights/artifacts/environment.tar.gz'
+    [########################################] | 100% Completed | 12.6s
 
 
 
 ```python
 from tempo.serve.constants import DefaultInsightsDockerEndpoint
-from tempo.serve.metadata import RuntimeOptions
-from tempo import deploy
+from tempo import deploy_local
 
-docker_options = RuntimeOptions(**{
-    "insights_options": {
-        "worker_endpoint": DefaultInsightsDockerEndpoint 
-    }
-})
+seldon_options.local_options.insights_options.worker_endpoint = DefaultInsightsDockerEndpoint
 
-remote_model = deploy(pipeline, docker_options)
+remote_model = deploy_local(pipeline, seldon_options)
 ```
-
-    inside deploy: runtime='tempo.seldon.SeldonDockerRuntime' docker_options=DockerOptions(runtime='tempo.seldon.SeldonDockerRuntime') k8s_options=KubernetesOptions(runtime='tempo.seldon.SeldonKubernetesRuntime', replicas=1, minReplicas=None, maxReplicas=None, authSecretName=None, serviceAccountName=None, namespace='default') ingress_options=IngressOptions(ingress='tempo.ingress.istio.IstioIngress', ssl=False, verify_ssl=True) insights_options=InsightsOptions(worker_endpoint='http://insights-dumper:8080', batch_size=1, parallelism=1, retries=3, window_time=0, mode_type=<InsightRequestModes.NONE: 'NONE'>, in_asyncio=False)
-    inside deploy: runtime='tempo.seldon.SeldonDockerRuntime' docker_options=DockerOptions(runtime='tempo.seldon.SeldonDockerRuntime') k8s_options=KubernetesOptions(runtime='tempo.seldon.SeldonKubernetesRuntime', replicas=1, minReplicas=None, maxReplicas=None, authSecretName=None, serviceAccountName=None, namespace='default') ingress_options=IngressOptions(ingress='tempo.ingress.istio.IstioIngress', ssl=False, verify_ssl=True) insights_options=InsightsOptions(worker_endpoint='http://insights-dumper:8080', batch_size=1, parallelism=1, retries=3, window_time=0, mode_type=<InsightRequestModes.NONE: 'NONE'>, in_asyncio=False)
-
 
 We can now test our model deployed in Docker as:
 
@@ -305,18 +304,18 @@ print(get_logs_insights_message_dumper())
         "path": "/",
         "headers": {
             "host": "0.0.0.0:8080",
-            "ce-id": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
+            "ce-id": "f7ad4230-c4b4-4022-aae8-7f8cf0c1f8ee",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "f7ad4230-c4b4-4022-aae8-7f8cf0c1f8ee",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
-            "user-agent": "Python/3.7 aiohttp/3.6.2",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
             "content-length": "16",
             "content-type": "application/json"
         },
@@ -324,35 +323,35 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "0.0.0.0",
-        "ip": "::ffff:172.18.0.1",
+        "ip": "::ffff:172.19.0.1",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "5229eb0f11ce"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [20/Jun/2021:11:53:44 +0000] "POST / HTTP/1.1" 200 979 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.19.0.1 - - [30/Jul/2021:14:43:53 +0000] "POST / HTTP/1.1" 200 1000 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper:8080",
-            "ce-id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "ce-id": "2117cf59-2750-44af-aadf-06262f559d64",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "2117cf59-2750-44af-aadf-06262f559d64",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
@@ -363,35 +362,35 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.2",
+        "ip": "::ffff:172.19.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "5229eb0f11ce"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.2 - - [20/Jun/2021:11:54:03 +0000] "POST / HTTP/1.1" 200 1001 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.19.0.3 - - [30/Jul/2021:14:54:37 +0000] "POST / HTTP/1.1" 200 1016 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper:8080",
-            "ce-id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "ce-id": "2117cf59-2750-44af-aadf-06262f559d64",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.request",
-            "requestid": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "2117cf59-2750-44af-aadf-06262f559d64",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
@@ -399,21 +398,21 @@ print(get_logs_insights_message_dumper())
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"id\": \"6960b14c-78e0-495e-bd55-de07c9fe75fb\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "body": "{\"id\": \"2117cf59-2750-44af-aadf-06262f559d64\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.2",
+        "ip": "::ffff:172.19.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "5229eb0f11ce"
         },
         "connection": {},
         "json": {
-            "id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "id": "2117cf59-2750-44af-aadf-06262f559d64",
             "parameters": null,
             "inputs": [
                 {
@@ -457,39 +456,39 @@ print(get_logs_insights_message_dumper())
             "outputs": null
         }
     }
-    ::ffff:172.18.0.2 - - [20/Jun/2021:11:54:03 +0000] "POST / HTTP/1.1" 200 2044 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.19.0.3 - - [30/Jul/2021:14:54:37 +0000] "POST / HTTP/1.1" 200 2059 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper:8080",
-            "ce-id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "ce-id": "2117cf59-2750-44af-aadf-06262f559d64",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.response",
-            "requestid": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "2117cf59-2750-44af-aadf-06262f559d64",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
-            "content-length": "118",
+            "content-length": "153",
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}]}",
+        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}], \"model_version\": \"NOTIMPLEMENTED\"}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.2",
+        "ip": "::ffff:172.19.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "5229eb0f11ce"
         },
         "connection": {},
         "json": {
@@ -505,10 +504,11 @@ print(get_logs_insights_message_dumper())
                         1
                     ]
                 }
-            ]
+            ],
+            "model_version": "NOTIMPLEMENTED"
         }
     }
-    ::ffff:172.18.0.2 - - [20/Jun/2021:11:54:03 +0000] "POST / HTTP/1.1" 200 1311 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.19.0.3 - - [30/Jul/2021:14:54:37 +0000] "POST / HTTP/1.1" 200 1404 "-" "Python/3.7 aiohttp/3.7.4.post0"
     
 
 
@@ -542,15 +542,15 @@ print(get_logs_insights_message_dumper())
         "path": "/",
         "headers": {
             "host": "0.0.0.0:8080",
-            "ce-id": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
+            "ce-id": "3254a0e9-d436-4355-b279-dbf44eb1f7de",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "ee4c3bf7-760f-4fb5-a39a-9cc5eb3da044",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "3254a0e9-d436-4355-b279-dbf44eb1f7de",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.6.2",
@@ -568,28 +568,28 @@ print(get_logs_insights_message_dumper())
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "fa4f8912b8f8"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.1 - - [20/Jun/2021:11:53:44 +0000] "POST / HTTP/1.1" 200 979 "-" "Python/3.7 aiohttp/3.6.2"
+    ::ffff:172.18.0.1 - - [22/Jul/2021:12:11:46 +0000] "POST / HTTP/1.1" 200 994 "-" "Python/3.7 aiohttp/3.6.2"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper:8080",
-            "ce-id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "ce-id": "335f65fa-3629-4db6-b638-3ac0943c23d6",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "335f65fa-3629-4db6-b638-3ac0943c23d6",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
@@ -600,35 +600,35 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.2",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "fa4f8912b8f8"
         },
         "connection": {},
         "json": {
             "log": "value"
         }
     }
-    ::ffff:172.18.0.2 - - [20/Jun/2021:11:54:03 +0000] "POST / HTTP/1.1" 200 1001 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [22/Jul/2021:12:15:17 +0000] "POST / HTTP/1.1" 200 1016 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper:8080",
-            "ce-id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "ce-id": "335f65fa-3629-4db6-b638-3ac0943c23d6",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.request",
-            "requestid": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "335f65fa-3629-4db6-b638-3ac0943c23d6",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
@@ -636,21 +636,21 @@ print(get_logs_insights_message_dumper())
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"id\": \"6960b14c-78e0-495e-bd55-de07c9fe75fb\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "body": "{\"id\": \"335f65fa-3629-4db6-b638-3ac0943c23d6\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.2",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "fa4f8912b8f8"
         },
         "connection": {},
         "json": {
-            "id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "id": "335f65fa-3629-4db6-b638-3ac0943c23d6",
             "parameters": null,
             "inputs": [
                 {
@@ -694,39 +694,39 @@ print(get_logs_insights_message_dumper())
             "outputs": null
         }
     }
-    ::ffff:172.18.0.2 - - [20/Jun/2021:11:54:03 +0000] "POST / HTTP/1.1" 200 2044 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [22/Jul/2021:12:15:17 +0000] "POST / HTTP/1.1" 200 2059 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper:8080",
-            "ce-id": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
+            "ce-id": "335f65fa-3629-4db6-b638-3ac0943c23d6",
             "ce-specversion": "0.3",
             "ce-source": "io.seldon.serving.deployment.NOTIMPLEMENTED.NOTIMPLEMENTED",
             "ce-type": "io.seldon.serving.inference.response",
-            "requestid": "6960b14c-78e0-495e-bd55-de07c9fe75fb",
-            "modelid": "NOTIMPLEMENTED",
-            "inferenceservicename": "NOTIMPLEMENTED",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "NOTIMPLEMENTED",
+            "ce-requestid": "335f65fa-3629-4db6-b638-3ac0943c23d6",
+            "ce-modelid": "NOTIMPLEMENTED",
+            "ce-inferenceservicename": "NOTIMPLEMENTED",
+            "ce-namespace": "NOTIMPLEMENTED",
+            "ce-endpoint": "NOTIMPLEMENTED",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
-            "content-length": "118",
+            "content-length": "153",
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}]}",
+        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}], \"model_version\": \"NOTIMPLEMENTED\"}",
         "fresh": false,
         "hostname": "insights-dumper",
-        "ip": "::ffff:172.18.0.2",
+        "ip": "::ffff:172.18.0.3",
         "ips": [],
         "protocol": "http",
         "query": {},
         "subdomains": [],
         "xhr": false,
         "os": {
-            "hostname": "c8008dc7eb3b"
+            "hostname": "fa4f8912b8f8"
         },
         "connection": {},
         "json": {
@@ -742,10 +742,11 @@ print(get_logs_insights_message_dumper())
                         1
                     ]
                 }
-            ]
+            ],
+            "model_version": "NOTIMPLEMENTED"
         }
     }
-    ::ffff:172.18.0.2 - - [20/Jun/2021:11:54:03 +0000] "POST / HTTP/1.1" 200 1311 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:172.18.0.3 - - [22/Jul/2021:12:15:17 +0000] "POST / HTTP/1.1" 200 1404 "-" "Python/3.7 aiohttp/3.7.4.post0"
     
 
 
@@ -772,7 +773,7 @@ undeploy_insights_message_dumper()
  Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansible from the Tempo project Ansible playbook.
  
  ```
- ansible-playbook ansible/playbooks/default.yaml
+ ansible-playbook ansible/playbooks/seldon_core.yaml
  ```
 
 
@@ -788,10 +789,10 @@ undeploy_insights_message_dumper()
 !kubectl apply -f k8s/rbac -n seldon
 ```
 
-    secret/minio-secret configured
-    serviceaccount/tempo-pipeline unchanged
-    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
-    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+    secret/minio-secret created
+    serviceaccount/tempo-pipeline created
+    role.rbac.authorization.k8s.io/tempo-pipeline created
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding created
 
 
 
@@ -805,23 +806,6 @@ create_minio_rclone(os.getcwd()+"/rclone.conf")
 ```python
 from tempo.serve.loader import upload
 upload(pipeline)
-```
-
-
-```python
-from tempo.serve.metadata import RuntimeOptions, KubernetesOptions, InsightsOptions
-from tempo.serve.constants import DefaultInsightsK8sEndpoint
-from tempo.seldon.k8s import SeldonCoreOptions
-
-kubernetes_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-            namespace="seldon",
-            authSecretName="minio-secret"
-        ),
-        insights_options=InsightsOptions(
-            worker_endpoint=DefaultInsightsK8sEndpoint
-        )
-    )
 ```
 
 
@@ -843,9 +827,9 @@ print(get_logs_insights_message_dumper())
 
 
 ```python
-from tempo import deploy
+from tempo import deploy_remote
 
-remote_model = deploy(pipeline, kubernetes_options)
+remote_model = deploy_remote(pipeline, seldon_options)
 ```
 
 ## Log insights
@@ -860,7 +844,7 @@ remote_model.predict(data=data, parameters=params)
 
 
 
-    array([[63.1   , 62.3   ,  0.1234]])
+    array([63])
 
 
 
@@ -876,15 +860,15 @@ print(get_logs_insights_message_dumper())
         "path": "/",
         "headers": {
             "host": "insights-dumper.seldon-system:8080",
-            "ce-id": "ebdf84c1-1a63-4ecb-84d4-d5edb5408987",
+            "ce-id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
             "ce-specversion": "0.3",
-            "ce-source": "io.seldon.serving.deployment.insights-pipeline.NOTIMPLEMENTED",
+            "ce-source": "io.seldon.serving.deployment.insights-pipeline.seldon",
             "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "ebdf84c1-1a63-4ecb-84d4-d5edb5408987",
-            "modelid": "insights-pipeline",
-            "inferenceservicename": "insights-pipeline",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "default",
+            "ce-requestid": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-modelid": "insights-pipeline",
+            "ce-inferenceservicename": "insights-pipeline",
+            "ce-namespace": "seldon",
+            "ce-endpoint": "default",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
@@ -895,7 +879,7 @@ print(get_logs_insights_message_dumper())
         "body": "{\"log\": \"value\"}",
         "fresh": false,
         "hostname": "insights-dumper.seldon-system",
-        "ip": "::ffff:10.8.3.26",
+        "ip": "::ffff:10.244.0.24",
         "ips": [],
         "protocol": "http",
         "query": {},
@@ -909,21 +893,21 @@ print(get_logs_insights_message_dumper())
             "log": "value"
         }
     }
-    ::ffff:10.8.3.26 - - [20/Jun/2021:11:02:52 +0000] "POST / HTTP/1.1" 200 1033 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:10.244.0.24 - - [30/Jul/2021:14:59:14 +0000] "POST / HTTP/1.1" 200 1034 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper.seldon-system:8080",
-            "ce-id": "ebdf84c1-1a63-4ecb-84d4-d5edb5408987",
+            "ce-id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
             "ce-specversion": "0.3",
-            "ce-source": "io.seldon.serving.deployment.insights-pipeline.NOTIMPLEMENTED",
+            "ce-source": "io.seldon.serving.deployment.insights-pipeline.seldon",
             "ce-type": "io.seldon.serving.inference.request",
-            "requestid": "ebdf84c1-1a63-4ecb-84d4-d5edb5408987",
-            "modelid": "insights-pipeline",
-            "inferenceservicename": "insights-pipeline",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "default",
+            "ce-requestid": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-modelid": "insights-pipeline",
+            "ce-inferenceservicename": "insights-pipeline",
+            "ce-namespace": "seldon",
+            "ce-endpoint": "default",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
@@ -931,10 +915,10 @@ print(get_logs_insights_message_dumper())
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"id\": \"ebdf84c1-1a63-4ecb-84d4-d5edb5408987\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "body": "{\"id\": \"93295ae4-2a13-4198-bde4-3fecd91cc135\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
         "fresh": false,
         "hostname": "insights-dumper.seldon-system",
-        "ip": "::ffff:10.8.3.26",
+        "ip": "::ffff:10.244.0.24",
         "ips": [],
         "protocol": "http",
         "query": {},
@@ -945,7 +929,7 @@ print(get_logs_insights_message_dumper())
         },
         "connection": {},
         "json": {
-            "id": "ebdf84c1-1a63-4ecb-84d4-d5edb5408987",
+            "id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
             "parameters": null,
             "inputs": [
                 {
@@ -989,32 +973,32 @@ print(get_logs_insights_message_dumper())
             "outputs": null
         }
     }
-    ::ffff:10.8.3.26 - - [20/Jun/2021:11:02:52 +0000] "POST / HTTP/1.1" 200 2076 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:10.244.0.24 - - [30/Jul/2021:14:59:14 +0000] "POST / HTTP/1.1" 200 2077 "-" "Python/3.7 aiohttp/3.7.4.post0"
     -----------------
     {
         "path": "/",
         "headers": {
             "host": "insights-dumper.seldon-system:8080",
-            "ce-id": "ebdf84c1-1a63-4ecb-84d4-d5edb5408987",
+            "ce-id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
             "ce-specversion": "0.3",
-            "ce-source": "io.seldon.serving.deployment.insights-pipeline.NOTIMPLEMENTED",
+            "ce-source": "io.seldon.serving.deployment.insights-pipeline.seldon",
             "ce-type": "io.seldon.serving.inference.response",
-            "requestid": "ebdf84c1-1a63-4ecb-84d4-d5edb5408987",
-            "modelid": "insights-pipeline",
-            "inferenceservicename": "insights-pipeline",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "default",
+            "ce-requestid": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-modelid": "insights-pipeline",
+            "ce-inferenceservicename": "insights-pipeline",
+            "ce-namespace": "seldon",
+            "ce-endpoint": "default",
             "accept": "*/*",
             "accept-encoding": "gzip, deflate",
             "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
-            "content-length": "118",
+            "content-length": "153",
             "content-type": "application/json"
         },
         "method": "POST",
-        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}]}",
+        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}], \"model_version\": \"NOTIMPLEMENTED\"}",
         "fresh": false,
         "hostname": "insights-dumper.seldon-system",
-        "ip": "::ffff:10.8.3.26",
+        "ip": "::ffff:10.244.0.24",
         "ips": [],
         "protocol": "http",
         "query": {},
@@ -1035,182 +1019,13 @@ print(get_logs_insights_message_dumper())
                     ],
                     "shape": [
                         1
-                    ]
-                }
-            ]
-        }
-    }
-    ::ffff:10.8.3.26 - - [20/Jun/2021:11:02:52 +0000] "POST / HTTP/1.1" 200 1343 "-" "Python/3.7 aiohttp/3.7.4.post0"
-    -----------------
-    {
-        "path": "/",
-        "headers": {
-            "host": "insights-dumper.seldon-system:8080",
-            "ce-id": "a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9",
-            "ce-specversion": "0.3",
-            "ce-source": "io.seldon.serving.deployment.insights-pipeline.NOTIMPLEMENTED",
-            "ce-type": "io.seldon.serving.inference.custominsight",
-            "requestid": "a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9",
-            "modelid": "insights-pipeline",
-            "inferenceservicename": "insights-pipeline",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "default",
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
-            "content-length": "16",
-            "content-type": "application/json"
-        },
-        "method": "POST",
-        "body": "{\"log\": \"value\"}",
-        "fresh": false,
-        "hostname": "insights-dumper.seldon-system",
-        "ip": "::ffff:10.8.3.27",
-        "ips": [],
-        "protocol": "http",
-        "query": {},
-        "subdomains": [],
-        "xhr": false,
-        "os": {
-            "hostname": "insights-dumper"
-        },
-        "connection": {},
-        "json": {
-            "log": "value"
-        }
-    }
-    ::ffff:10.8.3.27 - - [20/Jun/2021:11:12:50 +0000] "POST / HTTP/1.1" 200 1033 "-" "Python/3.7 aiohttp/3.7.4.post0"
-    -----------------
-    {
-        "path": "/",
-        "headers": {
-            "host": "insights-dumper.seldon-system:8080",
-            "ce-id": "a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9",
-            "ce-specversion": "0.3",
-            "ce-source": "io.seldon.serving.deployment.insights-pipeline.NOTIMPLEMENTED",
-            "ce-type": "io.seldon.serving.inference.request",
-            "requestid": "a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9",
-            "modelid": "insights-pipeline",
-            "inferenceservicename": "insights-pipeline",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "default",
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
-            "content-length": "345",
-            "content-type": "application/json"
-        },
-        "method": "POST",
-        "body": "{\"id\": \"a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
-        "fresh": false,
-        "hostname": "insights-dumper.seldon-system",
-        "ip": "::ffff:10.8.3.27",
-        "ips": [],
-        "protocol": "http",
-        "query": {},
-        "subdomains": [],
-        "xhr": false,
-        "os": {
-            "hostname": "insights-dumper"
-        },
-        "connection": {},
-        "json": {
-            "id": "a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9",
-            "parameters": null,
-            "inputs": [
-                {
-                    "name": "data",
-                    "shape": [
-                        1
-                    ],
-                    "datatype": "INT64",
-                    "parameters": null,
-                    "data": [
-                        63
-                    ]
-                },
-                {
-                    "name": "parameters",
-                    "shape": [
-                        16
-                    ],
-                    "datatype": "BYTES",
-                    "parameters": null,
-                    "data": [
-                        123,
-                        39,
-                        108,
-                        111,
-                        103,
-                        39,
-                        58,
-                        32,
-                        39,
-                        118,
-                        97,
-                        108,
-                        117,
-                        101,
-                        39,
-                        125
                     ]
                 }
             ],
-            "outputs": null
+            "model_version": "NOTIMPLEMENTED"
         }
     }
-    ::ffff:10.8.3.27 - - [20/Jun/2021:11:12:50 +0000] "POST / HTTP/1.1" 200 2076 "-" "Python/3.7 aiohttp/3.7.4.post0"
-    -----------------
-    {
-        "path": "/",
-        "headers": {
-            "host": "insights-dumper.seldon-system:8080",
-            "ce-id": "a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9",
-            "ce-specversion": "0.3",
-            "ce-source": "io.seldon.serving.deployment.insights-pipeline.NOTIMPLEMENTED",
-            "ce-type": "io.seldon.serving.inference.response",
-            "requestid": "a3d9ceff-ac39-4e8c-a6cd-718b9c88e2a9",
-            "modelid": "insights-pipeline",
-            "inferenceservicename": "insights-pipeline",
-            "namespace": "NOTIMPLEMENTED",
-            "endpoint": "default",
-            "accept": "*/*",
-            "accept-encoding": "gzip, deflate",
-            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
-            "content-length": "118",
-            "content-type": "application/json"
-        },
-        "method": "POST",
-        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}]}",
-        "fresh": false,
-        "hostname": "insights-dumper.seldon-system",
-        "ip": "::ffff:10.8.3.27",
-        "ips": [],
-        "protocol": "http",
-        "query": {},
-        "subdomains": [],
-        "xhr": false,
-        "os": {
-            "hostname": "insights-dumper"
-        },
-        "connection": {},
-        "json": {
-            "model_name": "insights-pipeline",
-            "outputs": [
-                {
-                    "name": "output0",
-                    "datatype": "INT64",
-                    "data": [
-                        63
-                    ],
-                    "shape": [
-                        1
-                    ]
-                }
-            ]
-        }
-    }
-    ::ffff:10.8.3.27 - - [20/Jun/2021:11:12:50 +0000] "POST / HTTP/1.1" 200 1343 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    ::ffff:10.244.0.24 - - [30/Jul/2021:14:59:14 +0000] "POST / HTTP/1.1" 200 1422 "-" "Python/3.7 aiohttp/3.7.4.post0"
     
 
 
@@ -1220,17 +1035,198 @@ print(get_logs_insights_message_dumper())
 ```python
 params = {  }
 data = np.array([63])
-pipeline.remote(data=data, parameters=params)
+remote_model.predict(data=data, parameters=params)
 ```
+
+
+
+
+    array([63])
+
+
 
 
 ```python
 print(get_logs_insights_message_dumper())
 ```
 
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper.seldon-system:8080",
+            "ce-id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-specversion": "0.3",
+            "ce-source": "io.seldon.serving.deployment.insights-pipeline.seldon",
+            "ce-type": "io.seldon.serving.inference.custominsight",
+            "ce-requestid": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-modelid": "insights-pipeline",
+            "ce-inferenceservicename": "insights-pipeline",
+            "ce-namespace": "seldon",
+            "ce-endpoint": "default",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "16",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"log\": \"value\"}",
+        "fresh": false,
+        "hostname": "insights-dumper.seldon-system",
+        "ip": "::ffff:10.244.0.24",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "insights-dumper"
+        },
+        "connection": {},
+        "json": {
+            "log": "value"
+        }
+    }
+    ::ffff:10.244.0.24 - - [30/Jul/2021:14:59:14 +0000] "POST / HTTP/1.1" 200 1034 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper.seldon-system:8080",
+            "ce-id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-specversion": "0.3",
+            "ce-source": "io.seldon.serving.deployment.insights-pipeline.seldon",
+            "ce-type": "io.seldon.serving.inference.request",
+            "ce-requestid": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-modelid": "insights-pipeline",
+            "ce-inferenceservicename": "insights-pipeline",
+            "ce-namespace": "seldon",
+            "ce-endpoint": "default",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "345",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"id\": \"93295ae4-2a13-4198-bde4-3fecd91cc135\", \"parameters\": null, \"inputs\": [{\"name\": \"data\", \"shape\": [1], \"datatype\": \"INT64\", \"parameters\": null, \"data\": [63]}, {\"name\": \"parameters\", \"shape\": [16], \"datatype\": \"BYTES\", \"parameters\": null, \"data\": [123, 39, 108, 111, 103, 39, 58, 32, 39, 118, 97, 108, 117, 101, 39, 125]}], \"outputs\": null}",
+        "fresh": false,
+        "hostname": "insights-dumper.seldon-system",
+        "ip": "::ffff:10.244.0.24",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "insights-dumper"
+        },
+        "connection": {},
+        "json": {
+            "id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "parameters": null,
+            "inputs": [
+                {
+                    "name": "data",
+                    "shape": [
+                        1
+                    ],
+                    "datatype": "INT64",
+                    "parameters": null,
+                    "data": [
+                        63
+                    ]
+                },
+                {
+                    "name": "parameters",
+                    "shape": [
+                        16
+                    ],
+                    "datatype": "BYTES",
+                    "parameters": null,
+                    "data": [
+                        123,
+                        39,
+                        108,
+                        111,
+                        103,
+                        39,
+                        58,
+                        32,
+                        39,
+                        118,
+                        97,
+                        108,
+                        117,
+                        101,
+                        39,
+                        125
+                    ]
+                }
+            ],
+            "outputs": null
+        }
+    }
+    ::ffff:10.244.0.24 - - [30/Jul/2021:14:59:14 +0000] "POST / HTTP/1.1" 200 2077 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    -----------------
+    {
+        "path": "/",
+        "headers": {
+            "host": "insights-dumper.seldon-system:8080",
+            "ce-id": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-specversion": "0.3",
+            "ce-source": "io.seldon.serving.deployment.insights-pipeline.seldon",
+            "ce-type": "io.seldon.serving.inference.response",
+            "ce-requestid": "93295ae4-2a13-4198-bde4-3fecd91cc135",
+            "ce-modelid": "insights-pipeline",
+            "ce-inferenceservicename": "insights-pipeline",
+            "ce-namespace": "seldon",
+            "ce-endpoint": "default",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate",
+            "user-agent": "Python/3.7 aiohttp/3.7.4.post0",
+            "content-length": "153",
+            "content-type": "application/json"
+        },
+        "method": "POST",
+        "body": "{\"model_name\": \"insights-pipeline\", \"outputs\": [{\"name\": \"output0\", \"datatype\": \"INT64\", \"data\": [63], \"shape\": [1]}], \"model_version\": \"NOTIMPLEMENTED\"}",
+        "fresh": false,
+        "hostname": "insights-dumper.seldon-system",
+        "ip": "::ffff:10.244.0.24",
+        "ips": [],
+        "protocol": "http",
+        "query": {},
+        "subdomains": [],
+        "xhr": false,
+        "os": {
+            "hostname": "insights-dumper"
+        },
+        "connection": {},
+        "json": {
+            "model_name": "insights-pipeline",
+            "outputs": [
+                {
+                    "name": "output0",
+                    "datatype": "INT64",
+                    "data": [
+                        63
+                    ],
+                    "shape": [
+                        1
+                    ]
+                }
+            ],
+            "model_version": "NOTIMPLEMENTED"
+        }
+    }
+    ::ffff:10.244.0.24 - - [30/Jul/2021:14:59:14 +0000] "POST / HTTP/1.1" 200 1422 "-" "Python/3.7 aiohttp/3.7.4.post0"
+    
+
+
 
 ```python
-k8s_runtime.undeploy(pipeline)
+remote_model.undeploy()
 ```
 
 

@@ -240,8 +240,11 @@ class BaseModel:
         req = prot.to_protocol_request(*args, **kwargs)
         endpoint = remoter.get_endpoint_spec(model_spec)
         headers = remoter.get_headers(model_spec)
+        logger.debug(
+            "Calling requests POST with endpoint=%s headers=%s verify=%s", endpoint, headers, ingress_options.verify_ssl
+        )
         response_raw = requests.post(endpoint, json=req, headers=headers, verify=ingress_options.verify_ssl)
-        print(response_raw.content)
+        logger.debug(response_raw.content)
 
         response_raw.raise_for_status()
 

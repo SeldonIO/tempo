@@ -20,7 +20,7 @@ def dict_to_runtime(d: Dict) -> "BaseRuntimeOptionsType":
     # TODO update to load class by adding type to each
     enterprise_runtimes = ["tempo.seldon.SeldonDeployRunime"]
     docker_runtimes = ["tempo.seldon.SeldonDockerRuntime"]
-    k8s_runtimes = ["tempo.kfserving.KFservingKubernetesRuntime", "tempo.seldon.SeldonKubernetesRuntime"]
+    k8s_runtimes = ["tempo.kfserving.KFServingKubernetesRuntime", "tempo.seldon.SeldonKubernetesRuntime"]
     if runtime in k8s_runtimes:
         return KubernetesRuntimeOptions(**d)
     elif runtime in enterprise_runtimes:

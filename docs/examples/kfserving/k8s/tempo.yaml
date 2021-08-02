@@ -11,12 +11,13 @@ metadata:
       "name": null}, {"ty": "builtins.str", "name": null}]}, "description": "A pipeline
       to use either an sklearn or xgboost model for Iris classification"}, "protocol":
       "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      "tempo.kfserving.KFServingKubernetesRuntime", "docker_options": {"runtime":
-      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime": "tempo.kfserving.KFServingKubernetesRuntime",
-      "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName": null,
-      "serviceAccountName": "kf-tempo", "namespace": "production"}, "ingress_options":
-      {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
-      true}}}'
+      "tempo.kfserving.KFServingKubernetesRuntime", "state_options": {"state_type":
+      "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
+      "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
+      "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
+      null, "authSecretName": null, "serviceAccountName": "kf-tempo", "add_svc_orchestrator":
+      false, "namespace": "production"}}'
   labels:
     seldon.io/tempo: 'true'
   name: classifier
@@ -38,12 +39,14 @@ spec:
       - name: MLSERVER_MODEL_URI
         value: /mnt/models
       - name: TEMPO_RUNTIME_OPTIONS
-        value: '{"runtime": "tempo.kfserving.KFServingKubernetesRuntime", "docker_options":
-          {"runtime": "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime":
-          "tempo.kfserving.KFServingKubernetesRuntime", "replicas": 1, "minReplicas":
-          null, "maxReplicas": null, "authSecretName": null, "serviceAccountName":
-          "kf-tempo", "namespace": "production"}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
-          "ssl": false, "verify_ssl": true}}'
+        value: '{"runtime": "tempo.kfserving.KFServingKubernetesRuntime", "state_options":
+          {"state_type": "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options":
+          {"worker_endpoint": "", "batch_size": 1, "parallelism": 1, "retries": 3,
+          "window_time": 0, "mode_type": "NONE", "in_asyncio": false}, "ingress_options":
+          {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
+          true}, "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
+          null, "serviceAccountName": "kf-tempo", "add_svc_orchestrator": false, "namespace":
+          "production"}'
       image: seldonio/mlserver:0.3.2
       name: mlserver
     serviceAccountName: kf-tempo
@@ -60,12 +63,13 @@ metadata:
       [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
       "name": null}]}, "description": "SKLearn Iris classification model"}, "protocol":
       "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      "tempo.kfserving.KFServingKubernetesRuntime", "docker_options": {"runtime":
-      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime": "tempo.kfserving.KFServingKubernetesRuntime",
-      "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName": null,
-      "serviceAccountName": "kf-tempo", "namespace": "production"}, "ingress_options":
-      {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
-      true}}}'
+      "tempo.kfserving.KFServingKubernetesRuntime", "state_options": {"state_type":
+      "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
+      "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
+      "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
+      null, "authSecretName": null, "serviceAccountName": "kf-tempo", "add_svc_orchestrator":
+      false, "namespace": "production"}}'
   labels:
     seldon.io/tempo: 'true'
   name: test-iris-sklearn
@@ -89,12 +93,13 @@ metadata:
       [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
       "name": null}]}, "description": "XGBoost Iris classification model"}, "protocol":
       "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      "tempo.kfserving.KFServingKubernetesRuntime", "docker_options": {"runtime":
-      "tempo.seldon.SeldonDockerRuntime"}, "k8s_options": {"runtime": "tempo.kfserving.KFServingKubernetesRuntime",
-      "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName": null,
-      "serviceAccountName": "kf-tempo", "namespace": "production"}, "ingress_options":
-      {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl":
-      true}}}'
+      "tempo.kfserving.KFServingKubernetesRuntime", "state_options": {"state_type":
+      "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
+      "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
+      "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
+      "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
+      null, "authSecretName": null, "serviceAccountName": "kf-tempo", "add_svc_orchestrator":
+      false, "namespace": "production"}}'
   labels:
     seldon.io/tempo: 'true'
   name: test-iris-xgboost
