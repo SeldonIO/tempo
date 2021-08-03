@@ -84,3 +84,12 @@ You can do so as:
 $ pytest
 ```
 
+### Additional system requirements for running the tests:
+
+- `docker`
+- `conda`: for example `Miniconda`, follow the steps described in this [link](https://docs.conda.io/projects/conda/en/latest/user-guide/).
+- Models artifacts:
+For first time, install `gsutil` and download the models from Seldon's Google Storage bucket:
+```bash
+$ sudo make tests/testdata
+```
