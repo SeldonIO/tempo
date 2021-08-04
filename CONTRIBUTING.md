@@ -91,5 +91,5 @@ $ pytest
 - Models artifacts:
 For first time, install `gsutil` and download the models from Seldon's Google Storage bucket:
 ```bash
-$ sudo make tests/testdata
+$ make tests/testdata
 ```
