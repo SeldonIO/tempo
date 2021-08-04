@@ -30,7 +30,7 @@ def pipeline_conda_yaml() -> str:
     vi = sys.version_info
     python_version = f"{vi.major}.{vi.minor}.{vi.micro}"
     conda_path = PIPELINE_LOCAL_DIR + "/conda.yaml"
-    with open(PIPELINE_LOCAL_DIR + "/conda_noversion.yaml.tmpl") as f:
+    with open(PIPELINE_LOCAL_DIR + "/conda.yaml.tmpl") as f:
         env = yaml.safe_load(f)
         path = Path(TESTS_PATH)
         parent = path.parent.absolute()
