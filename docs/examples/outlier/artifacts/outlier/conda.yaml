@@ -8,4 +8,4 @@ dependencies:
     - dill==0.3.2
     - opencv-python-headless
     - mlops-tempo
-    - mlserver==0.3.2
+    - mlserver==0.4.0
