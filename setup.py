@@ -36,7 +36,7 @@ setup(
     url="https://github.com/SeldonIO/tempo",
     packages=find_packages(),
     include_package_data=True,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     setup_requires=["pytest-runner"],
     install_requires=[
         "grpcio>=1.32.0",

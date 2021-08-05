@@ -6,6 +6,7 @@ mypy==0.800
 
 # Testing
 pytest==6.2.0
+pytest-cov==2.12.1
 pytest-asyncio==0.14.0
 pytest-cases==3.4.6
 tox==3.22.0

@@ -3,7 +3,7 @@ LABEL name="Seldon MLOPs Utils" \
       vendor="Seldon Technologies" \
       version="0.1" \
       release="1" \
-      summary="Seldon MLOPs untils" \
+      summary="Seldon MLOPs Utils" \
       description="Artifact handling utilities"
 
 RUN pip install pip -U

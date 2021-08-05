@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -26,20 +27,23 @@ def pytest_collection_modifyitems(items):
 
 @pytest.fixture
 def pipeline_conda_yaml() -> str:
-    condaPath = PIPELINE_LOCAL_DIR + "/conda.yaml"
-    if not os.path.isfile(condaPath):
-        with open(PIPELINE_LOCAL_DIR + "/conda.yaml.tmpl") as f:
-            env = yaml.safe_load(f)
-            path = Path(TESTS_PATH)
-            parent = path.parent.absolute()
-            pip_deps = {"pip": []}
-            env["dependencies"].append(pip_deps)
-            for dep in MLServerEnvDeps:
-                pip_deps["pip"].append(dep)
-            pip_deps["pip"].append("mlops-tempo @ file://" + str(parent))
-            with open(condaPath, "w") as f2:
-                yaml.safe_dump(env, f2)
-    return condaPath
+    vi = sys.version_info
+    python_version = f"{vi.major}.{vi.minor}.{vi.micro}"
+    conda_path = PIPELINE_LOCAL_DIR + "/conda.yaml"
+    with open(PIPELINE_LOCAL_DIR + "/conda.yaml.tmpl") as f:
+        env = yaml.safe_load(f)
+        path = Path(TESTS_PATH)
+        parent = path.parent.absolute()
+        env["dependencies"].append(f"python={python_version}")
+        pip_deps = {"pip": []}
+        env["dependencies"].append(pip_deps)
+        for dep in MLServerEnvDeps:
+            pip_deps["pip"].append(dep)
+        pip_deps["pip"].append("mlops-tempo @ file://" + str(parent))
+        # pin the python version
+        with open(conda_path, "w") as f2:
+            yaml.safe_dump(env, f2)
+    return conda_path
 
 
 @pytest.fixture
