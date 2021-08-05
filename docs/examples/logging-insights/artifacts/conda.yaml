@@ -6,4 +6,4 @@ dependencies:
   - python=3.7.9
   - pip:
     - mlops-tempo @ file:///home/clive/work/mlops/fork-tempo
-    - mlserver==0.3.2
+    - mlserver==0.4.0
