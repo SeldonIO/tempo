@@ -1,5 +1,45 @@
 # Changelog
 
+## [v0.3.0](https://github.com/seldonio/tempo/tree/v0.3.0) (2021-08-05)
+
+[Full Changelog](https://github.com/seldonio/tempo/compare/v0.2.0...v0.3.0)
+
+**Closed issues:**
+
+- Quickstart Guide contains link leading to page not found [\#177](https://github.com/SeldonIO/tempo/issues/177)
+- \[TenorRT\] Predict return bad request 400 [\#172](https://github.com/SeldonIO/tempo/issues/172)
+- test issue [\#153](https://github.com/SeldonIO/tempo/issues/153)
+- Create 2-min quickstart video [\#70](https://github.com/SeldonIO/tempo/issues/70)
+- Adding functionality for state through State class [\#53](https://github.com/SeldonIO/tempo/issues/53)
+
+**Merged pull requests:**
+
+- Update version for 0.3.0 release [\#184](https://github.com/SeldonIO/tempo/pull/184) ([cliveseldon](https://github.com/cliveseldon))
+- Bump MLServer to 0.4.0 [\#183](https://github.com/SeldonIO/tempo/pull/183) ([adriangonz](https://github.com/adriangonz))
+- Sherif akoush/quickfix/improve docs [\#180](https://github.com/SeldonIO/tempo/pull/180) ([sakoush](https://github.com/sakoush))
+- Rerun examples and add aio deploy\_local/remote [\#178](https://github.com/SeldonIO/tempo/pull/178) ([cliveseldon](https://github.com/cliveseldon))
+- Added sphinx search extension to docs [\#176](https://github.com/SeldonIO/tempo/pull/176) ([axsaucedo](https://github.com/axsaucedo))
+- Updated tempo logo [\#175](https://github.com/SeldonIO/tempo/pull/175) ([axsaucedo](https://github.com/axsaucedo))
+- Add tensorrt fix for Docker and incubating example [\#174](https://github.com/SeldonIO/tempo/pull/174) ([cliveseldon](https://github.com/cliveseldon))
+- Runtime refactor [\#171](https://github.com/SeldonIO/tempo/pull/171) ([axsaucedo](https://github.com/axsaucedo))
+- Updated logo \(trimmed to make fit within area\) [\#169](https://github.com/SeldonIO/tempo/pull/169) ([axsaucedo](https://github.com/axsaucedo))
+- Update Readme [\#168](https://github.com/SeldonIO/tempo/pull/168) ([cliveseldon](https://github.com/cliveseldon))
+- Added tempo logo [\#167](https://github.com/SeldonIO/tempo/pull/167) ([axsaucedo](https://github.com/axsaucedo))
+- update to 1.9.0 istio [\#166](https://github.com/SeldonIO/tempo/pull/166) ([cliveseldon](https://github.com/cliveseldon))
+- add ephemeral containers feature gate to kind config [\#162](https://github.com/SeldonIO/tempo/pull/162) ([cliveseldon](https://github.com/cliveseldon))
+- State working implementation with K8s and Docker [\#158](https://github.com/SeldonIO/tempo/pull/158) ([axsaucedo](https://github.com/axsaucedo))
+- Updated google tag [\#157](https://github.com/SeldonIO/tempo/pull/157) ([axsaucedo](https://github.com/axsaucedo))
+- Update version badge to be dynamic linked to PyPI release [\#156](https://github.com/SeldonIO/tempo/pull/156) ([jklaise](https://github.com/jklaise))
+- Fix deploy docs link [\#152](https://github.com/SeldonIO/tempo/pull/152) ([majolo](https://github.com/majolo))
+- Request logger with cloud events \(compatible with Seldon Deploy install\) [\#151](https://github.com/SeldonIO/tempo/pull/151) ([axsaucedo](https://github.com/axsaucedo))
+- Default to no executor for seldon core runtime [\#149](https://github.com/SeldonIO/tempo/pull/149) ([cliveseldon](https://github.com/cliveseldon))
+- Update .pre-commit-config.yaml [\#148](https://github.com/SeldonIO/tempo/pull/148) ([axsaucedo](https://github.com/axsaucedo))
+- Added pre-commit hook and contributing doc [\#147](https://github.com/SeldonIO/tempo/pull/147) ([axsaucedo](https://github.com/axsaucedo))
+- Updating API docs by running docs [\#146](https://github.com/SeldonIO/tempo/pull/146) ([axsaucedo](https://github.com/axsaucedo))
+- Adding header projects [\#145](https://github.com/SeldonIO/tempo/pull/145) ([axsaucedo](https://github.com/axsaucedo))
+- Added changelog [\#143](https://github.com/SeldonIO/tempo/pull/143) ([axsaucedo](https://github.com/axsaucedo))
+- use link to .html instead of .md [\#142](https://github.com/SeldonIO/tempo/pull/142) ([RafalSkolasinski](https://github.com/RafalSkolasinski))
+
 ## [v0.2.0](https://github.com/seldonio/tempo/tree/v0.2.0) (2021-06-16)
 
 [Full Changelog](https://github.com/seldonio/tempo/compare/v0.1.0...v0.2.0)
