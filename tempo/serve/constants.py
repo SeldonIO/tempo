@@ -8,7 +8,7 @@ DefaultModelFilename = "model.pickle"
 DefaultRemoteFilename = "remote.pickle"
 DefaultEnvFilename = "environment.tar.gz"
 
-MLServerEnvDeps = ["mlserver==0.3.2"]
+MLServerEnvDeps = ["mlserver==0.4.0"]
 DefaultCondaFile = "conda.yaml"
 
 ENV_K8S_SERVICE_HOST = "KUBERNETES_SERVICE_HOST"
@@ -23,7 +23,9 @@ DefaultInsightsImage = "mendhak/http-https-echo:18"
 DefaultInsightsLocalEndpoint = "http://0.0.0.0:8080"
 DefaultInsightsDockerEndpoint = f"http://{DefaultInsightsServiceName}:8080"
 DefaultSeldonSystemNamespace = "seldon-system"
-DefaultInsightsK8sEndpoint = f"http://{DefaultInsightsServiceName}.{DefaultSeldonSystemNamespace}:8080"
+DefaultInsightsK8sEndpoint = (
+    f"http://{DefaultInsightsServiceName}.{DefaultSeldonSystemNamespace}:8080"
+)
 
 
 DefaultRedisServiceName = "redis-master"
