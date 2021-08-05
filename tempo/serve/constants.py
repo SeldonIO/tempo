@@ -23,9 +23,7 @@ DefaultInsightsImage = "mendhak/http-https-echo:18"
 DefaultInsightsLocalEndpoint = "http://0.0.0.0:8080"
 DefaultInsightsDockerEndpoint = f"http://{DefaultInsightsServiceName}:8080"
 DefaultSeldonSystemNamespace = "seldon-system"
-DefaultInsightsK8sEndpoint = (
-    f"http://{DefaultInsightsServiceName}.{DefaultSeldonSystemNamespace}:8080"
-)
+DefaultInsightsK8sEndpoint = f"http://{DefaultInsightsServiceName}.{DefaultSeldonSystemNamespace}:8080"
 
 
 DefaultRedisServiceName = "redis-master"
