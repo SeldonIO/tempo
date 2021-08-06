@@ -114,7 +114,7 @@ class IrisFlow(FlowSpec):
         self.next(self.tempo)
 
     @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "0.2.0", "conda_env": "2.4.2"})
+    @pip(libraries={"mlops-tempo": "0.3.0", "conda_env": "2.4.2"})
     @step
     def tempo(self):
         import os
@@ -124,16 +124,20 @@ class IrisFlow(FlowSpec):
         import numpy as np
         from deploy import get_tempo_artifacts
 
-        from tempo import deploy
         from tempo.serve.loader import save
 
-        # create the S3 folders for our 2 models and tempo pipeline and
-        # store the model artifacts
-        with S3(run=self) as s3:
-            classifier_loc = s3.put("classifier/.keep", "keep")
-            classifier_loc = os.path.split(classifier_loc)[0]
-            sklearn_url = s3.put("sklearn/model.joblib", self.buffered_lr_model)
-            xgboost_url = s3.put("xgboost/model.bst", self.buffered_xgb_model)
+        classifier_loc = ""
+        sklearn_url = ""
+        xgboost_url = ""
+        if not self.run_local:
+            # create the S3 folders for our 2 models and tempo pipeline and
+            # store the model artifacts
+            with S3(run=self) as s3:
+                classifier_loc = s3.put("classifier/.keep", "keep")
+                classifier_loc = os.path.split(classifier_loc)[0]
+                sklearn_url = s3.put("sklearn/model.joblib", self.buffered_lr_model)
+                xgboost_url = s3.put("xgboost/model.bst", self.buffered_xgb_model)
+
         # Store models to local artifact locations
         local_sklearn_path = save_bytes_local(self.buffered_lr_model, "model.joblib")
         local_xgb_path = save_bytes_local(self.buffered_xgb_model, "model.bst")
@@ -172,27 +176,33 @@ class IrisFlow(FlowSpec):
             (os.path.join("classifier", f), os.path.join(classifier.get_tempo().details.local_folder, f))
             for f in listdir(classifier.get_tempo().details.local_folder)
         ]
-        # Store classifier files
-        with S3(run=self) as s3:
-            s3.put_files(iter(classifier_files))
+        if not self.run_local:
+            # Store classifier files
+            with S3(run=self) as s3:
+                s3.put_files(iter(classifier_files))
 
         # Deploy Tempo pipeline
         if self.run_local:
             print("Deploying locally")
-            remote_model = deploy(classifier)
+            from tempo import deploy_local
+
+            remote_model = deploy_local(classifier)
             time.sleep(10)
             print(remote_model.predict(np.array([[1, 2, 3, 4]])))
             remote_model.undeploy()
         else:
             print("Deploying to production")
-            from tempo.seldon.k8s import SeldonCoreOptions
-            from tempo.serve.metadata import KubernetesOptions
+            from tempo import deploy_remote
+            from tempo.serve.metadata import SeldonCoreOptions
 
-            runtime_options = SeldonCoreOptions(
-                k8s_options=KubernetesOptions(namespace="production", authSecretName="s3-secret")
-            )
+            runtime_options = SeldonCoreOptions(**{
+                "remote_options": {
+                    "namespace": "production",
+                    "authSecretName": "s3-secret"
+                }
+            })
 
-            remote_model = deploy(classifier, options=runtime_options)
+            remote_model = deploy_remote(classifier, options=runtime_options)
             print(remote_model.predict(np.array([[1, 2, 3, 4]])))
 
         self.next(self.end)
