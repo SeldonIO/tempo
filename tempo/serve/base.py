@@ -13,16 +13,23 @@ import pydantic
 import requests
 from pydantic import validator
 
-from ..conf import settings
 from ..errors import UndefinedCustomImplementation
 from ..insights.manager import InsightsManager
 from ..magic import PayloadContext, TempoContextWrapper, tempo_context
 from ..state.state import BaseState
 from ..utils import logger
 from .args import infer_args, process_datatypes
-from .constants import ENV_K8S_SERVICE_HOST, DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
+from .constants import DefaultCondaFile, DefaultEnvFilename, DefaultModelFilename
 from .loader import load_custom, save_custom, save_environment
-from .metadata import InsightRequestModes, ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework, RuntimeOptions
+from .metadata import (
+    BaseRuntimeOptionsType,
+    DockerOptions,
+    InsightRequestModes,
+    ModelDataArg,
+    ModelDataArgs,
+    ModelDetails,
+    ModelFramework,
+)
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
 from .typing import fullname
@@ -41,7 +48,7 @@ class BaseModel:
         outputs: ModelDataType = None,
         conda_env: str = None,
         protocol: Protocol = None,
-        runtime_options: RuntimeOptions = RuntimeOptions(),
+        runtime_options: BaseRuntimeOptionsType = DockerOptions(),
         model_spec: ModelSpec = None,
         description: str = "",
     ):
@@ -78,7 +85,7 @@ class BaseModel:
             )
 
         self.use_remote: bool = False
-        self.runtime_options_override: Optional[RuntimeOptions] = None
+        self.runtime_options_override: Optional[BaseRuntimeOptionsType] = None
 
         insights_params = runtime_options.insights_options.dict()
         self.insights_manager = InsightsManager(**insights_params)
@@ -95,7 +102,7 @@ class BaseModel:
     def set_remote(self, val: bool):
         self.use_remote = val
 
-    def set_runtime_options_override(self, runtime_options: RuntimeOptions):
+    def set_runtime_options_override(self, runtime_options: BaseRuntimeOptionsType):
         self.runtime_options_override = runtime_options
 
     def _get_args(
@@ -212,12 +219,7 @@ class BaseModel:
             return self.model_spec
 
     def _create_remote(self, model_spec: ModelSpec) -> Runtime:
-        if settings.use_kubernetes or os.getenv(ENV_K8S_SERVICE_HOST):
-            cls_path = model_spec.runtime_options.k8s_options.runtime
-        else:
-            cls_path = model_spec.runtime_options.runtime
-        if cls_path is None:
-            cls_path = model_spec.runtime_options.docker_options.runtime
+        cls_path = model_spec.runtime_options.runtime
         logger.debug("Using remote class %s", cls_path)
         cls: Any = locate(cls_path)
         return cls(model_spec.runtime_options)
@@ -238,7 +240,11 @@ class BaseModel:
         req = prot.to_protocol_request(*args, **kwargs)
         endpoint = remoter.get_endpoint_spec(model_spec)
         headers = remoter.get_headers(model_spec)
+        logger.debug(
+            "Calling requests POST with endpoint=%s headers=%s verify=%s", endpoint, headers, ingress_options.verify_ssl
+        )
         response_raw = requests.post(endpoint, json=req, headers=headers, verify=ingress_options.verify_ssl)
+        logger.debug(response_raw.content)
 
         response_raw.raise_for_status()
 
@@ -311,7 +317,7 @@ class ModelSpec(pydantic.BaseModel):
 
     model_details: ModelDetails
     protocol: Protocol
-    runtime_options: RuntimeOptions
+    runtime_options: BaseRuntimeOptionsType
 
     @validator("protocol", pre=True)
     def ensure_type(cls, v):
@@ -330,7 +336,7 @@ class ModelSpec(pydantic.BaseModel):
 
 
 class Deployer(object):
-    def __init__(self, runtime_options: Optional[RuntimeOptions]):
+    def __init__(self, runtime_options: Optional[BaseRuntimeOptionsType]):
         self.runtime_options = runtime_options
 
     def deploy(self, model: Any):

@@ -14,7 +14,7 @@ dependencies:
       - alibi==0.5.7
       - alibi-detect==0.6.0
       - dill
-      - mlserver==0.3.2
+      - mlserver==0.4.0
       - xgboost
       - ansible
       - openshift
@@ -22,3 +22,5 @@ dependencies:
       - pytest-asyncio==0.14.0
       - pandas==1.0.1
       - numpyro==0.6.0
+      - jax==0.2.10
+      - jaxlib==0.1.62

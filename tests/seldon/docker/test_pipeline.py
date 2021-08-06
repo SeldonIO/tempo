@@ -9,12 +9,12 @@ from tempo.serve.pipeline import Pipeline
 
 
 def test_conda_yaml(pipeline_conda_yaml):
-    print(pipeline_conda_yaml)
     with open(pipeline_conda_yaml) as f:
         env = yaml.safe_load(f)
         for dep in env["dependencies"]:
-            if dep == "pip":
-                assert dep[0] == MLServerEnvDeps[0]
+            # we want to fetch the pip dependencies
+            if isinstance(dep, dict):
+                assert dep["pip"][0] == MLServerEnvDeps[0]
 
 
 def test_deploy_pipeline_docker(

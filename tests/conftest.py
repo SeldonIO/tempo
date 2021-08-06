@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -9,7 +10,7 @@ from tempo import Model, ModelFramework, Pipeline, PipelineModels, model, pipeli
 from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
 from tempo.seldon import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
-from tempo.serve.metadata import KubernetesOptions, RuntimeOptions
+from tempo.serve.metadata import KubernetesRuntimeOptions
 
 TESTS_PATH = os.path.dirname(__file__)
 TESTDATA_PATH = os.path.join(TESTS_PATH, "testdata")
@@ -26,20 +27,23 @@ def pytest_collection_modifyitems(items):
 
 @pytest.fixture
 def pipeline_conda_yaml() -> str:
-    condaPath = PIPELINE_LOCAL_DIR + "/conda.yaml"
-    if not os.path.isfile(condaPath):
-        with open(PIPELINE_LOCAL_DIR + "/conda.yaml.tmpl") as f:
-            env = yaml.safe_load(f)
-            path = Path(TESTS_PATH)
-            parent = path.parent.absolute()
-            pip_deps = {"pip": []}
-            env["dependencies"].append(pip_deps)
-            for dep in MLServerEnvDeps:
-                pip_deps["pip"].append(dep)
-            pip_deps["pip"].append("mlops-tempo @ file://" + str(parent))
-            with open(condaPath, "w") as f2:
-                yaml.safe_dump(env, f2)
-    return condaPath
+    vi = sys.version_info
+    python_version = f"{vi.major}.{vi.minor}.{vi.micro}"
+    conda_path = PIPELINE_LOCAL_DIR + "/conda.yaml"
+    with open(PIPELINE_LOCAL_DIR + "/conda.yaml.tmpl") as f:
+        env = yaml.safe_load(f)
+        path = Path(TESTS_PATH)
+        parent = path.parent.absolute()
+        env["dependencies"].append(f"python={python_version}")
+        pip_deps = {"pip": []}
+        env["dependencies"].append(pip_deps)
+        for dep in MLServerEnvDeps:
+            pip_deps["pip"].append(dep)
+        pip_deps["pip"].append("mlops-tempo @ file://" + str(parent))
+        # pin the python version
+        with open(conda_path, "w") as f2:
+            yaml.safe_dump(env, f2)
+    return conda_path
 
 
 @pytest.fixture
@@ -51,9 +55,7 @@ def sklearn_model() -> Model:
         uri="gs://seldon-models/sklearn/iris",
         local_folder=model_path,
         protocol=SeldonProtocol(),
-        runtime_options=RuntimeOptions(
-            k8s_options=KubernetesOptions(namespace="production", replicas=1),
-        ),
+        runtime_options=KubernetesRuntimeOptions(namespace="production", replicas=1),
     )
 
 

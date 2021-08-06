@@ -61,6 +61,13 @@ clf.fit(X, y)
 clf.save_model(f"{XGBOOST_FOLDER}/model.bst")
 ```
 
+    [14:37:34] WARNING: ../src/learner.cc:1061: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective 'multi:softprob' was changed from 'merror' to 'mlogloss'. Explicitly set eval_metric if you'd like to restore the old behavior.
+
+
+    /home/rskolasinski/miniconda3/envs/tempo-examples/lib/python3.7/site-packages/xgboost/sklearn.py:888: UserWarning: The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+      warnings.warn(label_encoder_deprecation_msg, UserWarning)
+
+
 ## Write models environments
 
 
@@ -203,6 +210,34 @@ save(model_sklearn, save_env=True)
 save(model_xgboost, save_env=True)
 ```
 
+    INFO:tempo:Saving environment
+    INFO:tempo:Saving tempo model to /home/rskolasinski/work/tempo/docs/examples/control-environments/artifacts/sklearn/model.pickle
+    INFO:tempo:Using found conda.yaml
+    INFO:tempo:Creating conda env with: conda env create --name tempo-7c4f55a2-0760-46fb-9a31-6c586c08fef1 --file /tmp/tmpbb26jkmn.yml
+    INFO:tempo:packing conda environment from tempo-7c4f55a2-0760-46fb-9a31-6c586c08fef1
+
+
+    Collecting packages...
+    Packing environment at '/home/rskolasinski/miniconda3/envs/tempo-7c4f55a2-0760-46fb-9a31-6c586c08fef1' to '/home/rskolasinski/work/tempo/docs/examples/control-environments/artifacts/sklearn/environment.tar.gz'
+    [########################################] | 100% Completed | 15.5s
+
+
+    INFO:tempo:Removing conda env with: conda remove --name tempo-7c4f55a2-0760-46fb-9a31-6c586c08fef1 --all --yes
+    INFO:tempo:Saving environment
+    INFO:tempo:Saving tempo model to /home/rskolasinski/work/tempo/docs/examples/control-environments/artifacts/xgboost/model.pickle
+    INFO:tempo:Using found conda.yaml
+    INFO:tempo:Creating conda env with: conda env create --name tempo-f43d828c-54af-4182-b0ef-4632585f88c9 --file /tmp/tmpkr72i37t.yml
+    INFO:tempo:packing conda environment from tempo-f43d828c-54af-4182-b0ef-4632585f88c9
+
+
+    Collecting packages...
+    Packing environment at '/home/rskolasinski/miniconda3/envs/tempo-f43d828c-54af-4182-b0ef-4632585f88c9' to '/home/rskolasinski/work/tempo/docs/examples/control-environments/artifacts/xgboost/environment.tar.gz'
+    [########################################] | 100% Completed | 23.1s
+
+
+    INFO:tempo:Removing conda env with: conda remove --name tempo-f43d828c-54af-4182-b0ef-4632585f88c9 --all --yes
+
+
 
 ```python
 docker_runtime = SeldonDockerRuntime()
@@ -234,11 +269,19 @@ print(model_sklearn.remote(payload=p1))
 print(model_sklearn.remote(payload=p2))
 ```
 
+    {'prediction': [[9.49810079285076e-34, 2.267015334079471e-19, 1.0]], 'meta': {'hostname': '7a192a0249d1'}}
+    {'prediction': [[0.9999999998972331, 1.0276696730328812e-10, 1.633959045505507e-30]], 'meta': {'hostname': '7a192a0249d1'}}
+
+
 
 ```python
 print(model_xgboost.remote(payload=p1))
 print(model_xgboost.remote(payload=p2))
 ```
+
+    {'prediction': [[0.00847206823527813, 0.03168793022632599, 0.9598399996757507]], 'meta': {'hostname': '09a8c18c9bee'}}
+    {'prediction': [[0.9732961654663086, 0.024121448397636414, 0.002582334913313389]], 'meta': {'hostname': '09a8c18c9bee'}}
+
 
 ## Define Pipeline
 
@@ -294,6 +337,21 @@ docker_runtime = SeldonDockerRuntime()
 save(classifier, save_env=True)
 ```
 
+    INFO:tempo:Saving environment
+    INFO:tempo:Saving tempo model to /home/rskolasinski/work/tempo/docs/examples/control-environments/artifacts/classifier/model.pickle
+    INFO:tempo:Using found conda.yaml
+    INFO:tempo:Creating conda env with: conda env create --name tempo-36628da6-b0fa-4a31-adf9-4dfb8a3592d8 --file /tmp/tmpaq44de1z.yml
+    INFO:tempo:packing conda environment from tempo-36628da6-b0fa-4a31-adf9-4dfb8a3592d8
+
+
+    Collecting packages...
+    Packing environment at '/home/rskolasinski/miniconda3/envs/tempo-36628da6-b0fa-4a31-adf9-4dfb8a3592d8' to '/home/rskolasinski/work/tempo/docs/examples/control-environments/artifacts/classifier/environment.tar.gz'
+    [########################################] | 100% Completed | 12.2s
+
+
+    INFO:tempo:Removing conda env with: conda remove --name tempo-36628da6-b0fa-4a31-adf9-4dfb8a3592d8 --all --yes
+
+
 
 ```python
 docker_runtime.deploy(classifier)
@@ -305,11 +363,38 @@ classifier(payload=p1)
 ```
 
 
+
+
+    ({'prediction': [[0.00847206823527813,
+        0.03168793022632599,
+        0.9598399996757507]],
+      'meta': {'hostname': 'machine42'}},
+     'xgboost prediction')
+
+
+
+
 ```python
 classifier.remote(payload=p1)
 ```
 
 
+
+
+    {'output0': {'prediction': [[0.00847206823527813,
+        0.03168793022632599,
+        0.9598399996757507]],
+      'meta': {'hostname': '09a8c18c9bee'}},
+     'output1': 'xgboost prediction'}
+
+
+
+
 ```python
 docker_runtime.undeploy(classifier)
 ```
+
+    INFO:tempo:Undeploying classifier
+    INFO:tempo:Undeploying sklearn-classifier
+    INFO:tempo:Undeploying xgboost-classifier
+

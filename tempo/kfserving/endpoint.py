@@ -27,14 +27,14 @@ class Endpoint(object):
         except Exception:
             logger.warning("Failed to load kubeconfig. Only local mode is possible.")
 
-    def get_service_host(self, model_spec: ModelSpec):
+    def get_service_host(self, model_spec: ModelSpec) -> str:
         if self.inside_cluster is not None:
             config.load_incluster_config()
         api_instance = client.CustomObjectsApi()
         api_response = api_instance.get_namespaced_custom_object_status(
             "serving.kubeflow.org",
             "v1beta1",
-            model_spec.runtime_options.k8s_options.namespace,
+            model_spec.runtime_options.namespace,  # type: ignore
             "inferenceservices",
             model_spec.model_details.name,
         )
@@ -59,7 +59,7 @@ class Endpoint(object):
             api_response = api_instance.get_namespaced_custom_object_status(
                 "serving.kubeflow.org",
                 "v1beta1",
-                model_spec.runtime_options.k8s_options.namespace,
+                model_spec.runtime_options.namespace,  # type: ignore
                 "inferenceservices",
                 model_spec.model_details.name,
             )

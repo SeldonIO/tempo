@@ -21,6 +21,7 @@ Subpackages
    tempo.kfserving
    tempo.seldon
    tempo.serve
+   tempo.state
 
 Submodules
 ----------

@@ -1,6 +1,7 @@
+import abc
 from enum import Enum
 from pydoc import locate
-from typing import Any, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 
 from pydantic import BaseModel, validator
 
@@ -12,6 +13,22 @@ class InsightsTypes(Enum):
 
 
 DEFAULT_INSIGHTS_TYPE = InsightsTypes.CUSTOM_INSIGHT
+
+
+def dict_to_runtime(d: Dict) -> "BaseRuntimeOptionsType":
+    runtime = d.get("runtime")
+    # TODO update to load class by adding type to each
+    enterprise_runtimes = ["tempo.seldon.SeldonDeployRunime"]
+    docker_runtimes = ["tempo.seldon.SeldonDockerRuntime"]
+    k8s_runtimes = ["tempo.kfserving.KFServingKubernetesRuntime", "tempo.seldon.SeldonKubernetesRuntime"]
+    if runtime in k8s_runtimes:
+        return KubernetesRuntimeOptions(**d)
+    elif runtime in enterprise_runtimes:
+        return EnterpriseRuntimeOptions(**d)
+    elif runtime in docker_runtimes:
+        return DockerOptions(**d)
+    else:
+        raise Exception("Runtime not supported: " + str(runtime))
 
 
 class ModelFramework(Enum):
@@ -82,26 +99,6 @@ class ModelDetails(BaseModel):
     #    use_enum_values = True
 
 
-class KubernetesOptions(BaseModel):
-    runtime: str = "tempo.seldon.SeldonKubernetesRuntime"
-    replicas: int = 1
-    namespace = "default"
-    minReplicas: Optional[int] = None
-    maxReplicas: Optional[int] = None
-    authSecretName: Optional[str] = None
-    serviceAccountName: Optional[str] = None
-
-
-class DockerOptions(BaseModel):
-    runtime: str = "tempo.seldon.SeldonDockerRuntime"
-
-
-class IngressOptions(BaseModel):
-    ingress: str = "tempo.ingress.istio.IstioIngress"
-    ssl: bool = False
-    verify_ssl: bool = True
-
-
 class InsightRequestModes(Enum):
     ALL = "ALL"
     REQUEST = "REQUEST"
@@ -150,10 +147,77 @@ class StateOptions(BaseModel):
         use_enum_values = True
 
 
-class RuntimeOptions(BaseModel):
-    runtime: str = "tempo.seldon.SeldonDockerRuntime"
-    docker_options: DockerOptions = DockerOptions()
-    k8s_options: KubernetesOptions = KubernetesOptions()
-    ingress_options: IngressOptions = IngressOptions()
-    insights_options: InsightsOptions = InsightsOptions()
+class IngressOptions(BaseModel):
+    ingress: str = "tempo.ingress.istio.IstioIngress"
+    ssl: bool = False
+    verify_ssl: bool = True
+
+
+class _BaseRuntimeOptions(BaseModel):
+    runtime: str = ""
     state_options: StateOptions = StateOptions()
+    insights_options: InsightsOptions = InsightsOptions()
+    ingress_options: IngressOptions = IngressOptions()
+
+    class Config:
+        use_enum_values = True
+
+
+class EnterpriseRuntimeAuthType(Enum):
+    session_cookie = "session_cookie"
+    oidc = "oidc"
+
+
+class EnterpriseRuntimeOptions(_BaseRuntimeOptions):
+    runtime: str = "tempo.seldon.SeldonDeployRunime"
+    host: str
+    user: str
+    password: str
+    auth_type: EnterpriseRuntimeAuthType = EnterpriseRuntimeAuthType.session_cookie
+    oidc_client_id: str
+    oidc_server: str
+    verify_ssl: bool = True
+
+
+class KubernetesRuntimeOptions(_BaseRuntimeOptions):
+    runtime: str = "tempo.seldon.SeldonKubernetesRuntime"
+    # Kubernetes parameters
+    replicas: int = 1
+    namespace = "default"
+    minReplicas: Optional[int] = None
+    maxReplicas: Optional[int] = None
+    authSecretName: Optional[str] = None
+    serviceAccountName: Optional[str] = None
+    # TODO move to separate seldonkubernetesruntime
+    add_svc_orchestrator: bool = False
+
+
+class DockerOptions(_BaseRuntimeOptions):
+    runtime: str = "tempo.seldon.SeldonDockerRuntime"
+
+
+class _BaseProductOptions(BaseModel, abc.ABC):
+    # ty: str = ""
+    local_options: DockerOptions = DockerOptions()
+    remote_options: Any = KubernetesRuntimeOptions()
+
+
+class SeldonCoreOptions(_BaseProductOptions):
+    # ty: str = "tempo.serve.metadata.SeldonCoreOptions"
+    remote_options: KubernetesRuntimeOptions = KubernetesRuntimeOptions(runtime="tempo.seldon.SeldonKubernetesRuntime")
+
+
+class KFServingOptions(_BaseProductOptions):
+    # ty: str = "tempo.serve.metadata.KFServingOptions"
+    remote_options: KubernetesRuntimeOptions = KubernetesRuntimeOptions(
+        runtime="tempo.kfserving.KFservingKubernetesRuntime"
+    )
+
+
+class SeldonEnterpriseOptions(_BaseProductOptions):
+    # ty: str = "tempo.serve.metadata.KFServingOptions"
+    remote_options: EnterpriseRuntimeOptions
+
+
+BaseRuntimeOptionsType = Union[KubernetesRuntimeOptions, DockerOptions, EnterpriseRuntimeOptions]
+BaseProductOptionsType = Union[SeldonCoreOptions, KFServingOptions, SeldonEnterpriseOptions]

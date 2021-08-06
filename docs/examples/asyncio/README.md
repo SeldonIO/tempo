@@ -23,6 +23,20 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 !tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
+    [01;34m.[00m
+    ├── [01;34martifacts[00m
+    │   ├── [01;34mclassifier[00m
+    │   ├── [01;34msklearn[00m
+    │   └── [01;34mxgboost[00m
+    └── [01;34msrc[00m
+        ├── constants.py
+        ├── data.py
+        ├── tempo.py
+        └── train.py
+    
+    5 directories, 4 files
+
+
 ## Train Models
 
 This section is where as a data scientist you do your work of training models and creating artfacts.
@@ -42,14 +56,13 @@ logging.basicConfig(level=logging.ERROR)
 
 ```python
 # %load src/train.py
-import joblib
 import os
 
+import joblib
 from sklearn.linear_model import LogisticRegression
-from xgboost import XGBClassifier
-
-from src.data import IrisData
 from src.constants import SKLearnFolder, XGBoostFolder
+from src.data import IrisData
+from xgboost import XGBClassifier
 
 
 def train_sklearn(data: IrisData):
@@ -81,6 +94,13 @@ train_sklearn(data)
 train_xgboost(data)
 ```
 
+    [18:05:52] WARNING: ../src/learner.cc:1095: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective 'multi:softprob' was changed from 'merror' to 'mlogloss'. Explicitly set eval_metric if you'd like to restore the old behavior.
+
+
+    /home/clive/anaconda3/envs/tempo-examples/lib/python3.7/site-packages/xgboost/sklearn.py:1146: UserWarning: The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+      warnings.warn(label_encoder_deprecation_msg, UserWarning)
+
+
 ## Create Tempo Artifacts
 
 Here we create the Tempo models and orchestration Pipeline for our final service using our models.
@@ -95,11 +115,10 @@ from src.tempo import classifier
 ```python
 # %load src/tempo.py
 import numpy as np
+from src.constants import ClassifierFolder, SKLearnFolder, XGBoostFolder
 
 from tempo import ModelFramework, PipelineModels
-from tempo.aio import pipeline, Model
-
-from src.constants import ClassifierFolder, SKLearnFolder, XGBoostFolder
+from tempo.aio import Model, pipeline
 
 SKLearnModel = Model(
     name="test-iris-sklearn",
@@ -138,8 +157,11 @@ In preparation for running our models we save the Python environment needed for 
 
 
 ```python
-!cat artifacts/classifier/conda.yaml
+!ls artifacts/classifier/conda.yaml
 ```
+
+    artifacts/classifier/conda.yaml
+
 
 
 ```python
@@ -148,14 +170,19 @@ import tempo
 tempo.save(classifier)
 ```
 
+    Collecting packages...
+    Packing environment at '/home/clive/anaconda3/envs/tempo-330c15d8-a189-45a6-abc3-a27f39b6a7c5' to '/home/clive/work/mlops/fork-tempo/docs/examples/asyncio/artifacts/classifier/environment.tar.gz'
+    [########################################] | 100% Completed | 11.2s
+
+
 ## Test Locally on Docker
 
 Here we test our models using production images but running locally on Docker. This allows us to ensure the final production deployed model will behave as expected when deployed.
 
 
 ```python
-from tempo.aio import deploy
-remote_model = deploy(classifier)
+from tempo.aio import deploy_local
+remote_model = deploy_local(classifier)
 ```
 
 
@@ -165,10 +192,21 @@ await remote_model.predict(np.array([[1, 2, 3, 4]]))
 ```
 
 
+
+
+    array([2.], dtype=float32)
+
+
+
+
 ```python
 print(await remote_model.predict(np.array([[0, 0, 0,0]])))
 print(await remote_model.predict(np.array([[5.964,4.006,2.081,1.031]])))
 ```
+
+    [1.]
+    [[0.97329617 0.02412145 0.00258233]]
+
 
 
 ```python

@@ -8,7 +8,7 @@ all: $(EXAMPLES_MD)
 .ipynb.md:
 	jupyter nbconvert \
 		$< \
-		--ClearOutputPreprocessor.enabled=True \
+		--ClearOutputPreprocessor.enabled=False \
 		--to markdown \
 		--output $(notdir $@)
 

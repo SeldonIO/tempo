@@ -12,6 +12,7 @@ Submodules
 .. toctree::
    :maxdepth: 6
 
+   tempo.insights.cloudevents
    tempo.insights.manager
    tempo.insights.worker
    tempo.insights.wrapper

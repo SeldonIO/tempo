@@ -28,6 +28,22 @@ conda env create --name tempo-examples --file conda/tempo-examples.yaml
 !tree -P "*.py"  -I "__init__.py|__pycache__" -L 2
 ```
 
+    [01;34m.[00m
+    ├── [01;34martifacts[00m
+    │   ├── [01;34mexplainer[00m
+    │   └── [01;34mmodel[00m
+    ├── [01;34mk8s[00m
+    │   └── [01;34mrbac[00m
+    └── [01;34msrc[00m
+        ├── constants.py
+        ├── data.py
+        ├── explainer.py
+        ├── model.py
+        └── tempo.py
+    
+    6 directories, 5 files
+
+
 ## Train Models
 
  * This section is where as a data scientist you do your work of training models and creating artfacts.
@@ -63,12 +79,28 @@ from src.model import train_model
 adult_model = train_model(ARTIFACTS_FOLDER, data)
 ```
 
+    Train accuracy:  0.9656333333333333
+    Test accuracy:  0.854296875
+
+
 
 ```python
 from src.explainer import train_explainer
 
 train_explainer(ARTIFACTS_FOLDER, data, adult_model)
 ```
+
+
+
+
+    AnchorTabular(meta={
+      'name': 'AnchorTabular',
+      'type': ['blackbox'],
+      'explanations': ['local'],
+      'params': {'disc_perc': (25, 50, 75), 'seed': 1}}
+    )
+
+
 
 ## Create Tempo Artifacts
 
@@ -86,7 +118,6 @@ explainer = Explainer()
 ```python
 # %load src/tempo.py
 import os
-from typing import Any, Tuple
 
 import dill
 import numpy as np
@@ -99,7 +130,7 @@ from tempo.serve.pipeline import PipelineModels
 from tempo.serve.utils import pipeline, predictmethod
 
 
-def create_adult_model() -> Model :
+def create_adult_model() -> Model:
     sklearn_model = Model(
         name="income-sklearn",
         platform=ModelFramework.SKLearn,
@@ -109,8 +140,8 @@ def create_adult_model() -> Model :
 
     return sklearn_model
 
-def create_explainer(model: Model) -> Tuple[Model, Any]:
 
+def create_explainer(model: Model):
     @pipeline(
         name="income-explainer",
         uri="s3://tempo/explainer/pipeline",
@@ -141,8 +172,8 @@ def create_explainer(model: Model) -> Tuple[Model, Any]:
             explanation = self.explainer.explain(payload, **parameters)
             return explanation.to_json()
 
-    #explainer = ExplainerPipeline()
-    #return sklearn_model, explainer
+    # explainer = ExplainerPipeline()
+    # return sklearn_model, explainer
     return ExplainerPipeline
 
 ```
@@ -152,13 +183,21 @@ def create_explainer(model: Model) -> Tuple[Model, Any]:
 
 
 ```python
-!cat artifacts/explainer/conda.yaml
+!ls artifacts/explainer/conda.yaml
 ```
+
+    artifacts/explainer/conda.yaml
+
 
 
 ```python
 tempo.save(Explainer)
 ```
+
+    Collecting packages...
+    Packing environment at '/home/clive/anaconda3/envs/tempo-27d7d340-70df-4095-92b7-b9ef722eda26' to '/home/clive/work/mlops/fork-tempo/docs/examples/explainer/artifacts/explainer/environment.tar.gz'
+    [########################################] | 100% Completed | 59.8s
+
 
 ## Test Locally on Docker
 
@@ -166,8 +205,8 @@ Here we test our models using production images but running locally on Docker. T
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(explainer)
+from tempo import deploy_local
+remote_model = deploy_local(explainer)
 ```
 
 
@@ -176,11 +215,17 @@ r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"thres
 print(r["data"]["anchor"])
 ```
 
+    ['Marital Status = Separated', 'Sex = Female']
+
+
 
 ```python
 r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"threshold":0.99}))
 print(r["data"]["anchor"])
 ```
+
+    ['Marital Status = Separated', 'Sex = Female', 'Capital Gain <= 0.00', 'Education = Associates', 'Age > 28.00']
+
 
 
 ```python
@@ -200,6 +245,12 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 !kubectl apply -f k8s/rbac -n production
 ```
 
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+
+
 
 ```python
 from tempo.examples.minio import create_minio_rclone
@@ -215,20 +266,19 @@ tempo.upload(explainer)
 
 
 ```python
-from tempo.serve.metadata import KubernetesOptions
-from tempo.seldon.k8s import SeldonCoreOptions
-runtime_options = SeldonCoreOptions(
-        k8s_options=KubernetesOptions(
-            namespace="production",
-            authSecretName="minio-secret"
-        )
-    )
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
 ```
 
 
 ```python
-from tempo import deploy
-remote_model = deploy(explainer, options=runtime_options)
+from tempo import deploy_remote
+remote_model = deploy_remote(explainer, options=runtime_options)
 ```
 
 
@@ -236,6 +286,9 @@ remote_model = deploy(explainer, options=runtime_options)
 r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"threshold":0.95}))
 print(r["data"]["anchor"])
 ```
+
+    ['Relationship = Unmarried', 'Marital Status = Separated', 'Capital Gain <= 0.00']
+
 
 
 ```python
@@ -249,11 +302,15 @@ remote_model.undeploy()
 
 
 ```python
-from tempo.seldon.k8s import SeldonKubernetesRuntime
-
-k8s_runtime = SeldonKubernetesRuntime(runtime_options)
-yaml_str = k8s_runtime.manifest(explainer)
-
+from tempo import manifest
+from tempo.serve.metadata import SeldonCoreOptions
+runtime_options = SeldonCoreOptions(**{
+        "remote_options": {
+            "namespace": "production",
+            "authSecretName": "minio-secret"
+        }
+    })
+yaml_str = manifest(explainer, options=runtime_options)
 with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
     f.write(yaml_str)
 ```
@@ -262,6 +319,90 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
 ```python
 !kustomize build k8s
 ```
+
+    apiVersion: machinelearning.seldon.io/v1
+    kind: SeldonDeployment
+    metadata:
+      annotations:
+        seldon.io/tempo-description: ""
+        seldon.io/tempo-model: '{"model_details": {"name": "income-explainer", "local_folder":
+          "/home/clive/work/mlops/fork-tempo/docs/examples/explainer/artifacts/explainer",
+          "uri": "s3://tempo/explainer/pipeline", "platform": "tempo", "inputs": {"args":
+          [{"ty": "numpy.ndarray", "name": "payload"}, {"ty": "builtins.dict", "name":
+          "parameters"}]}, "outputs": {"args": [{"ty": "builtins.str", "name": null}]},
+          "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+          "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "state_options":
+          {"state_type": "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options":
+          {"worker_endpoint": "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time":
+          0, "mode_type": "NONE", "in_asyncio": false}, "ingress_options": {"ingress":
+          "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl": true}, "replicas":
+          1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
+          "serviceAccountName": null, "add_svc_orchestrator": false, "namespace": "production"}}'
+      labels:
+        seldon.io/tempo: "true"
+      name: income-explainer
+      namespace: production
+    spec:
+      predictors:
+      - annotations:
+          seldon.io/no-engine: "true"
+        componentSpecs:
+        - spec:
+            containers:
+            - name: classifier
+              resources:
+                limits:
+                  cpu: 1
+                  memory: 1Gi
+                requests:
+                  cpu: 500m
+                  memory: 500Mi
+        graph:
+          envSecretRefName: minio-secret
+          implementation: TEMPO_SERVER
+          modelUri: s3://tempo/explainer/pipeline
+          name: income-explainer
+          serviceAccountName: tempo-pipeline
+          type: MODEL
+        name: default
+        replicas: 1
+      protocol: kfserving
+    ---
+    apiVersion: machinelearning.seldon.io/v1
+    kind: SeldonDeployment
+    metadata:
+      annotations:
+        seldon.io/tempo-description: ""
+        seldon.io/tempo-model: '{"model_details": {"name": "income-sklearn", "local_folder":
+          "/home/clive/work/mlops/fork-tempo/docs/examples/explainer/artifacts/model",
+          "uri": "gs://seldon-models/test/income/model", "platform": "sklearn", "inputs":
+          {"args": [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty":
+          "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+          "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "state_options":
+          {"state_type": "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options":
+          {"worker_endpoint": "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time":
+          0, "mode_type": "NONE", "in_asyncio": false}, "ingress_options": {"ingress":
+          "tempo.ingress.istio.IstioIngress", "ssl": false, "verify_ssl": true}, "replicas":
+          1, "minReplicas": null, "maxReplicas": null, "authSecretName": "minio-secret",
+          "serviceAccountName": null, "add_svc_orchestrator": false, "namespace": "production"}}'
+      labels:
+        seldon.io/tempo: "true"
+      name: income-sklearn
+      namespace: production
+    spec:
+      predictors:
+      - annotations:
+          seldon.io/no-engine: "true"
+        graph:
+          envSecretRefName: minio-secret
+          implementation: SKLEARN_SERVER
+          modelUri: gs://seldon-models/test/income/model
+          name: income-sklearn
+          type: MODEL
+        name: default
+        replicas: 1
+      protocol: kfserving
+
 
 
 ```python

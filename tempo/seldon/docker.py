@@ -10,16 +10,16 @@ from tempo.docker.constants import DefaultNetworkName
 from tempo.docker.utils import create_network
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
 from tempo.serve.base import DeployedModel, ModelSpec, Runtime
-from tempo.serve.metadata import RuntimeOptions
+from tempo.serve.metadata import DockerOptions
 
 
 class SeldonDockerRuntime(Runtime):
     def list_models(self) -> Sequence[DeployedModel]:
         pass
 
-    def __init__(self, runtime_options: Optional[RuntimeOptions] = None):
+    def __init__(self, runtime_options: Optional[DockerOptions] = None):
         if runtime_options is None:
-            runtime_options = RuntimeOptions()
+            runtime_options = DockerOptions()
         runtime_options.runtime = "tempo.seldon.SeldonDockerRuntime"
         super().__init__(runtime_options)
 
