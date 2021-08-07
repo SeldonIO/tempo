@@ -43,8 +43,25 @@ def save_bytes_local(model: Any, model_name: str):
     local_model_path = os.path.join(folder, model_name)
     with open(local_model_path, "wb") as f:
         f.write(model)
-        # shutil.copyfileobj(model, f)
     return folder
+
+
+def gke_authenticate(kubeconfig: str, gsa_key: str):
+    import os
+    import tempfile
+    from importlib import reload
+    import kubernetes.config.kube_config
+
+    k8s_folder = tempfile.mkdtemp()
+    kubeconfig_path = os.path.join(k8s_folder, "kubeconfig.yaml")
+    with open(kubeconfig_path, "w") as f:
+        f.write(kubeconfig)
+    gsa_key_path = os.path.join(k8s_folder, "gsa-key.json")
+    with open(gsa_key_path, "w") as f:
+        f.write(gsa_key)
+    os.environ["KUBECONFIG"] = kubeconfig_path
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gsa_key_path
+    reload(kubernetes.config.kube_config)  # need to refresh environ variables used for kubeconfig
 
 
 class IrisFlow(FlowSpec):
@@ -126,52 +143,42 @@ class IrisFlow(FlowSpec):
 
         from tempo.serve.loader import save
 
-        classifier_loc = ""
+        classifier_url = ""
         sklearn_url = ""
         xgboost_url = ""
         if not self.run_local:
             # create the S3 folders for our 2 models and tempo pipeline and
             # store the model artifacts
             with S3(run=self) as s3:
-                classifier_loc = s3.put("classifier/.keep", "keep")
-                classifier_loc = os.path.split(classifier_loc)[0]
-                sklearn_url = s3.put("sklearn/model.joblib", self.buffered_lr_model)
-                xgboost_url = s3.put("xgboost/model.bst", self.buffered_xgb_model)
+                classifier_url = os.path.split(s3.put("classifier/.keep", "keep"))[0]
+                sklearn_url = os.path.split(s3.put("sklearn/model.joblib", self.buffered_lr_model))[0]
+                xgboost_url = os.path.split(s3.put("xgboost/model.bst", self.buffered_xgb_model))[0]
 
+        print("classifier url", classifier_url)
+        print("sklearn url", sklearn_url)
+        print("xgboost url", xgboost_url)
         # Store models to local artifact locations
         local_sklearn_path = save_bytes_local(self.buffered_lr_model, "model.joblib")
         local_xgb_path = save_bytes_local(self.buffered_xgb_model, "model.bst")
+
+
         classifier, sklearn_model, xgboost_model = get_tempo_artifacts(
-            local_sklearn_path, sklearn_url, local_xgb_path, xgboost_url, classifier_loc
+            local_sklearn_path, sklearn_url, local_xgb_path, xgboost_url, classifier_url
         )
 
         # Create k8s auth setup
         if not self.run_local:
             if self.k8s_provider == "gke":
-                k8s_folder = tempfile.mkdtemp()
-                kubeconfig_path = os.path.join(k8s_folder, "kubeconfig.yaml")
-                with open(kubeconfig_path, "w") as f:
-                    f.write(self.kubeconfig)
-                gsa_key_path = os.path.join(k8s_folder, "gsa-key.json")
-                with open(gsa_key_path, "w") as f:
-                    f.write(self.gsa_key)
-                os.environ["KUBECONFIG"] = kubeconfig_path
-                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gsa_key_path
-                from importlib import reload
-
-                import kubernetes.config.kube_config
-
-                reload(kubernetes.config.kube_config)  # need to refresh environ variables used for kubeconfig
+               gke_authenticate(self.kubeconfig, self.gsa_key)
             else:
                 raise Exception(f"Unknown Kubernetes Provider {self.k8s_provider}")
 
-        # Save the Tempo pipeline
+        # Save the Tempo pipeline and upload files
         conda_env_path = os.path.join(classifier.get_tempo().details.local_folder, "conda.yaml")
         with open(conda_env_path, "w") as f:
             f.write(self.conda_env)
         save(classifier)
         from os import listdir
-
         classifier_files = [
             (os.path.join("classifier", f), os.path.join(classifier.get_tempo().details.local_folder, f))
             for f in listdir(classifier.get_tempo().details.local_folder)
@@ -180,6 +187,8 @@ class IrisFlow(FlowSpec):
             # Store classifier files
             with S3(run=self) as s3:
                 s3.put_files(iter(classifier_files))
+
+
 
         # Deploy Tempo pipeline
         if self.run_local:
@@ -203,6 +212,7 @@ class IrisFlow(FlowSpec):
             })
 
             remote_model = deploy_remote(classifier, options=runtime_options)
+            time.sleep(10)
             print(remote_model.predict(np.array([[1, 2, 3, 4]])))
 
         self.next(self.end)
