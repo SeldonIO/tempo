@@ -1,7 +1,10 @@
 import functools
 from typing import Any
-
 from metaflow import S3, FlowSpec, IncludeFile, Parameter, conda, step
+
+pipeline_folder_name = "classifier"
+sklearn_folder_name = "sklearn"
+xgboost_folder_name = "xgboost"
 
 
 def script_path(filename):
@@ -17,7 +20,7 @@ def script_path(filename):
     return os.path.join(filepath, filename)
 
 
-def pip(libraries):
+def pip(libraries, test_index=False):
     def decorator(function):
         @functools.wraps(function)
         def wrapper(*args, **kwargs):
@@ -25,8 +28,16 @@ def pip(libraries):
             import sys
 
             for library, version in libraries.items():
-                print("Pip Install:", library, version)
-                subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", library + "==" + version])
+                if not test_index:
+                    print("Pip Install:", library, version)
+                    subprocess.run([sys.executable, "-m", "pip", "install", "--quiet",
+                                    library + "==" + version])
+                else:
+                    print("Pip Test Install:", library, version)
+                    subprocess.run([sys.executable, "-m", "pip", "install", "--quiet",
+                                    "--index-url", "https://test.pypi.org/simple/",
+                                    "--extra-index-url", "https://pypi.org/simple",
+                                    library + "==" + version])
             return function(*args, **kwargs)
 
         return wrapper
@@ -46,7 +57,7 @@ def save_bytes_local(model: Any, model_name: str):
     return folder
 
 
-def gke_authenticate(kubeconfig: str, gsa_key: str):
+def gke_authenticate(kubeconfig: IncludeFile, gsa_key: IncludeFile):
     import os
     import tempfile
     from importlib import reload
@@ -64,6 +75,33 @@ def gke_authenticate(kubeconfig: str, gsa_key: str):
     reload(kubernetes.config.kube_config)  # need to refresh environ variables used for kubeconfig
 
 
+def create_s3_folder(flow_spec: FlowSpec, folder: str) -> str:
+    from metaflow import S3
+    import os
+    with S3(run=flow_spec) as s3:
+        return os.path.split(s3.put(folder + "/.keep", "keep"))[0]
+
+
+def upload_s3_folder(flow_spec: FlowSpec, s3_folder: str, path: str):
+    import os
+
+    artifact_files = [
+        (os.path.join(s3_folder, f), os.path.join(path, f))
+        for f in os.listdir(path)
+    ]
+    with S3(run=flow_spec) as s3:
+        s3.put_files(iter(artifact_files))
+
+
+def save_pipeline(pipeline, folder: str, conda_env: IncludeFile):
+    from tempo import save
+    import os
+
+    conda_env_path = os.path.join(folder, "conda.yaml")
+    with open(conda_env_path, "w") as f:
+        f.write(conda_env)
+    save(pipeline)
+
 class IrisFlow(FlowSpec):
     """
 
@@ -71,21 +109,20 @@ class IrisFlow(FlowSpec):
     The flow performs the following steps:
 
     1) Load Iris Data
+    2) Train SKLearn LR Model
+    3) Train XGBoost LR Model
+    4) Create and deploy Tempo artifacts
     """
 
     conda_env = IncludeFile(
         "conda_env", help="The path to conda environment for classifier", default=script_path("conda.yaml")
     )
-
     kubeconfig = IncludeFile("kubeconfig", help="The path to kubeconfig", default=script_path("kubeconfig.yaml"))
-
     gsa_key = IncludeFile(
         "gsa_key", help="The path to google service account json", default=script_path("gsa-key.json")
     )
-
-    run_local = Parameter("local", help="Whether to run locally", default=False)
-
-    k8s_provider = Parameter("k8s_provider", help="kubernetes provider", default="gke")
+    tempo_on_docker = Parameter("tempo-on-docker", help="Whether to deploy Tempo artifacts to Docker", default=False)
+    k8s_provider = Parameter("k8s_provider", help="kubernetes provider. Needed for non local run to deploy", default="gke")
 
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
@@ -130,92 +167,82 @@ class IrisFlow(FlowSpec):
 
         self.next(self.tempo)
 
-    @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "0.3.0", "conda_env": "2.4.2"})
-    @step
-    def tempo(self):
-        import os
+    def create_tempo_artifacts(self):
         import tempfile
-        import time
-
-        import numpy as np
         from deploy import get_tempo_artifacts
-
-        from tempo.serve.loader import save
-
-        classifier_url = ""
-        sklearn_url = ""
-        xgboost_url = ""
-        if not self.run_local:
-            # create the S3 folders for our 2 models and tempo pipeline and
-            # store the model artifacts
-            with S3(run=self) as s3:
-                classifier_url = os.path.split(s3.put("classifier/.keep", "keep"))[0]
-                sklearn_url = os.path.split(s3.put("sklearn/model.joblib", self.buffered_lr_model))[0]
-                xgboost_url = os.path.split(s3.put("xgboost/model.bst", self.buffered_xgb_model))[0]
-
-        print("classifier url", classifier_url)
-        print("sklearn url", sklearn_url)
-        print("xgboost url", xgboost_url)
         # Store models to local artifact locations
         local_sklearn_path = save_bytes_local(self.buffered_lr_model, "model.joblib")
         local_xgb_path = save_bytes_local(self.buffered_xgb_model, "model.bst")
-
-
+        local_pipeline_path = tempfile.mkdtemp()
+        # Create S3 folders for artifacts
+        classifier_url = create_s3_folder(self, pipeline_folder_name)
+        sklearn_url = create_s3_folder(self, sklearn_folder_name)
+        xgboost_url = create_s3_folder(self, xgboost_folder_name)
         classifier, sklearn_model, xgboost_model = get_tempo_artifacts(
-            local_sklearn_path, sklearn_url, local_xgb_path, xgboost_url, classifier_url
+            local_sklearn_path,
+            local_xgb_path,
+            local_pipeline_path,
+            sklearn_url,
+            xgboost_url,
+            classifier_url
         )
+        # Create pipeline artifacts
+        save_pipeline(classifier, local_pipeline_path, self.conda_env)
+        # Upload artifacts to S3
+        upload_s3_folder(self, pipeline_folder_name, local_pipeline_path)
+        upload_s3_folder(self, sklearn_folder_name, local_sklearn_path)
+        upload_s3_folder(self, xgboost_folder_name, local_xgb_path)
+        return classifier
 
-        # Create k8s auth setup
-        if not self.run_local:
-            if self.k8s_provider == "gke":
-               gke_authenticate(self.kubeconfig, self.gsa_key)
-            else:
-                raise Exception(f"Unknown Kubernetes Provider {self.k8s_provider}")
+    def deploy_tempo_local(self, classifier):
+        from tempo import deploy_local
+        from tempo.serve.deploy import get_client
+        import time
+        import numpy as np
 
-        # Save the Tempo pipeline and upload files
-        conda_env_path = os.path.join(classifier.get_tempo().details.local_folder, "conda.yaml")
-        with open(conda_env_path, "w") as f:
-            f.write(self.conda_env)
-        save(classifier)
-        from os import listdir
-        classifier_files = [
-            (os.path.join("classifier", f), os.path.join(classifier.get_tempo().details.local_folder, f))
-            for f in listdir(classifier.get_tempo().details.local_folder)
-        ]
-        if not self.run_local:
-            # Store classifier files
-            with S3(run=self) as s3:
-                s3.put_files(iter(classifier_files))
+        remote_model = deploy_local(classifier)
+        self.client_model = get_client(remote_model)
+        time.sleep(10)
+        print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
+    def deploy_tempo_remote(self, classifier):
+        from tempo import deploy_remote
+        from tempo.serve.metadata import SeldonCoreOptions
+        from tempo.serve.deploy import get_client
+        import time
+        import numpy as np
 
-
-        # Deploy Tempo pipeline
-        if self.run_local:
-            print("Deploying locally")
-            from tempo import deploy_local
-
-            remote_model = deploy_local(classifier)
-            time.sleep(10)
-            print(remote_model.predict(np.array([[1, 2, 3, 4]])))
-            remote_model.undeploy()
+        if self.k8s_provider == "gke":
+            gke_authenticate(self.kubeconfig, self.gsa_key)
         else:
-            print("Deploying to production")
-            from tempo import deploy_remote
-            from tempo.serve.metadata import SeldonCoreOptions
+            raise Exception(f"Unknown Kubernetes Provider {self.k8s_provider}")
 
-            runtime_options = SeldonCoreOptions(**{
-                "remote_options": {
-                    "namespace": "production",
-                    "authSecretName": "s3-secret"
-                }
-            })
+        runtime_options = SeldonCoreOptions(**{
+            "remote_options": {
+                "namespace": "production",
+                "authSecretName": "s3-secret"
+            }
+        })
 
-            remote_model = deploy_remote(classifier, options=runtime_options)
-            time.sleep(10)
-            print(remote_model.predict(np.array([[1, 2, 3, 4]])))
+        remote_model = deploy_remote(classifier, options=runtime_options)
+        self.client_model = get_client(remote_model)
+        time.sleep(10)
+        print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
+
+    @conda(libraries={"numpy": "1.19.5"})
+    @pip(libraries={"mlops-tempo": "0.4.0.dev3", "conda_env": "2.4.2"}, test_index=True)
+    @step
+    def tempo(self):
+        classifier = self.create_tempo_artifacts()
+
+        if self.tempo_on_docker:
+            self.deploy_tempo_local(classifier)
+        else:
+            self.deploy_tempo_remote(classifier)
 
         self.next(self.end)
+
+
 
     @step
     def end(self):

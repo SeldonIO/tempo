@@ -3,7 +3,7 @@ import pytest
 import yaml
 
 from tempo.seldon.docker import SeldonDockerRuntime
-from tempo.serve.base import DeployedModel
+from tempo.serve.base import ClientModel
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.pipeline import Pipeline
 
@@ -52,7 +52,7 @@ def test_deploy_pipeline_docker(
         ),
     ],
 )
-def test_pipeline_remote(inference_pipeline_deployed: DeployedModel, x_input):
+def test_pipeline_remote(inference_pipeline_deployed: ClientModel, x_input):
     y_pred = inference_pipeline_deployed.predict(payload=x_input)
 
     np.testing.assert_allclose(y_pred, [2.0], atol=1e-2)

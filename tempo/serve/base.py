@@ -29,6 +29,7 @@ from .metadata import (
     ModelDataArgs,
     ModelDetails,
     ModelFramework,
+    ClientDetails,
 )
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
@@ -232,14 +233,33 @@ class BaseModel:
         model_spec = self._get_model_spec(None)
         return self.remote_with_spec(model_spec, *args, **kwargs)
 
-    def remote_with_spec(self, model_spec: ModelSpec, *args, **kwargs):
+    def remote_with_client(self, model_spec: ModelSpec, client_details: ClientDetails, *args, **kwargs):
         remoter = self._create_remote(model_spec)
         prot = model_spec.protocol
-        ingress_options = model_spec.runtime_options.ingress_options
-
         req = prot.to_protocol_request(*args, **kwargs)
+        logger.debug(
+            "Calling requests POST with client details endpoint=%s headers=%s verify=%s", client_details.url, client_details.headers,
+            client_details.verify_ssl
+        )
+        response_raw = requests.post(client_details.url, json=req, headers=client_details.headers,
+                                     verify=client_details.verify_ssl)
+        logger.debug(response_raw.content)
+
+        response_raw.raise_for_status()
+
+        response_json = response_raw.json()
+        output_schema = model_spec.model_details.outputs
+
+        return prot.from_protocol_response(response_json, output_schema)
+
+    def remote_with_spec(self, model_spec: ModelSpec, *args, **kwargs):
+        remoter = self._create_remote(model_spec)
+        ingress_options = model_spec.runtime_options.ingress_options
         endpoint = remoter.get_endpoint_spec(model_spec)
         headers = remoter.get_headers(model_spec)
+
+        prot = model_spec.protocol
+        req = prot.to_protocol_request(*args, **kwargs)
         logger.debug(
             "Calling requests POST with endpoint=%s headers=%s verify=%s", endpoint, headers, ingress_options.verify_ssl
         )
@@ -300,9 +320,16 @@ class BaseModel:
         return self._user_func(*args, **kwargs)
 
 
-class DeployedModel(BaseModel):
-    def __init__(self, model_spec: ModelSpec):
+class ClientModel(BaseModel):
+    def __init__(self, model_spec: ModelSpec, client_details: ClientDetails = None):
         super().__init__(model_spec.model_details.name, model_spec=model_spec)
+        self.client_details = client_details
+
+    def predict(self, *args, **kwargs):
+        if self.client_details is not None:
+            return super().remote_with_client(self.model_spec,self.client_details, *args, **kwargs)
+        else:
+            super().predict(*args, **kwargs)
 
     def deploy(self, runtime: Runtime):
         logger.warn("Remote model %s can't be deployed", self.model_spec.model_details.name)
@@ -392,5 +419,5 @@ class Runtime(abc.ABC, Deployer):
         pass
 
     @abc.abstractmethod
-    def list_models(self) -> Sequence[DeployedModel]:
+    def list_models(self) -> Sequence[ClientModel]:
         pass

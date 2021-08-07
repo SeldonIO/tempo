@@ -5,7 +5,8 @@ from urllib.parse import urlparse
 
 import rclone
 
-from tempo.serve.base import BaseModel, DeployedModel, ModelSpec
+from tempo.serve.base import BaseModel, ClientModel, ModelSpec
+from tempo.serve.metadata import ClientDetails
 
 from ..conf import settings
 from ..utils import logger
@@ -16,9 +17,9 @@ def _load_rclone_cfg() -> str:
         return f.read()
 
 
-def deserialize(d: dict) -> DeployedModel:
+def deserialize(d: dict, client_details: ClientDetails = None) -> ClientModel:
     ms = ModelSpec(**d)
-    return DeployedModel(ms)
+    return ClientModel(ms, client_details=client_details)
 
 
 def save_remote(model: BaseModel, uri: str):
@@ -34,7 +35,7 @@ def save_remote(model: BaseModel, uri: str):
             rclone.with_config(_load_rclone_cfg()).copy(file.name, uri, flags=["-P"])
 
 
-def load_remote(uri: str) -> DeployedModel:
+def load_remote(uri: str) -> ClientModel:
     if uri.startswith(".") or uri.startswith("/"):
         with open(uri, "r") as f:
             return deserialize(json.loads(f.read()))

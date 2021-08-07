@@ -1,8 +1,9 @@
 from pydoc import locate
 from typing import Any
-
-from .base import BaseModel, ModelSpec, Runtime
-from .metadata import BaseProductOptionsType, BaseRuntimeOptionsType, DockerOptions, KubernetesRuntimeOptions
+import json
+from .base import BaseModel, ModelSpec, Runtime, ClientModel
+from .metadata import BaseProductOptionsType, BaseRuntimeOptionsType, DockerOptions, KubernetesRuntimeOptions, ClientDetails
+from .stub import deserialize
 
 
 class RemoteModel:
@@ -14,10 +15,17 @@ class RemoteModel:
             protocol=self.model.model_spec.protocol,
             runtime_options=self.runtime.runtime_options,
         )
+        self.client_details: ClientDetails = None
 
     def deploy(self):
         self.model.deploy(self.runtime)
         self.model.wait_ready(self.runtime)
+        self._create_client_details()
+
+    def _create_client_details(self):
+        self.client_details = ClientDetails(url=self.runtime.get_endpoint_spec(self.model_spec),
+                            headers=self.runtime.get_headers(self.model_spec),
+                            verify_ssl=self.model_spec.runtime_options.ingress_options.verify_ssl)
 
     def predict(self, *args, **kwargs):
         return self.model.remote_with_spec(self.model_spec, *args, **kwargs)
@@ -76,3 +84,7 @@ def manifest(model: Any, options: BaseProductOptionsType = None) -> str:
     rt: Runtime = _get_runtime(runtime_options.runtime, runtime_options)
     rm = RemoteModel(model, rt)
     return rm.manifest()
+
+
+def get_client(model: RemoteModel) -> ClientModel:
+    return deserialize(json.loads(model.model_spec.json()), model.client_details)
