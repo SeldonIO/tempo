@@ -1,23 +1,10 @@
 import functools
-from typing import Any
-from metaflow import S3, FlowSpec, IncludeFile, Parameter, conda, step
 
-pipeline_folder_name = "classifier"
-sklearn_folder_name = "sklearn"
-xgboost_folder_name = "xgboost"
+from metaflow import FlowSpec, IncludeFile, Parameter, conda, step
 
-
-def script_path(filename):
-    """
-    A convenience function to get the absolute path to a file in this
-    tutorial's directory. This allows the tutorial to be launched from any
-    directory.
-
-    """
-    import os
-
-    filepath = os.path.join(os.path.dirname(__file__))
-    return os.path.join(filepath, filename)
+PIPELINE_FOLDER_NAME = "classifier"
+SKLEARN_FOLDER_NAME = "sklearn"
+XGBOOST_FOLDER_NAME = "xgboost"
 
 
 def pip(libraries, test_index=False):
@@ -45,66 +32,15 @@ def pip(libraries, test_index=False):
     return decorator
 
 
-def save_bytes_local(model: Any, model_name: str):
+def script_path(filename):
     import os
-    import tempfile
+    filepath = os.path.join(os.path.dirname(__file__))
+    return os.path.join(filepath, filename)
 
-    folder = tempfile.mkdtemp()
-    print(folder)
-    local_model_path = os.path.join(folder, model_name)
-    with open(local_model_path, "wb") as f:
-        f.write(model)
-    return folder
-
-
-def gke_authenticate(kubeconfig: IncludeFile, gsa_key: IncludeFile):
-    import os
-    import tempfile
-    from importlib import reload
-    import kubernetes.config.kube_config
-
-    k8s_folder = tempfile.mkdtemp()
-    kubeconfig_path = os.path.join(k8s_folder, "kubeconfig.yaml")
-    with open(kubeconfig_path, "w") as f:
-        f.write(kubeconfig)
-    gsa_key_path = os.path.join(k8s_folder, "gsa-key.json")
-    with open(gsa_key_path, "w") as f:
-        f.write(gsa_key)
-    os.environ["KUBECONFIG"] = kubeconfig_path
-    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = gsa_key_path
-    reload(kubernetes.config.kube_config)  # need to refresh environ variables used for kubeconfig
-
-
-def create_s3_folder(flow_spec: FlowSpec, folder: str) -> str:
-    from metaflow import S3
-    import os
-    with S3(run=flow_spec) as s3:
-        return os.path.split(s3.put(folder + "/.keep", "keep"))[0]
-
-
-def upload_s3_folder(flow_spec: FlowSpec, s3_folder: str, path: str):
-    import os
-
-    artifact_files = [
-        (os.path.join(s3_folder, f), os.path.join(path, f))
-        for f in os.listdir(path)
-    ]
-    with S3(run=flow_spec) as s3:
-        s3.put_files(iter(artifact_files))
-
-
-def save_pipeline(pipeline, folder: str, conda_env: IncludeFile):
-    from tempo import save
-    import os
-
-    conda_env_path = os.path.join(folder, "conda.yaml")
-    with open(conda_env_path, "w") as f:
-        f.write(conda_env)
-    save(pipeline)
 
 class IrisFlow(FlowSpec):
     """
-
+    A Flow to train two Iris dataset models and combine them for inference with Tempo
 
     The flow performs the following steps:
 
@@ -170,14 +106,16 @@ class IrisFlow(FlowSpec):
     def create_tempo_artifacts(self):
         import tempfile
         from deploy import get_tempo_artifacts
+        from tempo.metaflow.utils import save_artifact, \
+            create_s3_folder, upload_s3_folder, save_pipeline_with_conda
         # Store models to local artifact locations
-        local_sklearn_path = save_bytes_local(self.buffered_lr_model, "model.joblib")
-        local_xgb_path = save_bytes_local(self.buffered_xgb_model, "model.bst")
+        local_sklearn_path = save_artifact(self.buffered_lr_model, "model.joblib")
+        local_xgb_path = save_artifact(self.buffered_xgb_model, "model.bst")
         local_pipeline_path = tempfile.mkdtemp()
         # Create S3 folders for artifacts
-        classifier_url = create_s3_folder(self, pipeline_folder_name)
-        sklearn_url = create_s3_folder(self, sklearn_folder_name)
-        xgboost_url = create_s3_folder(self, xgboost_folder_name)
+        classifier_url = create_s3_folder(self, PIPELINE_FOLDER_NAME)
+        sklearn_url = create_s3_folder(self, SKLEARN_FOLDER_NAME)
+        xgboost_url = create_s3_folder(self, XGBOOST_FOLDER_NAME)
         classifier, sklearn_model, xgboost_model = get_tempo_artifacts(
             local_sklearn_path,
             local_xgb_path,
@@ -187,11 +125,11 @@ class IrisFlow(FlowSpec):
             classifier_url
         )
         # Create pipeline artifacts
-        save_pipeline(classifier, local_pipeline_path, self.conda_env)
+        save_pipeline_with_conda(classifier, local_pipeline_path, self.conda_env)
         # Upload artifacts to S3
-        upload_s3_folder(self, pipeline_folder_name, local_pipeline_path)
-        upload_s3_folder(self, sklearn_folder_name, local_sklearn_path)
-        upload_s3_folder(self, xgboost_folder_name, local_xgb_path)
+        upload_s3_folder(self, PIPELINE_FOLDER_NAME, local_pipeline_path)
+        upload_s3_folder(self, SKLEARN_FOLDER_NAME, local_sklearn_path)
+        upload_s3_folder(self, XGBOOST_FOLDER_NAME, local_xgb_path)
         return classifier
 
     def deploy_tempo_local(self, classifier):
@@ -206,6 +144,7 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     def deploy_tempo_remote(self, classifier):
+        from tempo.metaflow.utils import gke_authenticate
         from tempo import deploy_remote
         from tempo.serve.metadata import SeldonCoreOptions
         from tempo.serve.deploy import get_client
@@ -230,7 +169,7 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "0.4.0.dev3", "conda_env": "2.4.2"}, test_index=True)
+    @pip(libraries={"mlops-tempo": "0.4.0.dev5", "conda_env": "2.4.2"}, test_index=True)
     @step
     def tempo(self):
         classifier = self.create_tempo_artifacts()
