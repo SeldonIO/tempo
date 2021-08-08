@@ -23,13 +23,13 @@ from .constants import DefaultCondaFile, DefaultEnvFilename, DefaultModelFilenam
 from .loader import load_custom, save_custom, save_environment
 from .metadata import (
     BaseRuntimeOptionsType,
+    ClientDetails,
     DockerOptions,
     InsightRequestModes,
     ModelDataArg,
     ModelDataArgs,
     ModelDetails,
     ModelFramework,
-    ClientDetails,
 )
 from .protocol import Protocol
 from .types import LoadMethodSignature, ModelDataType, PredictMethodSignature
@@ -238,11 +238,14 @@ class BaseModel:
         prot = model_spec.protocol
         req = prot.to_protocol_request(*args, **kwargs)
         logger.debug(
-            "Calling requests POST with client details endpoint=%s headers=%s verify=%s", client_details.url, client_details.headers,
-            client_details.verify_ssl
+            "Calling requests POST with client details endpoint=%s headers=%s verify=%s",
+            client_details.url,
+            client_details.headers,
+            client_details.verify_ssl,
         )
-        response_raw = requests.post(client_details.url, json=req, headers=client_details.headers,
-                                     verify=client_details.verify_ssl)
+        response_raw = requests.post(
+            client_details.url, json=req, headers=client_details.headers, verify=client_details.verify_ssl
+        )
         logger.debug(response_raw.content)
 
         response_raw.raise_for_status()
@@ -327,7 +330,7 @@ class ClientModel(BaseModel):
 
     def predict(self, *args, **kwargs):
         if self.client_details is not None:
-            return super().remote_with_client(self.model_spec,self.client_details, *args, **kwargs)
+            return super().remote_with_client(self.model_spec, self.client_details, *args, **kwargs)
         else:
             super().predict(*args, **kwargs)
 

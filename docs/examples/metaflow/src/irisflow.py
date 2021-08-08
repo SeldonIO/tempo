@@ -17,14 +17,23 @@ def pip(libraries, test_index=False):
             for library, version in libraries.items():
                 if not test_index:
                     print("Pip Install:", library, version)
-                    subprocess.run([sys.executable, "-m", "pip", "install", "--quiet",
-                                    library + "==" + version])
+                    subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", library + "==" + version])
                 else:
                     print("Pip Test Install:", library, version)
-                    subprocess.run([sys.executable, "-m", "pip", "install", "--quiet",
-                                    "--index-url", "https://test.pypi.org/simple/",
-                                    "--extra-index-url", "https://pypi.org/simple",
-                                    library + "==" + version])
+                    subprocess.run(
+                        [
+                            sys.executable,
+                            "-m",
+                            "pip",
+                            "install",
+                            "--quiet",
+                            "--index-url",
+                            "https://test.pypi.org/simple/",
+                            "--extra-index-url",
+                            "https://pypi.org/simple",
+                            library + "==" + version,
+                        ]
+                    )
             return function(*args, **kwargs)
 
         return wrapper
@@ -34,6 +43,7 @@ def pip(libraries, test_index=False):
 
 def script_path(filename):
     import os
+
     filepath = os.path.join(os.path.dirname(__file__))
     return os.path.join(filepath, filename)
 
@@ -58,7 +68,9 @@ class IrisFlow(FlowSpec):
         "gsa_key", help="The path to google service account json", default=script_path("gsa-key.json")
     )
     tempo_on_docker = Parameter("tempo-on-docker", help="Whether to deploy Tempo artifacts to Docker", default=False)
-    k8s_provider = Parameter("k8s_provider", help="kubernetes provider. Needed for non local run to deploy", default="gke")
+    k8s_provider = Parameter(
+        "k8s_provider", help="kubernetes provider. Needed for non local run to deploy", default="gke"
+    )
 
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
@@ -105,9 +117,11 @@ class IrisFlow(FlowSpec):
 
     def create_tempo_artifacts(self):
         import tempfile
+
         from deploy import get_tempo_artifacts
-        from tempo.metaflow.utils import save_artifact, \
-            create_s3_folder, upload_s3_folder, save_pipeline_with_conda
+
+        from tempo.metaflow.utils import create_s3_folder, save_artifact, save_pipeline_with_conda, upload_s3_folder
+
         # Store models to local artifact locations
         local_sklearn_path = save_artifact(self.buffered_lr_model, "model.joblib")
         local_xgb_path = save_artifact(self.buffered_xgb_model, "model.bst")
@@ -117,12 +131,7 @@ class IrisFlow(FlowSpec):
         sklearn_url = create_s3_folder(self, SKLEARN_FOLDER_NAME)
         xgboost_url = create_s3_folder(self, XGBOOST_FOLDER_NAME)
         classifier, sklearn_model, xgboost_model = get_tempo_artifacts(
-            local_sklearn_path,
-            local_xgb_path,
-            local_pipeline_path,
-            sklearn_url,
-            xgboost_url,
-            classifier_url
+            local_sklearn_path, local_xgb_path, local_pipeline_path, sklearn_url, xgboost_url, classifier_url
         )
         # Create pipeline artifacts
         save_pipeline_with_conda(classifier, local_pipeline_path, self.conda_env)
@@ -133,10 +142,12 @@ class IrisFlow(FlowSpec):
         return classifier
 
     def deploy_tempo_local(self, classifier):
+        import time
+
+        import numpy as np
+
         from tempo import deploy_local
         from tempo.serve.deploy import get_client
-        import time
-        import numpy as np
 
         remote_model = deploy_local(classifier)
         self.client_model = get_client(remote_model)
@@ -144,24 +155,23 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     def deploy_tempo_remote(self, classifier):
-        from tempo.metaflow.utils import gke_authenticate
-        from tempo import deploy_remote
-        from tempo.serve.metadata import SeldonCoreOptions
-        from tempo.serve.deploy import get_client
         import time
+
         import numpy as np
+
+        from tempo import deploy_remote
+        from tempo.metaflow.utils import gke_authenticate
+        from tempo.serve.deploy import get_client
+        from tempo.serve.metadata import SeldonCoreOptions
 
         if self.k8s_provider == "gke":
             gke_authenticate(self.kubeconfig, self.gsa_key)
         else:
             raise Exception(f"Unknown Kubernetes Provider {self.k8s_provider}")
 
-        runtime_options = SeldonCoreOptions(**{
-            "remote_options": {
-                "namespace": "production",
-                "authSecretName": "s3-secret"
-            }
-        })
+        runtime_options = SeldonCoreOptions(
+            **{"remote_options": {"namespace": "production", "authSecretName": "s3-secret"}}
+        )
 
         remote_model = deploy_remote(classifier, options=runtime_options)
         self.client_model = get_client(remote_model)
@@ -180,8 +190,6 @@ class IrisFlow(FlowSpec):
             self.deploy_tempo_remote(classifier)
 
         self.next(self.end)
-
-
 
     @step
     def end(self):

@@ -1,6 +1,6 @@
 from typing import Any
 
-from metaflow import IncludeFile, FlowSpec, S3
+from metaflow import S3, FlowSpec, IncludeFile
 
 
 def save_artifact(model: Any, filename: str):
@@ -40,6 +40,7 @@ def gke_authenticate(kubeconfig: IncludeFile, gsa_key: IncludeFile):
     import os
     import tempfile
     from importlib import reload
+
     import kubernetes.config.kube_config
 
     k8s_folder = tempfile.mkdtemp()
@@ -67,8 +68,10 @@ def create_s3_folder(flow_spec: FlowSpec, folder_name: str) -> str:
     Path S3 path
 
     """
-    from metaflow import S3
     import os
+
+    from metaflow import S3
+
     with S3(run=flow_spec) as s3:
         return os.path.split(s3.put(folder_name + "/.keep", "keep"))[0]
 
@@ -85,10 +88,7 @@ def upload_s3_folder(flow_spec: FlowSpec, s3_folder_name: str, local_path: str):
     """
     import os
 
-    artifact_files = [
-        (os.path.join(s3_folder_name, f), os.path.join(local_path, f))
-        for f in os.listdir(local_path)
-    ]
+    artifact_files = [(os.path.join(s3_folder_name, f), os.path.join(local_path, f)) for f in os.listdir(local_path)]
     with S3(run=flow_spec) as s3:
         s3.put_files(iter(artifact_files))
 
@@ -103,8 +103,9 @@ def save_pipeline_with_conda(pipeline, folder: str, conda_env: IncludeFile):
     conda_env The conda environment as a Metaflow IncludeFile
 
     """
-    from tempo import save
     import os
+
+    from tempo import save
 
     conda_env_path = os.path.join(folder, "conda.yaml")
     with open(conda_env_path, "w") as f:

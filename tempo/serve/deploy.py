@@ -1,8 +1,15 @@
+import json
 from pydoc import locate
 from typing import Any
-import json
-from .base import BaseModel, ModelSpec, Runtime, ClientModel
-from .metadata import BaseProductOptionsType, BaseRuntimeOptionsType, DockerOptions, KubernetesRuntimeOptions, ClientDetails
+
+from .base import BaseModel, ClientModel, ModelSpec, Runtime
+from .metadata import (
+    BaseProductOptionsType,
+    BaseRuntimeOptionsType,
+    ClientDetails,
+    DockerOptions,
+    KubernetesRuntimeOptions,
+)
 from .stub import deserialize
 
 
@@ -23,9 +30,11 @@ class RemoteModel:
         self._create_client_details()
 
     def _create_client_details(self):
-        self.client_details = ClientDetails(url=self.runtime.get_endpoint_spec(self.model_spec),
-                            headers=self.runtime.get_headers(self.model_spec),
-                            verify_ssl=self.model_spec.runtime_options.ingress_options.verify_ssl)
+        self.client_details = ClientDetails(
+            url=self.runtime.get_endpoint_spec(self.model_spec),
+            headers=self.runtime.get_headers(self.model_spec),
+            verify_ssl=self.model_spec.runtime_options.ingress_options.verify_ssl,
+        )
 
     def predict(self, *args, **kwargs):
         return self.model.remote_with_spec(self.model_spec, *args, **kwargs)
