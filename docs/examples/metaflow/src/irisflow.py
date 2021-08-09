@@ -1,44 +1,9 @@
-import functools
-
 from metaflow import FlowSpec, IncludeFile, Parameter, conda, step
+from utils import pip
 
 PIPELINE_FOLDER_NAME = "classifier"
 SKLEARN_FOLDER_NAME = "sklearn"
 XGBOOST_FOLDER_NAME = "xgboost"
-
-
-def pip(libraries, test_index=False):
-    def decorator(function):
-        @functools.wraps(function)
-        def wrapper(*args, **kwargs):
-            import subprocess
-            import sys
-
-            for library, version in libraries.items():
-                if not test_index:
-                    print("Pip Install:", library, version)
-                    subprocess.run([sys.executable, "-m", "pip", "install", "--quiet", library + "==" + version])
-                else:
-                    print("Pip Test Install:", library, version)
-                    subprocess.run(
-                        [
-                            sys.executable,
-                            "-m",
-                            "pip",
-                            "install",
-                            "--quiet",
-                            "--index-url",
-                            "https://test.pypi.org/simple/",
-                            "--extra-index-url",
-                            "https://pypi.org/simple",
-                            library + "==" + version,
-                        ]
-                    )
-            return function(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
 
 
 def script_path(filename):
@@ -75,6 +40,9 @@ class IrisFlow(FlowSpec):
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
     def start(self):
+        """
+        Download Iris classification datatset
+        """
         # pylint: disable=no-member
         from sklearn import datasets
 
@@ -86,6 +54,9 @@ class IrisFlow(FlowSpec):
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
     def train_sklearn(self):
+        """
+        Train a SKLearn Logistic Regression Classifier on dataset and save model as artifact
+        """
         from joblib import dump
         from sklearn.linear_model import LogisticRegression
 
@@ -100,6 +71,9 @@ class IrisFlow(FlowSpec):
     @conda(libraries={"xgboost": "1.4.0"})
     @step
     def train_xgboost(self):
+        """
+        Train an XGBoost classifier on the dataset and save model as artifact
+        """
         from xgboost import XGBClassifier
 
         xgb = XGBClassifier()
@@ -111,6 +85,9 @@ class IrisFlow(FlowSpec):
 
     @step
     def join(self, inputs):
+        """
+        Merge two training runs.
+        """
         self.merge_artifacts(inputs)
 
         self.next(self.tempo)
@@ -182,6 +159,11 @@ class IrisFlow(FlowSpec):
     @pip(libraries={"mlops-tempo": "0.4.0.dev5", "conda_env": "2.4.2"}, test_index=True)
     @step
     def tempo(self):
+        """
+        Create Tempo artifacts locally and saved to S3 within the workflow bucket.
+        Then either deploy locally to Docker or deploy to a remote Kubernetes cluster based on the
+        --tempo-on-docker parameter
+        """
         classifier = self.create_tempo_artifacts()
 
         if self.tempo_on_docker:
@@ -193,6 +175,9 @@ class IrisFlow(FlowSpec):
 
     @step
     def end(self):
+        """
+        End flow.
+        """
         pass
 
 

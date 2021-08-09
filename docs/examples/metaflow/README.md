@@ -6,26 +6,40 @@ We will train two models and deploy them with tempo within a Metaflow pipeline. 
 
 ## MetaFlow Prequisites
 
-Install metaflow
+
+### Install metaflow locally
 
 ```
 pip install metaflow
 ```
 
+### Setup AWS Metaflow Support
+
+Note at present this is required even for a local run as artifacts are stored on S3.
+
 [Install Metaflow with remote AWS support](https://docs.metaflow.org/metaflow-on-aws/metaflow-on-aws).
 
+### Setup Conda-Forge Support
+
+The flow will use conda-forge so you need to add that channel to conda.
+
+```
+conda config --add channels conda-forge
+```
 
 
 
 ## Tempo Requirements
 
-For deploy to a remote Kubernetes cluster:
+For deploying to a remote Kubernetes cluster with Seldon Core installed do the following steps:
 
 ### GKE Cluster
 
 Create a GKE cluster and install Seldon Core on it using [Ansible to install Seldon Core on a Kubernetes cluster](https://github.com/SeldonIO/ansible-k8s-collection).
 
-For GKE we will need to create two files in the flow src folder:
+For Metaflow to connect to your GKE cluster from AWS it will need to authenticate inside the running pipeline. For this you will need to do some further steps as follows:
+
+You will need to create two files in the flow src folder:
 
 ```bash
 kubeconfig.yaml
@@ -36,22 +50,109 @@ Follow the steps outlined in [GKE server authentication](https://cloud.google.co
 
 
 
-
-```python
-!kubectl create ns production
-```
+## Iris Flow Summary
 
 
 ```python
-!kubectl create -f k8s/tempo-pipeline-rbac.yaml -n production
+!python src/irisflow.py --environment=conda show
 ```
 
-Create a Secret from the `k8s/s3_secret.yaml.tmpl` file by adding your AWS Key that can read from S3 and saving as `k8s/s3_secret.yaml`
+    [35m[1mMetaflow 2.3.2[0m[35m[22m executing [0m[31m[1mIrisFlow[0m[35m[22m[0m[35m[22m for [0m[31m[1muser:clive[0m[35m[22m[K[0m[35m[22m[0m
+    [22m
+    A Flow to train two Iris dataset models and combine them for inference with Tempo
+    
+    The flow performs the following steps:
+    
+    1) Load Iris Data
+    2) Train SKLearn LR Model
+    3) Train XGBoost LR Model
+    4) Create and deploy Tempo artifacts[K[0m[22m[0m
+    [22m
+    Step [0m[31m[1mstart[0m[22m[K[0m[22m[0m
+    [22m    Download Iris classification datatset[K[0m[22m[0m
+    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mtrain_sklearn[0m[22m, [0m[35m[22mtrain_xgboost[0m[22m[K[0m[22m[0m
+    [22m
+    Step [0m[31m[1mtrain_sklearn[0m[22m[K[0m[22m[0m
+    [22m    Train a SKLearn Logistic Regression Classifier on dataset and save model as artifact[K[0m[22m[0m
+    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mjoin[0m[22m[K[0m[22m[0m
+    [22m
+    Step [0m[31m[1mtrain_xgboost[0m[22m[K[0m[22m[0m
+    [22m    Train an XGBoost classifier on the dataset and save model as artifact[K[0m[22m[0m
+    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mjoin[0m[22m[K[0m[22m[0m
+    [22m
+    Step [0m[31m[1mjoin[0m[22m[K[0m[22m[0m
+    [22m    Merge two training runs.[K[0m[22m[0m
+    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mtempo[0m[22m[K[0m[22m[0m
+    [22m
+    Step [0m[31m[1mtempo[0m[22m[K[0m[22m[0m
+    [22m    Create Tempo artifacts locally and saved to S3 within the workflow bucket.
+        Then either deploy locally to Docker or deploy to a remote Kubernetes cluster based on the
+        --tempo-on-docker parameter[K[0m[22m[0m
+    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mend[0m[22m[K[0m[22m[0m
+    [22m
+    Step [0m[31m[1mend[0m[22m[K[0m[22m[0m
+    [22m    End flow.[K[0m[22m[0m
+    [22m[K[0m[22m[0m
+
 
 
 ```python
-!kubectl create -f k8s/s3_secret.yaml -n production
+!python src/irisflow.py --environment=conda run --help
 ```
+
+    [35m[1mMetaflow 2.3.2[0m[35m[22m executing [0m[31m[1mIrisFlow[0m[35m[22m[0m[35m[22m for [0m[31m[1muser:clive[0m[35m[22m[K[0m[35m[22m[0m
+    Usage: irisflow.py run [OPTIONS]
+    
+      Run the workflow locally.
+    
+    Options:
+      --conda_env FILEPATH       The path to conda environment for classifier
+                                 [default: src/conda.yaml]
+    
+      --kubeconfig FILEPATH      The path to kubeconfig  [default:
+                                 src/kubeconfig.yaml]
+    
+      --gsa_key FILEPATH         The path to google service account json
+                                 [default: src/gsa-key.json]
+    
+      --tempo-on-docker BOOLEAN  Whether to deploy Tempo artifacts to Docker
+                                 [default: False]
+    
+      --k8s_provider TEXT        kubernetes provider. Needed for non local run to
+                                 deploy  [default: gke]
+    
+      --tag TEXT                 Annotate this run with the given tag. You can
+                                 specify this option multiple times to attach
+                                 multiple tags in the run.
+    
+      --max-workers INTEGER      Maximum number of parallel processes.  [default:
+                                 16]
+    
+      --max-num-splits INTEGER   Maximum number of splits allowed in a foreach.
+                                 This is a safety check preventing bugs from
+                                 triggering thousands of steps inadvertently.
+                                 [default: 100]
+    
+      --max-log-size INTEGER     Maximum size of stdout and stderr captured in
+                                 megabytes. If a step outputs more than this to
+                                 stdout/stderr, its output will be truncated.
+                                 [default: 10]
+    
+      --with TEXT                Add a decorator to all steps. You can specify
+                                 this option multiple times to attach multiple
+                                 decorators in steps.
+    
+      --run-id-file TEXT         Write the ID of this run to the file specified.
+      --namespace TEXT           Change namespace from the default (your username)
+                                 to the specified tag. Note that this option does
+                                 not alter tags assigned to the objects produced
+                                 by this run, just what existing objects are
+                                 visible in the client API. You can enable the
+                                 global namespace with an empty string.--
+                                 namespace=
+    
+      --help                     Show this message and exit.
+
 
 ## Run Flow locally to deploy to Docker
 
@@ -275,7 +376,7 @@ Create a Secret from the `k8s/s3_secret.yaml.tmpl` file by adding your AWS Key t
     [35m2021-08-08 15:32:06.511 [0m[1mDone![0m
 
 
-Use the saved client from the Flow to make predictions
+## Make Predictions with Metaflow Tempo Artifact
 
 
 ```python
@@ -302,7 +403,30 @@ client.predict(np.array([[1, 2, 3, 4]]))
 
 
 
-## Run Flow on AWS and Deploy to Kubernetes
+## Run Flow on AWS and Deploy to Remote Kubernetes
+
+We will now run our flow on AWS Batch and will launch Tempo artifacts onto a remote Kubernetes cluster. make sure you have setup the cluster and have the appropriate authentication files as outlined above.
+
+## Setup RBAC and Secret on Kubernetes Cluster
+
+
+```python
+!kubectl create ns production
+```
+
+
+```python
+!kubectl create -f k8s/tempo-pipeline-rbac.yaml -n production
+```
+
+Create a Secret from the `k8s/s3_secret.yaml.tmpl` file by adding your AWS Key that can read from S3 and saving as `k8s/s3_secret.yaml`
+
+
+```python
+!kubectl create -f k8s/s3_secret.yaml -n production
+```
+
+## Run Metaflow on AWS Batch
 
 
 ```python
@@ -600,7 +724,7 @@ client.predict(np.array([[1, 2, 3, 4]]))
     [35m2021-08-08 15:39:05.789 [0m[1mDone![0m
 
 
-Use the saved client from the Flow to make predictions
+## Make Predictions with Metaflow Tempo Artifact
 
 
 ```python
@@ -626,6 +750,18 @@ client.predict(np.array([[1, 2, 3, 4]]))
      'output1': 'xgboost prediction'}
 
 
+
+## Tempo Utils for creating your own Metaflow workflow
+
+
+```python
+import tempo.metaflow.utils
+```
+
+
+```python
+%pdoc tempo.metaflow.utils.save_artifact
+```
 
 
 ```python
