@@ -55,6 +55,63 @@ def gke_authenticate(kubeconfig: IncludeFile, gsa_key: IncludeFile):
     reload(kubernetes.config.kube_config)  # need to refresh environ variables used for kubeconfig
 
 
+def aws_authenticate(eks_cluster_name: str):
+    import os
+    import tempfile
+    from importlib import reload
+
+    import kubernetes.config.kube_config
+
+    k8s_folder = tempfile.mkdtemp()
+
+    # install AWS IAM authenticator for k8s
+    os.system('curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator && chmod +x /usr/local/bin/aws-iam-authenticator')
+    kubeconfig_path = os.path.join(k8s_folder, "kubeconfig.yaml")
+    with open(kubeconfig_path, "w") as f:
+        f.write(generate_eks_config(eks_cluster_name))
+    print(generate_eks_config(eks_cluster_name))
+    os.environ["KUBECONFIG"] = kubeconfig_path
+    reload(kubernetes.config.kube_config)
+
+
+def generate_eks_config(cluster_name: str) -> str:
+    """ Use AWS API to generate kubeconfig given EKS cluster name """
+    import boto3
+    eks = boto3.client('eks')
+
+    # Get cluster details from EKS API
+    resp = eks.describe_cluster(name=cluster_name)
+
+    endpoint = resp['cluster']['endpoint']
+    ca_cert = resp['cluster']['certificateAuthority']['data']
+
+    return f"""apiVersion: v1
+clusters:
+- cluster:
+    server: {endpoint}
+    certificate-authority-data: {ca_cert}
+  name: kubernetes
+contexts:
+- context:
+    cluster: kubernetes
+    user: aws
+  name: aws
+current-context: aws
+kind: Config
+preferences: {{}}
+users:
+- name: aws
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      command: aws-iam-authenticator
+      args:
+        - "token"
+        - "-i"
+        - "{cluster_name}"
+    """
+
+
 def create_s3_folder(flow_spec: FlowSpec, folder_name: str) -> str:
     """
     Create an S3 folder within the Flow

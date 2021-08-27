@@ -31,15 +31,27 @@ conda config --add channels conda-forge
 
 ## Tempo Requirements
 
-For deploying to a remote Kubernetes cluster with Seldon Core installed do the following steps:
+Create a GKE or EKS cluster and install Seldon Core on it using [Ansible to install Seldon Core on a Kubernetes cluster](https://github.com/SeldonIO/ansible-k8s-collection).
 
-### GKE Cluster
+### Setup RBAC on Kubernetes Cluster
 
-Create a GKE cluster and install Seldon Core on it using [Ansible to install Seldon Core on a Kubernetes cluster](https://github.com/SeldonIO/ansible-k8s-collection).
+Regardless of whether the K8S runs on GKE or EKS, we need to configure the namespace and RBAC first.
 
-For Metaflow to connect to your GKE cluster from AWS it will need to authenticate inside the running pipeline. For this you will need to do some further steps as follows:
+```
+kubectl create ns production
+```
 
-You will need to create two files in the flow src folder:
+```
+kubectl create -f k8s/tempo-pipeline-rbac.yaml -n production
+```
+
+## K8S Auth from Metaflow
+
+To deploy services to our Kubernetes cluster with Seldon Core installed, Metaflow steps that run on AWS Batch and use tempo will need to be able to access K8S API. This step will depend on whether you're using GKE or AWS EKS to run your cluster.
+
+### Option 1. K8S cluster runs on GKE
+
+We will need to create two files in the flow src folder:
 
 ```bash
 kubeconfig.yaml
@@ -49,6 +61,61 @@ gsa-key.json
 Follow the steps outlined in [GKE server authentication](https://cloud.google.com/kubernetes-engine/docs/how-to/api-server-authentication#environments-without-gcloud).
 
 
+### Option 2. K8S cluster runs on AWS EKS
+
+Make note of two AWS IAM role names, for example find them in the IAM console. The names depend on how you deployed Metaflow and EKS in the first place:
+
+1. The role used by Metaflow tasks executed on AWS Batch. If you used the default CloudFormation template to deploy Metaflow, it is the role that has `*BatchS3TaskRole*` in its name.
+
+2. The role used by EKS nodes. If you used `eksctl` to create your EKS cluster, it is the role that starts with `eksctl-<your-cluster-name>-NodeInstanceRole-*`
+
+Now, we need to make sure that AWS Batch role has permissions to access the K8S cluster. For this, add a policy to the AWS Batch task role(1) that has `eks:*` permissions on your EKS cluster (TODO: narrow this down).
+
+You'll also need to add a mapping for that role to `aws-auth` ConfigMap in `kube-system` namespace. For more details, see [AWS docs](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html) (under "To add an IAM user or role to an Amazon EKS cluster"). In short, you'd need to add this to `mapRoles` section in the aws-auth ConfigMap:
+```
+     - rolearn: <batch tark role ARN>
+       username: cluster-admin
+       groups:
+         - system:masters
+```
+
+We also need to make sure that the code running in K8S can access S3. For this, add a policy to the EKS node role (2) to allow it to read and write Metaflow S3 buckets.
+
+## S3 Authentication
+Services deployed to Seldon will need to access Metaflow S3 bucket to download trained models. The exact configuration will depend on whether you're using GKE or AWS EKS to run your cluster.
+
+From the base template provided below, create your `s3_secret.yaml`.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-secret
+type: Opaque
+stringData:
+  RCLONE_CONFIG_S3_TYPE: s3
+  RCLONE_CONFIG_S3_PROVIDER: aws
+  RCLONE_CONFIG_S3_BUCKET_REGION: <region>
+  <...cloud-dependent s3 auth settings (see below)>
+```
+
+For GKE, to access S3 we'll need to add the following variables to use key/secret auth:
+```yaml
+  RCLONE_CONFIG_S3_ENV_AUTH: "false"
+  RCLONE_CONFIG_S3_ACCESS_KEY_ID: <key>
+  RCLONE_CONFIG_S3_SECRET_ACCESS_KEY: <secret>
+```
+
+For AWS EKS, we'll use the instance role assigned to the node, we'll only need to set one env variable:
+```yaml
+RCLONE_CONFIG_S3_ENV_AUTH: "true"
+```
+
+Finally, create the secret:
+
+```python
+!kubectl create -f s3_secret.yaml -n production
+```
 
 ## Iris Flow Summary
 
@@ -355,25 +422,6 @@ client.predict(np.array([[1, 2, 3, 4]]))
 
 We will now run our flow on AWS Batch and will launch Tempo artifacts onto a remote Kubernetes cluster. make sure you have setup the cluster and have the appropriate authentication files as outlined above.
 
-## Setup RBAC and Secret on Kubernetes Cluster
-
-
-```python
-!kubectl create ns production
-```
-
-
-```python
-!kubectl create -f k8s/tempo-pipeline-rbac.yaml -n production
-```
-
-Create a Secret from the `k8s/s3_secret.yaml.tmpl` file by adding your AWS Key that can read from S3 and saving as `k8s/s3_secret.yaml`
-
-
-```python
-!kubectl create -f k8s/s3_secret.yaml -n production
-```
-
 ## Run Metaflow on AWS Batch
 
 
@@ -674,7 +722,6 @@ Create a Secret from the `k8s/s3_secret.yaml.tmpl` file by adding your AWS Key t
 
 ## Make Predictions with Metaflow Tempo Artifact
 
-
 ```python
 from metaflow import Flow
 run = Flow('IrisFlow').latest_run
@@ -690,8 +737,6 @@ client = run.data.client_model
 import numpy as np
 client.predict(np.array([[1, 2, 3, 4]]))
 ```
-
-
 
 
     {'output0': array([[0.00847207, 0.03168793, 0.95984   ]], dtype=float32),

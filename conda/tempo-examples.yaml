@@ -2,8 +2,8 @@ name: tempo
 channels:
   - defaults
 dependencies:
-  - pip=21.0.1=py37h06a4308_0
-  - python=3.7.9=h7579374_0
+  - pip=21.0.1
+  - python=3.7.9
   - pip:
       - opencv-python-headless
       - conda-pack
