@@ -1,4 +1,4 @@
-# Metaflow with Tempo Example
+# End to End ML with Metaflow and Tempo
 
 We will train two models and deploy them with tempo within a Metaflow pipeline. To understand the core example see [here](https://tempo.readthedocs.io/en/latest/examples/multi-model/README.html)
 
@@ -13,12 +13,6 @@ We will train two models and deploy them with tempo within a Metaflow pipeline. 
 pip install metaflow
 ```
 
-### Setup AWS Metaflow Support
-
-Note at present this is required even for a local run as artifacts are stored on S3.
-
-[Install Metaflow with remote AWS support](https://docs.metaflow.org/metaflow-on-aws/metaflow-on-aws).
-
 ### Setup Conda-Forge Support
 
 The flow will use conda-forge so you need to add that channel to conda.
@@ -29,27 +23,63 @@ conda config --add channels conda-forge
 
 
 
-## Tempo Requirements
+## Iris Flow Summary
 
-Create a GKE or EKS cluster and install Seldon Core on it using [Ansible to install Seldon Core on a Kubernetes cluster](https://github.com/SeldonIO/ansible-k8s-collection).
 
-### Setup RBAC on Kubernetes Cluster
-
-Regardless of whether the K8S runs on GKE or EKS, we need to configure the namespace and RBAC first.
-
-```
-kubectl create ns production
+```python
+!python src/irisflow.py --environment=conda show
 ```
 
+## Run Flow locally to deploy to Docker
+
+To run the workflow with a local Docker deployment use the flag:
+
 ```
-kubectl create -f k8s/tempo-pipeline-rbac.yaml -n production
+--tempo-on-docker true
 ```
 
-## K8S Auth from Metaflow
 
-To deploy services to our Kubernetes cluster with Seldon Core installed, Metaflow steps that run on AWS Batch and use tempo will need to be able to access K8S API. This step will depend on whether you're using GKE or AWS EKS to run your cluster.
 
-### Option 1. K8S cluster runs on GKE
+```python
+!python src/irisflow.py --environment=conda run 
+```
+
+## Make Predictions with Metaflow Tempo Artifact
+
+
+```python
+from metaflow import Flow
+import numpy as np
+run = Flow('IrisFlow').latest_run
+client = run.data.client_model
+client.predict(np.array([[1, 2, 3, 4]]))
+```
+
+## Run Flow on AWS and Deploy to Remote Kubernetes
+
+We will now run our flow on AWS Batch and will launch Tempo artifacts onto a remote Kubernetes cluster. 
+
+### Setup AWS Metaflow Support
+
+Note at present this is required even for a local run as artifacts are stored on S3.
+
+[Install Metaflow with remote AWS support](https://docs.metaflow.org/metaflow-on-aws/metaflow-on-aws).
+
+### Seldon Requirements
+
+For deploying to a remote Kubernetes cluster with Seldon Core installed do the following steps:
+
+#### Install Seldon Core on your Kubernetes Cluster
+
+Create a GKE cluster and install Seldon Core on it using [Ansible to install Seldon Core on a Kubernetes cluster](https://github.com/SeldonIO/ansible-k8s-collection).
+
+
+### K8S Auth from Metaflow
+
+To deploy services to our Kubernetes cluster with Seldon Core installed, Metaflow steps that run on AWS Batch and use tempo will need to be able to access K8S API. This step will depend on whether you're using GKE or AWS EKS to run 
+your cluster.
+
+#### Option 1. K8S cluster runs on GKE
 
 We will need to create two files in the flow src folder:
 
@@ -61,7 +91,9 @@ gsa-key.json
 Follow the steps outlined in [GKE server authentication](https://cloud.google.com/kubernetes-engine/docs/how-to/api-server-authentication#environments-without-gcloud).
 
 
-### Option 2. K8S cluster runs on AWS EKS
+
+
+#### Option 2. K8S cluster runs on AWS EKS
 
 Make note of two AWS IAM role names, for example find them in the IAM console. The names depend on how you deployed Metaflow and EKS in the first place:
 
@@ -73,7 +105,7 @@ Now, we need to make sure that AWS Batch role has permissions to access the K8S 
 
 You'll also need to add a mapping for that role to `aws-auth` ConfigMap in `kube-system` namespace. For more details, see [AWS docs](https://docs.aws.amazon.com/eks/latest/userguide/add-user-role.html) (under "To add an IAM user or role to an Amazon EKS cluster"). In short, you'd need to add this to `mapRoles` section in the aws-auth ConfigMap:
 ```
-     - rolearn: <batch tark role ARN>
+     - rolearn: <batch task role ARN>
        username: cluster-admin
        groups:
          - system:masters
@@ -81,10 +113,10 @@ You'll also need to add a mapping for that role to `aws-auth` ConfigMap in `kube
 
 We also need to make sure that the code running in K8S can access S3. For this, add a policy to the EKS node role (2) to allow it to read and write Metaflow S3 buckets.
 
-## S3 Authentication
+### S3 Authentication
 Services deployed to Seldon will need to access Metaflow S3 bucket to download trained models. The exact configuration will depend on whether you're using GKE or AWS EKS to run your cluster.
 
-From the base template provided below, create your `s3_secret.yaml`.
+From the base templates provided below, create your `k8s/s3_secret.yaml`.
 
 ```yaml
 apiVersion: v1
@@ -111,316 +143,47 @@ For AWS EKS, we'll use the instance role assigned to the node, we'll only need t
 RCLONE_CONFIG_S3_ENV_AUTH: "true"
 ```
 
-Finally, create the secret:
+We provide two templates to use in the `k8s` folder:
+
+```
+s3_secret.yaml.tmpl.aws
+s3_secret.yaml.tmpl.gke
+```
+
+Use one to create the file `s3_secret.yaml` in the same folder
+
+
+## Setup RBAC and Secret on Kubernetes Cluster
+
+These steps assume you have authenticated to your cluster with kubectl configuration
+
 
 ```python
-!kubectl create -f s3_secret.yaml -n production
+!kubectl create ns production
 ```
 
-## Iris Flow Summary
-
-
-```python
-!python src/irisflow.py --environment=conda show
-```
-
-    [35m[1mMetaflow 2.3.2[0m[35m[22m executing [0m[31m[1mIrisFlow[0m[35m[22m[0m[35m[22m for [0m[31m[1muser:clive[0m[35m[22m[K[0m[35m[22m[0m
-    [22m
-    A Flow to train two Iris dataset models and combine them for inference with Tempo
-    
-    The flow performs the following steps:
-    
-    1) Load Iris Data
-    2) Train SKLearn LR Model
-    3) Train XGBoost LR Model
-    4) Create and deploy Tempo artifacts[K[0m[22m[0m
-    [22m
-    Step [0m[31m[1mstart[0m[22m[K[0m[22m[0m
-    [22m    Download Iris classification datatset[K[0m[22m[0m
-    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mtrain_sklearn[0m[22m, [0m[35m[22mtrain_xgboost[0m[22m[K[0m[22m[0m
-    [22m
-    Step [0m[31m[1mtrain_sklearn[0m[22m[K[0m[22m[0m
-    [22m    Train a SKLearn Logistic Regression Classifier on dataset and save model as artifact[K[0m[22m[0m
-    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mjoin[0m[22m[K[0m[22m[0m
-    [22m
-    Step [0m[31m[1mtrain_xgboost[0m[22m[K[0m[22m[0m
-    [22m    Train an XGBoost classifier on the dataset and save model as artifact[K[0m[22m[0m
-    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mjoin[0m[22m[K[0m[22m[0m
-    [22m
-    Step [0m[31m[1mjoin[0m[22m[K[0m[22m[0m
-    [22m    Merge two training runs.[K[0m[22m[0m
-    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mtempo[0m[22m[K[0m[22m[0m
-    [22m
-    Step [0m[31m[1mtempo[0m[22m[K[0m[22m[0m
-    [22m    Create Tempo artifacts locally and saved to S3 within the workflow bucket.
-        Then either deploy locally to Docker or deploy to a remote Kubernetes cluster based on the
-        --tempo-on-docker parameter[K[0m[22m[0m
-    [22m    [0m[35m[22m=>[0m[22m [0m[35m[22mend[0m[22m[K[0m[22m[0m
-    [22m
-    Step [0m[31m[1mend[0m[22m[K[0m[22m[0m
-    [22m    End flow.[K[0m[22m[0m
-    [22m[K[0m[22m[0m
-
-
-## Run Flow locally to deploy to Docker
-
-To run the workflow with a local Docker deployment use the flag:
-
-```
---tempo-on-docker true
-```
+    Error from server (AlreadyExists): namespaces "production" already exists
 
 
 
 ```python
-!python src/irisflow.py \
-    --environment=conda \
-    run --tempo-on-docker true
+!kubectl create -f k8s/tempo-pipeline-rbac.yaml -n production
 ```
 
-    [35m[1mMetaflow 2.3.2[0m[35m[22m executing [0m[31m[1mIrisFlow[0m[35m[22m[0m[35m[22m for [0m[31m[1muser:clive[0m[35m[22m[K[0m[35m[22m[0m
-    [35m[22mValidating your flow...[K[0m[35m[22m[0m
-    [32m[1m    The graph looks good![K[0m[32m[1m[0m
-    [35m[22mRunning pylint...[K[0m[35m[22m[0m
-    [32m[22m    Pylint not found, so extra checks are disabled.[K[0m[32m[22m[0m
-    [22mBootstrapping conda environment...(this could take a few minutes)[K[0m[22m[0m
-    [22mIncluding file src/conda.yaml of size 115B [K[0m[22m[0m
-    [22mFile persisted at s3://metaflow1-metaflows3bucket-dq2lr7x0v0nz/metaflow/data/IrisFlow/a94f1cff7702ed70807d16917bb282f51a28511e[K[0m[22m[0m
-    [22mIncluding file src/gsa-key.json of size 2KB [K[0m[22m[0m
-    [22mFile persisted at s3://metaflow1-metaflows3bucket-dq2lr7x0v0nz/metaflow/data/IrisFlow/6a24eaae697b14c2d8cdc2dcee1fce38b23b6ce0[K[0m[22m[0m
-    [22mIncluding file src/kubeconfig.yaml of size 2KB [K[0m[22m[0m
-    [22mFile persisted at s3://metaflow1-metaflows3bucket-dq2lr7x0v0nz/metaflow/data/IrisFlow/00e21f5423ea21f695831e970aa81a283ac25812[K[0m[22m[0m
-    [35m2021-08-09 16:26:11.721 [0m[1mWorkflow starting (run-id 33):[0m
-    [35m2021-08-09 16:26:13.511 [0m[32m[33/start/179 (pid 3789808)] [0m[1mTask is starting.[0m
-    [35m2021-08-09 16:26:17.912 [0m[32m[33/start/179 (pid 3789808)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-09 16:26:19.818 [0m[32m[33/train_sklearn/180 (pid 3790126)] [0m[1mTask is starting.[0m
-    [35m2021-08-09 16:26:21.229 [0m[32m[33/train_xgboost/181 (pid 3790258)] [0m[1mTask is starting.[0m
-    [35m2021-08-09 16:26:24.585 [0m[32m[33/train_sklearn/180 (pid 3790126)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-09 15:26:25.268 [0m[32m[33/train_xgboost/181 (pid 3790258)] [0m[22m[16:26:24] WARNING: ../src/learner.cc:1095: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective 'multi:softprob' was changed from 'merror' to 'mlogloss'. Explicitly set eval_metric if you'd like to restore the old behavior.[0m
-    [35m2021-08-09 16:26:26.338 [0m[32m[33/train_xgboost/181 (pid 3790258)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-09 16:26:28.276 [0m[32m[33/join/182 (pid 3790722)] [0m[1mTask is starting.[0m
-    [35m2021-08-09 16:26:34.579 [0m[32m[33/join/182 (pid 3790722)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-09 16:26:36.393 [0m[32m[33/tempo/183 (pid 3791157)] [0m[1mTask is starting.[0m
-    [35m2021-08-09 15:26:38.502 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mPip Test Install: mlops-tempo 0.4.0.dev5[0m
-    [35m2021-08-09 15:26:39.677 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mPip Test Install: conda_env 2.4.2[0m
-    [35m2021-08-09 15:26:41.546 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m/tmp/tmp01jqf_tm[0m
-    [35m2021-08-09 15:26:41.654 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m/tmp/tmpj_5jhnsy[0m
-    [35m2021-08-09 15:26:42.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mInsights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-09 15:26:42.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mInsights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-09 15:26:42.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mInsights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-09 15:26:42.839 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mInsights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-09 15:26:42.840 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mInsights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-09 15:26:44.193 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mWarning: you have pip-installed dependencies in your environment file, but you do not list pip itself as one of your conda dependencies.  Conda may not use the correct pip to install your packages, and they may end up in the wrong place.  Please add an explicit pip dependency.  I'm adding one for you, but still nagging you.[0m
-    [35m2021-08-09 15:27:17.601 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting package metadata (repodata.json): ...working... done[0m
-    [35m2021-08-09 15:27:20.076 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mSolving environment: ...working... done[0m
-    [35m2021-08-09 15:27:20.353 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:27:22.745 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mPreparing transaction: ...working... done[0m
-    [35m2021-08-09 15:27:24.529 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mVerifying transaction: ...working... done[0m
-    [35m2021-08-09 15:27:26.032 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mExecuting transaction: ...working... done[0m
-    [35m2021-08-09 15:27:50.635 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mRan pip subprocess with arguments:[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m['/home/clive/anaconda3/envs/tempo-e150ca0c-c19d-4611-96c4-37624926e8ab/bin/python', '-m', 'pip', 'install', '-U', '-r', '/tmp/condaenv.g01evd2o.requirements.txt'][0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mPip subprocess output:[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting mlops-tempo[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached mlops_tempo-0.3.0-py3-none-any.whl (74 kB)[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting mlserver==0.3.2[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached mlserver-0.3.2-py3-none-any.whl (46 kB)[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting fastapi[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached fastapi-0.68.0-py3-none-any.whl (52 kB)[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting protobuf[0m
-    [35m2021-08-09 15:27:50.636 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached protobuf-3.17.3-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl (1.0 MB)[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting orjson[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached orjson-3.6.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (233 kB)[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting numpy[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached numpy-1.21.1-cp37-cp37m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl (15.7 MB)[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting uvicorn[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached uvicorn-0.14.0-py3-none-any.whl (50 kB)[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting click[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached click-8.0.1-py3-none-any.whl (97 kB)[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting grpcio[0m
-    [35m2021-08-09 15:27:50.637 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached grpcio-1.39.0-cp37-cp37m-manylinux2014_x86_64.whl (4.3 MB)[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting docker[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached docker-5.0.0-py2.py3-none-any.whl (146 kB)[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting kubernetes[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached kubernetes-17.17.0-py3-none-any.whl (1.8 MB)[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting aiohttp[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached aiohttp-3.7.4.post0-cp37-cp37m-manylinux2014_x86_64.whl (1.3 MB)[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting attrs[0m
-    [35m2021-08-09 15:27:50.638 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached attrs-21.2.0-py2.py3-none-any.whl (53 kB)[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting requests[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached requests-2.26.0-py2.py3-none-any.whl (62 kB)[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting cloudpickle[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached cloudpickle-1.6.0-py3-none-any.whl (23 kB)[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting python-rclone[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached python_rclone-0.0.2-py3-none-any.whl (4.2 kB)[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting redis[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached redis-3.5.3-py2.py3-none-any.whl (72 kB)[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting packaging[0m
-    [35m2021-08-09 15:27:50.639 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached packaging-21.0-py3-none-any.whl (40 kB)[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting pydantic[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached pydantic-1.8.2-cp37-cp37m-manylinux2014_x86_64.whl (10.1 MB)[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting janus[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached janus-0.6.1-py3-none-any.whl (11 kB)[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting seldon-deploy-sdk[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached seldon_deploy_sdk-1.3.0-py3-none-any.whl (714 kB)[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting conda-pack[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached conda_pack-0.6.0-py2.py3-none-any.whl[0m
-    [35m2021-08-09 15:27:50.640 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting six>=1.5.2[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached six-1.16.0-py2.py3-none-any.whl (11 kB)[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting async-timeout<4.0,>=3.0[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached async_timeout-3.0.1-py3-none-any.whl (8.2 kB)[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting typing-extensions>=3.6.5[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached typing_extensions-3.10.0.0-py3-none-any.whl (26 kB)[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting yarl<2.0,>=1.0[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached yarl-1.6.3-cp37-cp37m-manylinux2014_x86_64.whl (294 kB)[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting multidict<7.0,>=4.5[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached multidict-5.1.0-cp37-cp37m-manylinux2014_x86_64.whl (142 kB)[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting chardet<5.0,>=2.0[0m
-    [35m2021-08-09 15:27:50.641 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached chardet-4.0.0-py2.py3-none-any.whl (178 kB)[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting idna>=2.0[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached idna-3.2-py3-none-any.whl (59 kB)[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting importlib-metadata[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached importlib_metadata-4.6.3-py3-none-any.whl (17 kB)[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mRequirement already satisfied: setuptools in /home/clive/anaconda3/envs/tempo-e150ca0c-c19d-4611-96c4-37624926e8ab/lib/python3.7/site-packages (from conda-pack->mlops-tempo->-r /tmp/condaenv.g01evd2o.requirements.txt (line 1)) (52.0.0.post20210125)[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting websocket-client>=0.32.0[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached websocket_client-1.1.1-py2.py3-none-any.whl (68 kB)[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting urllib3<1.27,>=1.21.1[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached urllib3-1.26.6-py2.py3-none-any.whl (138 kB)[0m
-    [35m2021-08-09 15:27:50.642 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mRequirement already satisfied: certifi>=2017.4.17 in /home/clive/anaconda3/envs/tempo-e150ca0c-c19d-4611-96c4-37624926e8ab/lib/python3.7/site-packages (from requests->mlops-tempo->-r /tmp/condaenv.g01evd2o.requirements.txt (line 1)) (2021.5.30)[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting charset-normalizer~=2.0.0[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached charset_normalizer-2.0.4-py3-none-any.whl (36 kB)[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting starlette==0.14.2[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached starlette-0.14.2-py3-none-any.whl (60 kB)[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting zipp>=0.5[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached zipp-3.5.0-py3-none-any.whl (5.7 kB)[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting google-auth>=1.0.1[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached google_auth-1.34.0-py2.py3-none-any.whl (152 kB)[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting python-dateutil>=2.5.3[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached python_dateutil-2.8.2-py2.py3-none-any.whl (247 kB)[0m
-    [35m2021-08-09 15:27:50.643 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting pyyaml>=3.12[0m
-    [35m2021-08-09 15:27:50.644 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached PyYAML-5.4.1-cp37-cp37m-manylinux1_x86_64.whl (636 kB)[0m
-    [35m2021-08-09 15:27:50.644 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting requests-oauthlib[0m
-    [35m2021-08-09 15:27:53.990 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached requests_oauthlib-1.3.0-py2.py3-none-any.whl (23 kB)[0m
-    [35m2021-08-09 15:27:53.990 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting cachetools<5.0,>=2.0.0[0m
-    [35m2021-08-09 15:27:53.991 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached cachetools-4.2.2-py3-none-any.whl (11 kB)[0m
-    [35m2021-08-09 15:27:53.991 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting pyasn1-modules>=0.2.1[0m
-    [35m2021-08-09 15:27:53.991 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached pyasn1_modules-0.2.8-py2.py3-none-any.whl (155 kB)[0m
-    [35m2021-08-09 15:27:53.991 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting rsa<5,>=3.1.4[0m
-    [35m2021-08-09 15:27:53.991 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached rsa-4.7.2-py3-none-any.whl (34 kB)[0m
-    [35m2021-08-09 15:27:53.999 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting pyasn1<0.5.0,>=0.4.6[0m
-    [35m2021-08-09 15:27:53.999 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached pyasn1-0.4.8-py2.py3-none-any.whl (77 kB)[0m
-    [35m2021-08-09 15:27:53.999 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting pyparsing>=2.0.2[0m
-    [35m2021-08-09 15:27:53.999 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached pyparsing-2.4.7-py2.py3-none-any.whl (67 kB)[0m
-    [35m2021-08-09 15:27:53.999 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting oauthlib>=3.0.0[0m
-    [35m2021-08-09 15:27:53.999 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached oauthlib-3.1.1-py2.py3-none-any.whl (146 kB)[0m
-    [35m2021-08-09 15:27:53.999 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting Authlib<=0.16.0[0m
-    [35m2021-08-09 15:27:54.000 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached Authlib-0.15.4-py2.py3-none-any.whl (203 kB)[0m
-    [35m2021-08-09 15:27:54.000 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting cryptography[0m
-    [35m2021-08-09 15:27:54.000 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached cryptography-3.4.7-cp36-abi3-manylinux2014_x86_64.whl (3.2 MB)[0m
-    [35m2021-08-09 15:27:54.000 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting cffi>=1.12[0m
-    [35m2021-08-09 15:27:54.000 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached cffi-1.14.6-cp37-cp37m-manylinux1_x86_64.whl (402 kB)[0m
-    [35m2021-08-09 15:27:54.000 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting pycparser[0m
-    [35m2021-08-09 15:27:54.000 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached pycparser-2.20-py2.py3-none-any.whl (112 kB)[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting asgiref>=3.3.4[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached asgiref-3.4.1-py3-none-any.whl (25 kB)[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting h11>=0.8[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mUsing cached h11-0.12.0-py3-none-any.whl (54 kB)[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mInstalling collected packages: zipp, typing-extensions, pycparser, urllib3, pyasn1, importlib-metadata, idna, charset-normalizer, cffi, starlette, six, rsa, requests, pydantic, pyasn1-modules, oauthlib, multidict, h11, cryptography, click, cachetools, asgiref, yarl, websocket-client, uvicorn, requests-oauthlib, pyyaml, python-dateutil, pyparsing, protobuf, orjson, numpy, grpcio, google-auth, fastapi, chardet, Authlib, attrs, async-timeout, seldon-deploy-sdk, redis, python-rclone, packaging, mlserver, kubernetes, janus, docker, conda-pack, cloudpickle, aiohttp, mlops-tempo[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mSuccessfully installed Authlib-0.15.4 aiohttp-3.7.4.post0 asgiref-3.4.1 async-timeout-3.0.1 attrs-21.2.0 cachetools-4.2.2 cffi-1.14.6 chardet-4.0.0 charset-normalizer-2.0.4 click-8.0.1 cloudpickle-1.6.0 conda-pack-0.6.0 cryptography-3.4.7 docker-5.0.0 fastapi-0.68.0 google-auth-1.34.0 grpcio-1.39.0 h11-0.12.0 idna-3.2 importlib-metadata-4.6.3 janus-0.6.1 kubernetes-17.17.0 mlops-tempo-0.3.0 mlserver-0.3.2 multidict-5.1.0 numpy-1.21.1 oauthlib-3.1.1 orjson-3.6.1 packaging-21.0 protobuf-3.17.3 pyasn1-0.4.8 pyasn1-modules-0.2.8 pycparser-2.20 pydantic-1.8.2 pyparsing-2.4.7 python-dateutil-2.8.2 python-rclone-0.0.2 pyyaml-5.4.1 redis-3.5.3 requests-2.26.0 requests-oauthlib-1.3.0 rsa-4.7.2 seldon-deploy-sdk-1.3.0 six-1.16.0 starlette-0.14.2 typing-extensions-3.10.0.0 urllib3-1.26.6 uvicorn-0.14.0 websocket-client-1.1.1 yarl-1.6.3 zipp-3.5.0[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:27:54.001 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m#[0m
-    [35m2021-08-09 15:27:54.007 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m# To activate this environment, use[0m
-    [35m2021-08-09 15:27:54.007 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m#[0m
-    [35m2021-08-09 15:27:54.008 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m#     $ conda activate tempo-e150ca0c-c19d-4611-96c4-37624926e8ab[0m
-    [35m2021-08-09 15:27:54.008 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m#[0m
-    [35m2021-08-09 15:27:54.008 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m# To deactivate an active environment, use[0m
-    [35m2021-08-09 15:27:54.008 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m#[0m
-    [35m2021-08-09 15:27:54.008 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m#     $ conda deactivate[0m
-    [35m2021-08-09 15:27:54.008 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:27:54.009 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mCollecting packages...[0m
-    [35m2021-08-09 15:27:55.794 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mPacking environment at '/home/clive/anaconda3/envs/tempo-e150ca0c-c19d-4611-96c4-37624926e8ab' to '/tmp/tmp_xpj6i75/environment.tar.gz'[0m
-    [########################################] | 100% Completed | 28.1s[0m[22m[                                        ] | 0% Completed |  0.0s
-    [35m2021-08-09 15:28:24.238 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.239 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m==> WARNING: A newer version of conda exists. <==[0m
-    [35m2021-08-09 15:28:24.239 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mcurrent version: 4.7.12[0m
-    [35m2021-08-09 15:28:24.240 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mlatest version: 4.10.3[0m
-    [35m2021-08-09 15:28:24.240 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.240 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mPlease update conda by running[0m
-    [35m2021-08-09 15:28:24.240 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.242 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m$ conda update -n base -c defaults conda[0m
-    [35m2021-08-09 15:28:24.242 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.243 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.243 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.404 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m## Package Plan ##[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22menvironment location: /home/clive/anaconda3/envs/tempo-e150ca0c-c19d-4611-96c4-37624926e8ab[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mThe following packages will be REMOVED:[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m_libgcc_mutex-0.1-main[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mca-certificates-2021.7.5-h06a4308_1[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mcertifi-2021.5.30-py37h06a4308_0[0m
-    [35m2021-08-09 15:28:24.405 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mld_impl_linux-64-2.35.1-h7274673_9[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mlibffi-3.3-he6710b0_2[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mlibgcc-ng-9.1.0-hdf63c60_0[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mlibstdcxx-ng-9.1.0-hdf63c60_0[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mncurses-6.2-he6710b0_1[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mopenssl-1.1.1k-h27cfd23_0[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mpip-21.2.2-py37h06a4308_0[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mpython-3.7.9-h7579374_0[0m
-    [35m2021-08-09 15:28:24.406 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mreadline-8.1-h27cfd23_0[0m
-    [35m2021-08-09 15:28:24.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22msetuptools-52.0.0-py37h06a4308_0[0m
-    [35m2021-08-09 15:28:24.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22msqlite-3.36.0-hc218d9a_0[0m
-    [35m2021-08-09 15:28:24.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mtk-8.6.10-hbc83047_0[0m
-    [35m2021-08-09 15:28:24.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mwheel-0.36.2-pyhd3eb1b0_0[0m
-    [35m2021-08-09 15:28:24.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mxz-5.2.5-h7b6447c_0[0m
-    [35m2021-08-09 15:28:24.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mzlib-1.2.11-h7b6447c_3[0m
-    [35m2021-08-09 15:28:24.407 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.408 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:24.451 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mPreparing transaction: ...working... done[0m
-    [35m2021-08-09 15:28:24.593 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mVerifying transaction: ...working... done[0m
-    [35m2021-08-09 15:28:24.756 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mExecuting transaction: ...working... done[0m
-    [35m2021-08-09 15:28:59.804 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mRemove all packages in environment /home/clive/anaconda3/envs/tempo-e150ca0c-c19d-4611-96c4-37624926e8ab:[0m
-    [35m2021-08-09 15:28:59.804 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m[0m
-    [35m2021-08-09 15:28:59.804 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22mInsights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-09 15:29:09.922 [0m[32m[33/tempo/183 (pid 3791157)] [0m[22m{'output0': array([[0.00847207, 0.03168793, 0.95984   ]], dtype=float32), 'output1': 'xgboost prediction'}[0m
-    [35m2021-08-09 16:29:12.428 [0m[32m[33/tempo/183 (pid 3791157)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-09 16:29:14.614 [0m[32m[33/end/184 (pid 3799779)] [0m[1mTask is starting.[0m
-    [35m2021-08-09 16:29:18.447 [0m[32m[33/end/184 (pid 3799779)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-09 16:29:18.907 [0m[1mDone![0m
+    serviceaccount/tempo-pipeline created
+    role.rbac.authorization.k8s.io/tempo-pipeline created
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding created
 
 
-## Make Predictions with Metaflow Tempo Artifact
+Create a Secret from the `k8s/s3_secret.yaml.tmpl` file by adding your AWS Key that can read from S3 and saving as `k8s/s3_secret.yaml`
 
 
 ```python
-from metaflow import Flow
-run = Flow('IrisFlow').latest_run
+!kubectl create -f k8s/s3_secret.yaml -n production
 ```
 
+    secret/s3-secret created
 
-```python
-client = run.data.client_model
-```
-
-
-```python
-import numpy as np
-client.predict(np.array([[1, 2, 3, 4]]))
-```
-
-
-
-
-    {'output0': array([[0.00847207, 0.03168793, 0.95984   ]], dtype=float32),
-     'output1': 'xgboost prediction'}
-
-
-
-## Run Flow on AWS and Deploy to Remote Kubernetes
-
-We will now run our flow on AWS Batch and will launch Tempo artifacts onto a remote Kubernetes cluster. make sure you have setup the cluster and have the appropriate authentication files as outlined above.
 
 ## Run Metaflow on AWS Batch
 
@@ -432,311 +195,18 @@ We will now run our flow on AWS Batch and will launch Tempo artifacts onto a rem
     run
 ```
 
-    [35m[1mMetaflow 2.3.2[0m[35m[22m executing [0m[31m[1mIrisFlow[0m[35m[22m[0m[35m[22m for [0m[31m[1muser:clive[0m[35m[22m[K[0m[35m[22m[0m
-    [35m[22mValidating your flow...[K[0m[35m[22m[0m
-    [32m[1m    The graph looks good![K[0m[32m[1m[0m
-    [35m[22mRunning pylint...[K[0m[35m[22m[0m
-    [32m[22m    Pylint not found, so extra checks are disabled.[K[0m[32m[22m[0m
-    [22mBootstrapping conda environment...(this could take a few minutes)[K[0m[22m[0m
-    [22mIncluding file src/conda.yaml of size 115B [K[0m[22m[0m
-    [22mFile persisted at s3://metaflow1-metaflows3bucket-dq2lr7x0v0nz/metaflow/data/IrisFlow/a94f1cff7702ed70807d16917bb282f51a28511e[K[0m[22m[0m
-    [22mIncluding file src/gsa-key.json of size 2KB [K[0m[22m[0m
-    [22mFile persisted at s3://metaflow1-metaflows3bucket-dq2lr7x0v0nz/metaflow/data/IrisFlow/6a24eaae697b14c2d8cdc2dcee1fce38b23b6ce0[K[0m[22m[0m
-    [22mIncluding file src/kubeconfig.yaml of size 2KB [K[0m[22m[0m
-    [22mFile persisted at s3://metaflow1-metaflows3bucket-dq2lr7x0v0nz/metaflow/data/IrisFlow/00e21f5423ea21f695831e970aa81a283ac25812[K[0m[22m[0m
-    [35m2021-08-08 15:33:21.881 [0m[1mWorkflow starting (run-id 32):[0m
-    [35m2021-08-08 15:33:23.615 [0m[32m[32/start/172 (pid 2469999)] [0m[1mTask is starting.[0m
-    [35m2021-08-08 14:33:24.695 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Task is starting (status SUBMITTED)...[0m
-    [35m2021-08-08 14:33:30.189 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Task is starting (status RUNNABLE)...[0m
-    [35m2021-08-08 14:33:35.635 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Task is starting (status STARTING)...[0m
-    [35m2021-08-08 14:34:02.032 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Task is starting (status RUNNING)...[0m
-    [35m2021-08-08 14:34:01.085 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Setting up task environment.[0m
-    [35m2021-08-08 14:34:07.172 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Downloading code package...[0m
-    [35m2021-08-08 14:34:07.679 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Code package downloaded.[0m
-    [35m2021-08-08 14:34:07.691 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Task is starting.[0m
-    [35m2021-08-08 14:34:08.057 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Bootstrapping environment...[0m
-    [35m2021-08-08 14:34:32.229 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Environment bootstrapped.[0m
-    [35m2021-08-08 14:34:42.634 [0m[32m[32/start/172 (pid 2469999)] [0m[22m[aa141922-797f-4e1e-8216-49b77312a969] Task finished with exit code 0.[0m
-    [35m2021-08-08 15:34:43.571 [0m[32m[32/start/172 (pid 2469999)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-08 15:34:45.443 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[1mTask is starting.[0m
-    [35m2021-08-08 15:34:46.764 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[1mTask is starting.[0m
-    [35m2021-08-08 14:34:46.764 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Task is starting (status SUBMITTED)...[0m
-    [35m2021-08-08 14:34:47.885 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Task is starting (status SUBMITTED)...[0m
-    [35m2021-08-08 14:34:48.706 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Task is starting (status RUNNABLE)...[0m
-    [35m2021-08-08 14:34:48.983 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Task is starting (status RUNNABLE)...[0m
-    [35m2021-08-08 14:34:49.792 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Task is starting (status STARTING)...[0m
-    [35m2021-08-08 14:34:50.067 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Task is starting (status STARTING)...[0m
-    [35m2021-08-08 14:34:53.343 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Task is starting (status RUNNING)...[0m
-    [35m2021-08-08 14:34:54.142 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Task is starting (status RUNNING)...[0m
-    [35m2021-08-08 14:34:52.064 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Setting up task environment.[0m
-    [35m2021-08-08 14:34:58.234 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Downloading code package...[0m
-    [35m2021-08-08 14:34:52.077 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Setting up task environment.[0m
-    [35m2021-08-08 14:34:58.207 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Downloading code package...[0m
-    [35m2021-08-08 14:34:58.726 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Code package downloaded.[0m
-    [35m2021-08-08 14:34:58.738 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Task is starting.[0m
-    [35m2021-08-08 14:34:59.120 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Bootstrapping environment...[0m
-    [35m2021-08-08 14:35:26.002 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Environment bootstrapped.[0m
-    [35m2021-08-08 14:35:27.470 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] [14:35:27] WARNING: ../src/learner.cc:1095: Starting in XGBoost 1.3.0, the default evaluation metric used with the objective 'multi:softprob' was changed from 'merror' to 'mlogloss'. Explicitly set eval_metric if you'd like to restore the old behavior.[0m
-    [35m2021-08-08 14:35:36.228 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[22m[13dfaaa8-27bb-4f00-a2e3-7deb4f8ad038] Task finished with exit code 0.[0m
-    [35m2021-08-08 15:35:37.077 [0m[32m[32/train_xgboost/174 (pid 2470544)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-08 14:34:58.762 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Code package downloaded.[0m
-    [35m2021-08-08 14:34:58.777 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Task is starting.[0m
-    [35m2021-08-08 14:34:59.242 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Bootstrapping environment...[0m
-    [35m2021-08-08 14:35:25.772 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Environment bootstrapped.[0m
-    [35m2021-08-08 14:35:37.628 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[22m[0c0c0dcf-6e75-4518-ac39-69b8acdb9c4f] Task finished with exit code 0.[0m
-    [35m2021-08-08 15:35:38.143 [0m[32m[32/train_sklearn/173 (pid 2470525)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-08 15:35:39.209 [0m[32m[32/join/175 (pid 2470870)] [0m[1mTask is starting.[0m
-    [35m2021-08-08 14:35:40.355 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Task is starting (status SUBMITTED)...[0m
-    [35m2021-08-08 14:35:42.535 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Task is starting (status RUNNABLE)...[0m
-    [35m2021-08-08 14:35:43.627 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Task is starting (status STARTING)...[0m
-    [35m2021-08-08 14:35:46.905 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Task is starting (status RUNNING)...[0m
-    [35m2021-08-08 14:35:46.039 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Setting up task environment.[0m
-    [35m2021-08-08 14:35:52.108 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Downloading code package...[0m
-    [35m2021-08-08 14:35:52.612 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Code package downloaded.[0m
-    [35m2021-08-08 14:35:52.622 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Task is starting.[0m
-    [35m2021-08-08 14:35:52.987 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Bootstrapping environment...[0m
-    [35m2021-08-08 14:36:09.321 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Environment bootstrapped.[0m
-    [35m2021-08-08 14:36:18.563 [0m[32m[32/join/175 (pid 2470870)] [0m[22m[36331d73-c958-4aa7-92a9-c0f3b6258d47] Task finished with exit code 0.[0m
-    [35m2021-08-08 15:36:19.404 [0m[32m[32/join/175 (pid 2470870)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-08 15:36:21.203 [0m[32m[32/tempo/176 (pid 2471152)] [0m[1mTask is starting.[0m
-    [35m2021-08-08 14:36:22.364 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Task is starting (status SUBMITTED)...[0m
-    [35m2021-08-08 14:36:25.652 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Task is starting (status RUNNABLE)...[0m
-    [35m2021-08-08 14:36:31.100 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Task is starting (status STARTING)...[0m
-    [35m2021-08-08 14:36:34.413 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Task is starting (status RUNNING)...[0m
-    [35m2021-08-08 14:36:33.061 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Setting up task environment.[0m
-    [35m2021-08-08 14:36:39.204 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Downloading code package...[0m
-    [35m2021-08-08 14:36:39.709 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Code package downloaded.[0m
-    [35m2021-08-08 14:36:39.721 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Task is starting.[0m
-    [35m2021-08-08 14:36:40.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Bootstrapping environment...[0m
-    [35m2021-08-08 14:36:59.191 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Environment bootstrapped.[0m
-    [35m2021-08-08 14:36:59.845 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Pip Test Install: mlops-tempo 0.4.0.dev5[0m
-    [35m2021-08-08 14:37:19.297 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Pip Test Install: conda_env 2.4.2[0m
-    [35m2021-08-08 14:37:18.814 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv[0m
-    [35m2021-08-08 14:37:21.299 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] /tmp/tmpr4v9ouza[0m
-    [35m2021-08-08 14:37:21.337 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] /tmp/tmppelyoow0[0m
-    [35m2021-08-08 14:37:20.626 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv[0m
-    [35m2021-08-08 14:37:22.166 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Warning: you have pip-installed dependencies in your environment file, but you do not list pip itself as one of your conda dependencies.  Conda may not use the correct pip to install your packages, and they may end up in the wrong place.  Please add an explicit pip dependency.  I'm adding one for you, but still nagging you.[0m
-    [35m2021-08-08 14:37:21.564 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Insights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-08 14:37:21.565 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Insights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-08 14:37:21.565 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Insights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-08 14:37:21.692 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Insights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-08 14:37:21.692 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Insights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-08 14:37:26.003 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting package metadata (repodata.json): ...working... done[0m
-    [35m2021-08-08 14:37:26.113 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Solving environment: ...working... done[0m
-    [35m2021-08-08 14:37:26.243 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:26.243 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Downloading and Extracting Packages[0m
-    wheel-0.36.2         | 33 KB     | ########## | 100%[0m 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] 
-    pip-21.2.2           | 1.8 MB    | ########## | 100%[0m 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] 
-    _libgcc_mutex-0.1    | 3 KB      | ########## | 100%[0m 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] 
-    setuptools-52.0.0    | 710 KB    | ########## | 100%[0m 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] 
-    [35m2021-08-08 14:37:26.213 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:26.213 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:26.213 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] ==> WARNING: A newer version of conda exists. <==[0m
-    [35m2021-08-08 14:37:26.213 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   current version: 4.7.12[0m
-    [35m2021-08-08 14:37:26.213 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   latest version: 4.10.3[0m
-    [35m2021-08-08 14:37:26.214 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:26.214 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Please update conda by running[0m
-    [35m2021-08-08 14:37:26.214 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:26.214 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]     $ conda update -n base -c defaults conda[0m
-    [35m2021-08-08 14:37:26.214 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:26.214 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    python-3.7.9         | 45.3 MB   | ########## | 100%[0m 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] 
-    [35m2021-08-08 14:37:27.713 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Preparing transaction: ...working... done[0m
-    [35m2021-08-08 14:37:28.566 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Verifying transaction: ...working... done[0m
-    [35m2021-08-08 14:37:36.195 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Executing transaction: ...working... done[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Ran pip subprocess with arguments:[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] ['/opt/conda/envs/tempo-3b5a29db-9160-4897-89c8-3e5a250f8186/bin/python', '-m', 'pip', 'install', '-U', '-r', '/tmp/condaenv.idvat6xa.requirements.txt'][0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Pip subprocess output:[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting mlops-tempo[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading mlops_tempo-0.3.0-py3-none-any.whl (74 kB)[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting mlserver==0.3.2[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading mlserver-0.3.2-py3-none-any.whl (46 kB)[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting numpy[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached numpy-1.21.1-cp37-cp37m-manylinux_2_12_x86_64.manylinux2010_x86_64.whl (15.7 MB)[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting fastapi[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached fastapi-0.68.0-py3-none-any.whl (52 kB)[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting protobuf[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached protobuf-3.17.3-cp37-cp37m-manylinux_2_5_x86_64.manylinux1_x86_64.whl (1.0 MB)[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting grpcio[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached grpcio-1.39.0-cp37-cp37m-manylinux2014_x86_64.whl (4.3 MB)[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting uvicorn[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached uvicorn-0.14.0-py3-none-any.whl (50 kB)[0m
-    [35m2021-08-08 14:37:51.091 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting click[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached click-8.0.1-py3-none-any.whl (97 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting orjson[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached orjson-3.6.1-cp37-cp37m-manylinux_2_24_x86_64.whl (233 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting attrs[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached attrs-21.2.0-py2.py3-none-any.whl (53 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting pydantic[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached pydantic-1.8.2-cp37-cp37m-manylinux2014_x86_64.whl (10.1 MB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting packaging[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached packaging-21.0-py3-none-any.whl (40 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting seldon-deploy-sdk[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached seldon_deploy_sdk-1.3.0-py3-none-any.whl (714 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting redis[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached redis-3.5.3-py2.py3-none-any.whl (72 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting cloudpickle[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached cloudpickle-1.6.0-py3-none-any.whl (23 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting python-rclone[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached python_rclone-0.0.2-py3-none-any.whl (4.2 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting janus[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached janus-0.6.1-py3-none-any.whl (11 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting conda-pack[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached conda_pack-0.6.0-py2.py3-none-any.whl[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting kubernetes[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached kubernetes-17.17.0-py3-none-any.whl (1.8 MB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting requests[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading requests-2.26.0-py2.py3-none-any.whl (62 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting aiohttp[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached aiohttp-3.7.4.post0-cp37-cp37m-manylinux2014_x86_64.whl (1.3 MB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting docker[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached docker-5.0.0-py2.py3-none-any.whl (146 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting six>=1.5.2[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading six-1.16.0-py2.py3-none-any.whl (11 kB)[0m
-    [35m2021-08-08 14:37:51.092 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting multidict<7.0,>=4.5[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached multidict-5.1.0-cp37-cp37m-manylinux2014_x86_64.whl (142 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting yarl<2.0,>=1.0[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached yarl-1.6.3-cp37-cp37m-manylinux2014_x86_64.whl (294 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting chardet<5.0,>=2.0[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading chardet-4.0.0-py2.py3-none-any.whl (178 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting typing-extensions>=3.6.5[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached typing_extensions-3.10.0.0-py3-none-any.whl (26 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting async-timeout<4.0,>=3.0[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached async_timeout-3.0.1-py3-none-any.whl (8.2 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting idna>=2.0[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading idna-3.2-py3-none-any.whl (59 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting importlib-metadata[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached importlib_metadata-4.6.3-py3-none-any.whl (17 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Requirement already satisfied: setuptools in /opt/conda/envs/tempo-3b5a29db-9160-4897-89c8-3e5a250f8186/lib/python3.7/site-packages (from conda-pack->mlops-tempo->-r /tmp/condaenv.idvat6xa.requirements.txt (line 1)) (52.0.0.post20210125)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting websocket-client>=0.32.0[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached websocket_client-1.1.1-py2.py3-none-any.whl (68 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Requirement already satisfied: certifi>=2017.4.17 in /opt/conda/envs/tempo-3b5a29db-9160-4897-89c8-3e5a250f8186/lib/python3.7/site-packages (from requests->mlops-tempo->-r /tmp/condaenv.idvat6xa.requirements.txt (line 1)) (2021.5.30)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting charset-normalizer~=2.0.0[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading charset_normalizer-2.0.4-py3-none-any.whl (36 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting urllib3<1.27,>=1.21.1[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading urllib3-1.26.6-py2.py3-none-any.whl (138 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting starlette==0.14.2[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached starlette-0.14.2-py3-none-any.whl (60 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting zipp>=0.5[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached zipp-3.5.0-py3-none-any.whl (5.7 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting requests-oauthlib[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached requests_oauthlib-1.3.0-py2.py3-none-any.whl (23 kB)[0m
-    [35m2021-08-08 14:37:51.093 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting google-auth>=1.0.1[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached google_auth-1.34.0-py2.py3-none-any.whl (152 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting python-dateutil>=2.5.3[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached python_dateutil-2.8.2-py2.py3-none-any.whl (247 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting pyyaml>=3.12[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached PyYAML-5.4.1-cp37-cp37m-manylinux1_x86_64.whl (636 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting cachetools<5.0,>=2.0.0[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached cachetools-4.2.2-py3-none-any.whl (11 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting pyasn1-modules>=0.2.1[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached pyasn1_modules-0.2.8-py2.py3-none-any.whl (155 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting rsa<5,>=3.1.4[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached rsa-4.7.2-py3-none-any.whl (34 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting pyasn1<0.5.0,>=0.4.6[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached pyasn1-0.4.8-py2.py3-none-any.whl (77 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting pyparsing>=2.0.2[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached pyparsing-2.4.7-py2.py3-none-any.whl (67 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting oauthlib>=3.0.0[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached oauthlib-3.1.1-py2.py3-none-any.whl (146 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting Authlib<=0.16.0[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached Authlib-0.15.4-py2.py3-none-any.whl (203 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting cryptography[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading cryptography-3.4.7-cp36-abi3-manylinux2014_x86_64.whl (3.2 MB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting cffi>=1.12[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading cffi-1.14.6-cp37-cp37m-manylinux1_x86_64.whl (402 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting pycparser[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Downloading pycparser-2.20-py2.py3-none-any.whl (112 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting h11>=0.8[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached h11-0.12.0-py3-none-any.whl (54 kB)[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting asgiref>=3.3.4[0m
-    [35m2021-08-08 14:37:51.094 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   Using cached asgiref-3.4.1-py3-none-any.whl (25 kB)[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Installing collected packages: zipp, typing-extensions, pycparser, urllib3, pyasn1, importlib-metadata, idna, charset-normalizer, cffi, starlette, six, rsa, requests, pydantic, pyasn1-modules, oauthlib, multidict, h11, cryptography, click, cachetools, asgiref, yarl, websocket-client, uvicorn, requests-oauthlib, pyyaml, python-dateutil, pyparsing, protobuf, orjson, numpy, grpcio, google-auth, fastapi, chardet, Authlib, attrs, async-timeout, seldon-deploy-sdk, redis, python-rclone, packaging, mlserver, kubernetes, janus, docker, conda-pack, cloudpickle, aiohttp, mlops-tempo[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Successfully installed Authlib-0.15.4 aiohttp-3.7.4.post0 asgiref-3.4.1 async-timeout-3.0.1 attrs-21.2.0 cachetools-4.2.2 cffi-1.14.6 chardet-4.0.0 charset-normalizer-2.0.4 click-8.0.1 cloudpickle-1.6.0 conda-pack-0.6.0 cryptography-3.4.7 docker-5.0.0 fastapi-0.68.0 google-auth-1.34.0 grpcio-1.39.0 h11-0.12.0 idna-3.2 importlib-metadata-4.6.3 janus-0.6.1 kubernetes-17.17.0 mlops-tempo-0.3.0 mlserver-0.3.2 multidict-5.1.0 numpy-1.21.1 oauthlib-3.1.1 orjson-3.6.1 packaging-21.0 protobuf-3.17.3 pyasn1-0.4.8 pyasn1-modules-0.2.8 pycparser-2.20 pydantic-1.8.2 pyparsing-2.4.7 python-dateutil-2.8.2 python-rclone-0.0.2 pyyaml-5.4.1 redis-3.5.3 requests-2.26.0 requests-oauthlib-1.3.0 rsa-4.7.2 seldon-deploy-sdk-1.3.0 six-1.16.0 starlette-0.14.2 typing-extensions-3.10.0.0 urllib3-1.26.6 uvicorn-0.14.0 websocket-client-1.1.1 yarl-1.6.3 zipp-3.5.0[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] #[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] # To activate this environment, use[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] #[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] #     $ conda activate tempo-3b5a29db-9160-4897-89c8-3e5a250f8186[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] #[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] # To deactivate an active environment, use[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] #[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] #     $ conda deactivate[0m
-    [35m2021-08-08 14:37:51.095 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:37:51.444 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Collecting packages...[0m
-    [35m2021-08-08 14:37:52.022 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Packing environment at '/opt/conda/envs/tempo-3b5a29db-9160-4897-89c8-3e5a250f8186' to '/tmp/tmpu0omqa66/environment.tar.gz'[0m
-    [########################################] | 100% Completed | 10.9s[0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] 
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] ## Package Plan ##[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   environment location: /opt/conda/envs/tempo-3b5a29db-9160-4897-89c8-3e5a250f8186[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] The following packages will be REMOVED:[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   _libgcc_mutex-0.1-main[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   ca-certificates-2021.7.5-h06a4308_1[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   certifi-2021.5.30-py37h06a4308_0[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   ld_impl_linux-64-2.35.1-h7274673_9[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   libffi-3.3-he6710b0_2[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   libgcc-ng-9.1.0-hdf63c60_0[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   libstdcxx-ng-9.1.0-hdf63c60_0[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   ncurses-6.2-he6710b0_1[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   openssl-1.1.1k-h27cfd23_0[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   pip-21.2.2-py37h06a4308_0[0m
-    [35m2021-08-08 14:38:03.372 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   python-3.7.9-h7579374_0[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   readline-8.1-h27cfd23_0[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   setuptools-52.0.0-py37h06a4308_0[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   sqlite-3.36.0-hc218d9a_0[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   tk-8.6.10-hbc83047_0[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   wheel-0.36.2-pyhd3eb1b0_0[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   xz-5.2.5-h7b6447c_0[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb]   zlib-1.2.11-h7b6447c_3[0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.373 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.407 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Preparing transaction: ...working... done[0m
-    [35m2021-08-08 14:38:03.504 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Verifying transaction: ...working... done[0m
-    [35m2021-08-08 14:38:03.699 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Executing transaction: ...working... done[0m
-    [35m2021-08-08 14:38:03.269 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:03.270 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Remove all packages in environment /opt/conda/envs/tempo-3b5a29db-9160-4897-89c8-3e5a250f8186:[0m
-    [35m2021-08-08 14:38:03.270 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb][0m
-    [35m2021-08-08 14:38:08.608 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Insights Manager not initialised as empty URL provided.[0m
-    [35m2021-08-08 14:38:18.854 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] {'output0': array([[0.00847207, 0.03168793, 0.95984   ]], dtype=float32), 'output1': 'xgboost prediction'}[0m
-    [35m2021-08-08 14:38:23.019 [0m[32m[32/tempo/176 (pid 2471152)] [0m[22m[71cbd837-9cf1-43a8-bdb9-e2c898f4f3eb] Task finished with exit code 0.[0m
-    [35m2021-08-08 15:38:23.844 [0m[32m[32/tempo/176 (pid 2471152)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-08 15:38:24.892 [0m[32m[32/end/177 (pid 2471980)] [0m[1mTask is starting.[0m
-    [35m2021-08-08 14:38:25.925 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Task is starting (status SUBMITTED)...[0m
-    [35m2021-08-08 14:38:28.110 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Task is starting (status RUNNABLE)...[0m
-    [35m2021-08-08 14:38:31.374 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Task is starting (status STARTING)...[0m
-    [35m2021-08-08 14:38:34.664 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Task is starting (status RUNNING)...[0m
-    [35m2021-08-08 14:38:32.954 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Setting up task environment.[0m
-    [35m2021-08-08 14:38:39.092 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Downloading code package...[0m
-    [35m2021-08-08 14:38:39.591 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Code package downloaded.[0m
-    [35m2021-08-08 14:38:39.602 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Task is starting.[0m
-    [35m2021-08-08 14:38:39.964 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Bootstrapping environment...[0m
-    [35m2021-08-08 14:38:56.230 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Environment bootstrapped.[0m
-    [35m2021-08-08 14:39:04.503 [0m[32m[32/end/177 (pid 2471980)] [0m[22m[d6392d28-0aec-416f-ac0e-670e0ef63c0b] Task finished with exit code 0.[0m
-    [35m2021-08-08 15:39:05.339 [0m[32m[32/end/177 (pid 2471980)] [0m[1mTask finished successfully.[0m
-    [35m2021-08-08 15:39:05.789 [0m[1mDone![0m
-
-
 ## Make Predictions with Metaflow Tempo Artifact
+
 
 ```python
 from metaflow import Flow
 run = Flow('IrisFlow').latest_run
-```
-
-
-```python
 client = run.data.client_model
-```
-
-
-```python
 import numpy as np
 client.predict(np.array([[1, 2, 3, 4]]))
 ```
+
+
 
 
     {'output0': array([[0.00847207, 0.03168793, 0.95984   ]], dtype=float32),

@@ -32,7 +32,6 @@ class IrisFlow(FlowSpec):
     gsa_key = IncludeFile(
         "gsa_key", help="The path to google service account json", default=script_path("gsa-key.json")
     )
-    tempo_on_docker = Parameter("tempo-on-docker", help="Whether to deploy Tempo artifacts to Docker", default=False)
     k8s_provider = Parameter(
         "k8s_provider", help="kubernetes provider. Needed for non local run to deploy", default="gke"
     )
@@ -112,16 +111,20 @@ class IrisFlow(FlowSpec):
         classifier_url = create_s3_folder(self, PIPELINE_FOLDER_NAME)
         sklearn_url = create_s3_folder(self, SKLEARN_FOLDER_NAME)
         xgboost_url = create_s3_folder(self, XGBOOST_FOLDER_NAME)
+
         classifier, sklearn_model, xgboost_model = get_tempo_artifacts(
             local_sklearn_path, local_xgb_path, local_pipeline_path, sklearn_url, xgboost_url, classifier_url
         )
         # Create pipeline artifacts
         save_pipeline_with_conda(classifier, local_pipeline_path, self.conda_env)
-        # Upload artifacts to S3
-        upload_s3_folder(self, PIPELINE_FOLDER_NAME, local_pipeline_path)
-        upload_s3_folder(self, SKLEARN_FOLDER_NAME, local_sklearn_path)
-        upload_s3_folder(self, XGBOOST_FOLDER_NAME, local_xgb_path)
-        return classifier
+        if classifier_url: # Check running with S3 access
+            # Upload artifacts to S3
+            upload_s3_folder(self, PIPELINE_FOLDER_NAME, local_pipeline_path)
+            upload_s3_folder(self, SKLEARN_FOLDER_NAME, local_sklearn_path)
+            upload_s3_folder(self, XGBOOST_FOLDER_NAME, local_xgb_path)
+            return classifier, True
+        else:
+            return classifier, False
 
     def deploy_tempo_local(self, classifier):
         import time
@@ -162,7 +165,7 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "git+https://github.com/oavdeev/tempo-1.git@f307c82938527763cdbec0959e951b9fabade59a", "conda_env": "2.4.2"}, test_index=True)
+    @pip(libraries={"mlops-tempo": "0.4.0.dev7", "conda_env": "2.4.2"}, test_index=True)
     @step
     def tempo(self):
         """
@@ -170,12 +173,12 @@ class IrisFlow(FlowSpec):
         Then either deploy locally to Docker or deploy to a remote Kubernetes cluster based on the
         --tempo-on-docker parameter
         """
-        classifier = self.create_tempo_artifacts()
+        classifier, remote = self.create_tempo_artifacts()
 
-        if self.tempo_on_docker:
-            self.deploy_tempo_local(classifier)
-        else:
+        if remote:
             self.deploy_tempo_remote(classifier)
+        else:
+            self.deploy_tempo_local(classifier)
 
         self.next(self.end)
 

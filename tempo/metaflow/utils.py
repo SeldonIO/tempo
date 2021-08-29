@@ -128,9 +128,11 @@ def create_s3_folder(flow_spec: FlowSpec, folder_name: str) -> str:
     import os
 
     from metaflow import S3
-
-    with S3(run=flow_spec) as s3:
-        return os.path.split(s3.put(folder_name + "/.keep", "keep"))[0]
+    try:
+        with S3(run=flow_spec) as s3:
+            return os.path.split(s3.put(folder_name + "/.keep", "keep"))[0]
+    except TypeError:
+        return ""
 
 
 def upload_s3_folder(flow_spec: FlowSpec, s3_folder_name: str, local_path: str):
