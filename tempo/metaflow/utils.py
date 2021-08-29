@@ -66,7 +66,11 @@ def aws_authenticate(eks_cluster_name: str):
 
     # install AWS IAM authenticator for k8s
     os.system(
-        "curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/aws-iam-authenticator && chmod +x /usr/local/bin/aws-iam-authenticator"
+        (
+            "curl -o /usr/local/bin/aws-iam-authenticator "
+            "https://amazon-eks.s3-us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/"
+            "amd64/aws-iam-authenticator && chmod +x /usr/local/bin/aws-iam-authenticator"
+        )
     )
     kubeconfig_path = os.path.join(k8s_folder, "kubeconfig.yaml")
     with open(kubeconfig_path, "w") as f:

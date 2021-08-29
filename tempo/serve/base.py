@@ -234,7 +234,6 @@ class BaseModel:
         return self.remote_with_spec(model_spec, *args, **kwargs)
 
     def remote_with_client(self, model_spec: ModelSpec, client_details: ClientDetails, *args, **kwargs):
-        remoter = self._create_remote(model_spec)
         prot = model_spec.protocol
         req = prot.to_protocol_request(*args, **kwargs)
         logger.debug(
