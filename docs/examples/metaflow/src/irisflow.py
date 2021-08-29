@@ -35,11 +35,7 @@ class IrisFlow(FlowSpec):
     k8s_provider = Parameter(
         "k8s_provider", help="kubernetes provider. Needed for non local run to deploy", default="gke"
     )
-    eks_cluster_name = Parameter('eks_cluster_name',
-        help="AWS EKS cluster name (if using EKS)",
-        default=''
-    )
-
+    eks_cluster_name = Parameter("eks_cluster_name", help="AWS EKS cluster name (if using EKS)", default="")
 
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
@@ -117,7 +113,7 @@ class IrisFlow(FlowSpec):
         )
         # Create pipeline artifacts
         save_pipeline_with_conda(classifier, local_pipeline_path, self.conda_env)
-        if classifier_url: # Check running with S3 access
+        if classifier_url:  # Check running with S3 access
             # Upload artifacts to S3
             upload_s3_folder(self, PIPELINE_FOLDER_NAME, local_pipeline_path)
             upload_s3_folder(self, SKLEARN_FOLDER_NAME, local_sklearn_path)
@@ -141,16 +137,17 @@ class IrisFlow(FlowSpec):
 
     def deploy_tempo_remote(self, classifier):
         import time
+
         import numpy as np
 
         from tempo import deploy_remote
-        from tempo.metaflow.utils import gke_authenticate, aws_authenticate
+        from tempo.metaflow.utils import aws_authenticate, gke_authenticate
         from tempo.serve.deploy import get_client
         from tempo.serve.metadata import SeldonCoreOptions
 
         if self.k8s_provider == "gke":
             gke_authenticate(self.kubeconfig, self.gsa_key)
-        elif self.k8s_provider == 'aws':
+        elif self.k8s_provider == "aws":
             aws_authenticate(self.eks_cluster_name)
         else:
             raise Exception(f"Unknown Kubernetes Provider {self.k8s_provider}")

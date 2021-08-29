@@ -15,7 +15,7 @@ def pip(libraries, test_index=False):
                 else:
                     print("Pip Test Install:", library, version)
 
-                    if version.startswith('git+https://') or version.startswith('https://'):
+                    if version.startswith("git+https://") or version.startswith("https://"):
                         subprocess.run(
                             [
                                 sys.executable,
