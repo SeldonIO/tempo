@@ -1,6 +1,6 @@
 import json
 from pydoc import locate
-from typing import Any
+from typing import Any, Optional
 
 from .base import BaseModel, ClientModel, ModelSpec, Runtime
 from .metadata import (
@@ -22,7 +22,7 @@ class RemoteModel:
             protocol=self.model.model_spec.protocol,
             runtime_options=self.runtime.runtime_options,
         )
-        self.client_details: ClientDetails = None
+        self.client_details: Optional[ClientDetails] = None
 
     def deploy(self):
         self.model.deploy(self.runtime)
