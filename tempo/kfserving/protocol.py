@@ -96,7 +96,8 @@ class KFServingV2Protocol(Protocol):
                 else:
                     inputs.append(KFServingV2Protocol.create_v2_from_any(raw, name))
 
-        return {"inputs": inputs}
+        parameters_np = {"content_type": "np"}
+        return {"inputs": inputs, "parameters": parameters_np}
 
     @staticmethod
     def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Optional[Type]:
