@@ -27,6 +27,7 @@ def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
 
 def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None):
     if env_name:
+        # TODO: add mlserver deps here if not present?
         _pack_environment(env_name, conda_pack_file_path)
     else:
         env = _get_env(conda_env_file_path, env_name)
@@ -94,7 +95,7 @@ def _get_pip_deps(dependencies: dict) -> Optional[dict]:
 
 
 def _pack_environment(env_name: str, file_path: str):
-    logger.info("packing conda environment from %s", env_name)
+    logger.info(f"packing conda environment from {env_name} to {file_path}")
     # Pack environment
     conda_pack.pack(
         name=env_name,

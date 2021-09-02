@@ -152,35 +152,32 @@ class BaseModel:
     @classmethod
     def load(cls, folder: str) -> "BaseModel":
         file_path_pkl = os.path.join(folder, DefaultModelFilename)
-        return load_custom(file_path_pkl)
+        if os.path.exists(file_path_pkl):
+            return load_custom(file_path_pkl)
+        else:
+            raise ValueError("This is not a custom tempo model and cannot be loaded with this mechanism")
 
-    def save(self, save_env=True):
+    def save(self, save_env=True) -> None:
         logger.info("Saving environment")
-        # for individual models we want to save the conda environment if there is a conda.yaml file in the artifact
-        # directory
+        # we want to pack the conda environment anyway
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
             conda_env_file_path = os.path.join(self.details.local_folder, DefaultCondaFile)
-            if not os.path.exists(conda_env_file_path):
-                conda_env_file_path = None
 
             save_environment(
                 conda_pack_file_path=file_path_env,
-                conda_env_file_path=conda_env_file_path,
+                conda_env_file_path=conda_env_file_path if os.path.exists(conda_env_file_path) else None,
                 env_name=self.conda_env_name,
             )
 
-        if not self._user_func:
-            # Nothing to save
-            return
-
-        file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
-        logger.info("Saving tempo model to %s", file_path_pkl)
-        if self._user_func is not None:
-            module = self._user_func.__module__
-        else:
-            module = None
-        save_custom(self, module, file_path_pkl)
+        if self._user_func:
+            file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+            logger.info("Saving tempo model to %s", file_path_pkl)
+            if self._user_func is not None:
+                module = self._user_func.__module__
+            else:
+                module = None
+            save_custom(self, module, file_path_pkl)
 
     def request(self, req: Dict) -> Dict:
 
