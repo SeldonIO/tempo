@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.kfserving.protocol import _REQUEST_NUMPY_CONTENT_TYPE, KFServingV2Protocol
 from tempo.serve.metadata import ModelDataArg, ModelDataArgs
 
 
@@ -38,7 +38,17 @@ def test_v2_to_protocol_request_numpy():
     data = np.random.randn(1, 28 * 28)
     request = v2.to_protocol_request(data)
     expected_request = {
-        "parameters": {"content_type": "np"},
-        "inputs": [{"name": "input-0", "datatype": "FP64", "data": data.tolist(), "shape": data.shape}],
+        "parameters": _REQUEST_NUMPY_CONTENT_TYPE,
+        "inputs": [{"name": "input-0", "datatype": "FP64", "data": data.flatten().tolist(), "shape": list(data.shape)}],
     }
-    assert sorted(request) == sorted(expected_request)
+
+    assert expected_request == request
+
+
+def test_v2_to_protocol_request_other():
+    v2 = KFServingV2Protocol()
+    data = 1
+    request = v2.to_protocol_request(data)
+    # we should not have the "parameters", mainly so that content_type= "np" is not present.
+    # this seems a bit convoluted, so we need to find a better way perhaps for dealing with inference types in tempo
+    assert "parameters" not in request
