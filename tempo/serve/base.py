@@ -156,18 +156,8 @@ class BaseModel:
 
     def save(self, save_env=True):
         logger.info("Saving environment")
-        if not self._user_func:
-            # Nothing to save
-            return
-
-        file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
-        logger.info("Saving tempo model to %s", file_path_pkl)
-        if self._user_func is not None:
-            module = self._user_func.__module__
-        else:
-            module = None
-        save_custom(self, module, file_path_pkl)
-
+        # for individual models we want to save the conda environment if there is a conda.yaml file in the artifact
+        # directory
         if save_env:
             file_path_env = os.path.join(self.details.local_folder, DefaultEnvFilename)
             conda_env_file_path = os.path.join(self.details.local_folder, DefaultCondaFile)
@@ -179,6 +169,18 @@ class BaseModel:
                 conda_env_file_path=conda_env_file_path,
                 env_name=self.conda_env_name,
             )
+
+        if not self._user_func:
+            # Nothing to save
+            return
+
+        file_path_pkl = os.path.join(self.details.local_folder, DefaultModelFilename)
+        logger.info("Saving tempo model to %s", file_path_pkl)
+        if self._user_func is not None:
+            module = self._user_func.__module__
+        else:
+            module = None
+        save_custom(self, module, file_path_pkl)
 
     def request(self, req: Dict) -> Dict:
 
