@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from tempo.kfserving.protocol import KFServingV2Protocol
@@ -30,4 +31,14 @@ def test_v2_from_protocol_response():
     modelTyArgs = ModelDataArgs(args=[ModelDataArg(ty=str, name=None)])
     v2 = KFServingV2Protocol()
     res = v2.from_protocol_response(res, modelTyArgs)
-    print(res)
+
+
+def test_v2_to_protocol_request_numpy():
+    v2 = KFServingV2Protocol()
+    data = np.random.randn(1, 28 * 28)
+    request = v2.to_protocol_request(data)
+    expected_request = {
+        "parameters": {"content_type": "np"},
+        "inputs": [{"name": "input-0", "datatype": "FP64", "data": data.tolist(), "shape": data.shape}],
+    }
+    assert sorted(request) == sorted(expected_request)

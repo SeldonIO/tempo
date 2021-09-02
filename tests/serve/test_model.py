@@ -4,6 +4,7 @@ from typing import List, Tuple
 import numpy as np
 import pytest
 
+from tempo import deploy_local
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
@@ -258,5 +259,7 @@ def test_pytorch_model_save():
         local_folder=artifacts_folder,
         description="A pytorch MNIST model - python 3.7",
     )
+    remote_model = deploy_local(pytorch_mnist_model)
+    data = np.random.randn(1, 28 * 28).astype(np.float32)
 
-    pytorch_mnist_model.save(save_env=True)
+    remote_model.predict(data)
