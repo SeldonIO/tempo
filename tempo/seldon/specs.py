@@ -68,6 +68,7 @@ class _V2ContainerFactory:
     TritonImage = TRITON_IMAGE
 
     MLServerRuntimes = {
+        ModelFramework.MLFlow: "mlserver_mlflow.MLflowRuntime",
         ModelFramework.SKLearn: "mlserver_sklearn.SKLearnModel",
         ModelFramework.XGBoost: "mlserver_xgboost.XGBoostModel",
         ModelFramework.Custom: "tempo.mlserver.InferenceRuntime",
