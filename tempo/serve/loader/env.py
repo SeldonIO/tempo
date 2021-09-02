@@ -14,11 +14,11 @@ from ..constants import MLServerEnvDeps
 def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
     if conda_env_file_path:
         with open(conda_env_file_path) as file:
+            logger.info(f"Using found conda env: {conda_env_file_path}")
             env = yaml.safe_load(file)
             if not _has_required_deps(env):
-                raise ValueError(f"conda.yaml does not contain {MLServerEnvDeps}")
-            else:
-                logger.info("Using found conda.yaml")
+                logger.info(f"conda.yaml does not contain {MLServerEnvDeps}, adding them")
+                env = _add_required_deps(env)
     else:
         env = _get_environment(env_name=env_name)
         env = _add_required_deps(env)
