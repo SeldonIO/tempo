@@ -1,3 +1,4 @@
+import os
 from typing import List, Tuple
 
 import numpy as np
@@ -8,10 +9,12 @@ from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.utils import model, predictmethod
 
-
 #
 # Test single input output model with type annotations
 #
+from tests.conftest import TESTS_PATH
+
+
 @pytest.mark.parametrize(
     "v2_input, expected",
     [
@@ -244,3 +247,16 @@ def test_model_save(custom_model: Model):
 
     assert len(custom_model.context.__dict__) > 0
     assert len(loaded.context.__dict__) == 0
+
+
+@pytest.mark.skip(reason="very slow")
+def test_pytorch_model_save():
+    artifacts_folder = os.path.join(TESTS_PATH, "serve", "data", "mlflow_pytorch", "model")
+    pytorch_mnist_model = Model(
+        name="test-pytorch-mnist",
+        platform=ModelFramework.MLFlow,
+        local_folder=artifacts_folder,
+        description="A pytorch MNIST model - python 3.7",
+    )
+
+    pytorch_mnist_model.save(save_env=True)

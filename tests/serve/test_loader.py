@@ -2,6 +2,7 @@ import os
 
 import pytest
 
+from tempo import ModelFramework
 from tempo.serve.constants import DefaultEnvFilename, MLServerEnvDeps
 from tempo.serve.loader.env import (
     _add_required_deps,
@@ -85,12 +86,7 @@ def test_get_env_ok(env_file_path):
     _get_env(conda_env_file_path=env_file_path)
 
 
-@pytest.mark.parametrize(
-    "env_file_path",
-    [
-        os.path.join(os.path.dirname(__file__), "data", "conda_missing_mlserver.yaml"),
-    ],
-)
-def test_get_env_with_missing_mlserver_deps(env_file_path):
-    env = _get_env(conda_env_file_path=env_file_path)
-    assert _has_required_deps(env)
+@pytest.mark.parametrize("platform", ModelFramework)
+def test_get_env_with_missing_mlserver_deps(conda_yaml_no_mlserver_deps, platform):
+    env = _get_env(conda_env_file_path=conda_yaml_no_mlserver_deps, platform=platform)
+    assert _has_required_deps(env, platform=platform)

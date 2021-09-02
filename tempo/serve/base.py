@@ -168,6 +168,7 @@ class BaseModel:
                 conda_pack_file_path=file_path_env,
                 conda_env_file_path=conda_env_file_path if os.path.exists(conda_env_file_path) else None,
                 env_name=self.conda_env_name,
+                platform=self.details.platform,
             )
 
         if self._user_func:
