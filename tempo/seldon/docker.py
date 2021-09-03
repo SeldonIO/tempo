@@ -9,12 +9,12 @@ from docker.models.containers import Container
 from tempo.docker.constants import DefaultNetworkName
 from tempo.docker.utils import create_network
 from tempo.seldon.specs import DefaultHTTPPort, DefaultModelsPath, get_container_spec
-from tempo.serve.base import DeployedModel, ModelSpec, Runtime
+from tempo.serve.base import ClientModel, ModelSpec, Runtime
 from tempo.serve.metadata import DockerOptions
 
 
 class SeldonDockerRuntime(Runtime):
-    def list_models(self) -> Sequence[DeployedModel]:
+    def list_models(self) -> Sequence[ClientModel]:
         pass
 
     def __init__(self, runtime_options: Optional[DockerOptions] = None):

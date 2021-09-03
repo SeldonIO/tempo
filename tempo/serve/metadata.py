@@ -86,6 +86,13 @@ class ModelDataArgs(BaseModel):
         json_encoders = {type: lambda v: v.__module__ + "." + v.__name__}
 
 
+class ClientDetails(BaseModel):
+
+    url: str
+    headers: Dict[str, str]
+    verify_ssl: bool
+
+
 class ModelDetails(BaseModel):
     name: str
     local_folder: str
