@@ -162,7 +162,7 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "0.4.0.dev7", "conda_env": "2.4.2"}, test_index=True)
+    @pip(libraries={"mlops-tempo": "0.5.0", "conda_env": "2.4.2"}, test_index=True)
     @step
     def tempo(self):
         """
