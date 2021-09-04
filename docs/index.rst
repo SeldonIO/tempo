@@ -24,6 +24,7 @@ Tempo
     Multi-model Orchestration with KFServing <examples/kfserving/README.md>    
     Model Explanation (using Alibi) <examples/explainer/README.md>
     Outlier Detection (using Alibi-Detect) <examples/outlier/README.md>
+    End to End Pipeline with Metaflow and Tempo <examples/metaflow/README.md>
 
 
 .. toctree::

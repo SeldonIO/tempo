@@ -19,6 +19,7 @@ Subpackages
    tempo.insights
    tempo.k8s
    tempo.kfserving
+   tempo.metaflow
    tempo.seldon
    tempo.serve
    tempo.state
