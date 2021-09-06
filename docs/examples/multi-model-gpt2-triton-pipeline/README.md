@@ -79,6 +79,7 @@ gpt2_model = Model(
     local_folder=ARTIFACT_FOLDER + "/gpt2-onnx-model",
     uri="s3://tempo/gpt2/model",
     # TODO: Simplify without need to add output types if array by default
+    # TODO: Create a doc page that explains inputs
     inputs={},
     outputs=(np.ndarray,np.ndarray,),
     description="GPT-2 ONNX Triton Model",
@@ -116,12 +117,16 @@ gpt2_outputs = remote_gpt2_model.predict(**gpt2_inputs)
 ```
 
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
 
 
     {'input_ids:0': array([[1212,  318,  257, 1332]], dtype=int32), 'attention_mask:0': array([[1, 1, 1, 1]], dtype=int32)}
 
 
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 5360795
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -175,12 +180,12 @@ class GPT2Transformer:
         self.ready = True
 
     @predictmethod
-    def predict(self, payload: np.ndarray) -> np.ndarray:
+    def predict(self, payload: np.array) -> np.array:
         count = 0
         # TODO: Update to allow this to be passed as parameters
         max_gen_len = 10
         # TODO: Update to work for multiple sentences
-        gen_sentence = payload[0]
+        gen_sentence = payload
         while count < max_gen_len:
             input_ids = self.tokenizer.encode(gen_sentence, return_tensors="tf")
             attention_mask = np.ones(input_ids.shape.as_list(), dtype=np.int32)
@@ -222,12 +227,16 @@ gpt2_transformer.load(tokenizer_path=ARTIFACT_FOLDER + "/gpt2-transformer")
 
 
 ```python
-gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
+gpt2_output = gpt2_transformer.predict("I love artificial intelligence")
 ```
 
     DEBUG:tempo:Setting context to context for insights manager
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 5296925
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -239,7 +248,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 6621721
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -251,7 +264,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 7965054
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -263,7 +280,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 9308014
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -275,7 +296,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 12004625
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -287,7 +312,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 13347162
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -299,7 +328,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 14689468
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -311,7 +344,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 16044702
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -323,7 +360,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 17399133
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -335,7 +376,11 @@ gpt2_output = gpt2_transformer.predict(["I love artificial intelligence"])
     NotebookApp.rate_limit_window=3.0 (secs)
     
     DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
     DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 20083773
     IOPub data rate exceeded.
     The notebook server will temporarily stop sending output
     to the client in order to avoid crashing it.
@@ -371,6 +416,9 @@ dependencies:
   - pip:
     - transformers==4.5.1
     - tokenizers==0.10.3
+    - tensorflow==2.4.1
+    - dill
+    - mlops-tempo
     - mlserver
     - mlserver-tempo
 ```
@@ -390,17 +438,6 @@ save(gpt2_transformer)
     WARNING:tempo:Insights Manager not initialised as empty URL provided.
     INFO:tempo:Saving environment
     INFO:tempo:Saving tempo model to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-transformer/model.pickle
-    INFO:tempo:Using found conda.yaml
-    INFO:tempo:Creating conda env with: conda env create --name tempo-40d229b4-4ca9-405a-80a1-d336b174add1 --file /tmp/tmpwm6mf7mo.yml
-    INFO:tempo:packing conda environment from tempo-40d229b4-4ca9-405a-80a1-d336b174add1
-
-
-    Collecting packages...
-    Packing environment at '/home/alejandro/miniconda3/envs/tempo-40d229b4-4ca9-405a-80a1-d336b174add1' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-transformer/environment.tar.gz'
-    [########################################] | 100% Completed | 16.0s
-
-
-    INFO:tempo:Removing conda env with: conda remove --name tempo-40d229b4-4ca9-405a-80a1-d336b174add1 --all --yes
 
 
 #### Deploy locally on Docker
@@ -410,13 +447,51 @@ save(gpt2_transformer)
 
 ```python
 from tempo import deploy_local
-remote_pipeline = deploy_local(gpt2_pipeline)
+remote_pipeline = deploy_local(gpt2_transformer)
+```
+
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
+
+
+
+```python
+log = logging.getLogger('urllib3')
+log.setLevel(logging.DEBUG) 
+logg = logging.getLogger('requests.packages.urllib3')
+logg.setLevel(logging.DEBUG) 
 ```
 
 
 ```python
-remote_model.predict(["I love artificial intelligence"])
+remote_pipeline.predict("I love artificial intelligence")
 ```
+
+    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
+    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
+    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:57937/v2/models/gpt2-transformer/infer headers={} verify=True
+    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:57937
+    DEBUG:urllib3.connectionpool:http://0.0.0.0:57937 "POST /v2/models/gpt2-transformer/infer HTTP/1.1" 200 455
+    DEBUG:tempo:b'{"model_name":"gpt2-transformer","model_version":"NOTIMPLEMENTED","id":"debcb373-6b87-4c2f-8ed4-47b1d2f45931","parameters":null,"outputs":[{"name":"output0","shape":[65],"datatype":"BYTES","parameters":null,"data":[73,32,108,111,118,101,32,97,114,116,105,102,105,99,105,97,108,32,105,110,116,101,108,108,105,103,101,110,99,101,32,44,32,98,117,116,32,73,32,39,109,32,110,111,116,32,115,117,114,101,32,105,102,32,105,116,32,39,115,32,119,111,114,116,104]}]}'
+
+
+
+
+
+    "I love artificial intelligence , but I 'm not sure if it 's worth"
+
+
 
 
 ```python
