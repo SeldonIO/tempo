@@ -6,10 +6,10 @@ We are are going to use follow the MNIST pytorch example from `mlflow`, check th
 
 In this example we will:
 
-  * [Train MNIST Model using mlflow and pytorch](#Train-model)
-  * [Create tempo artifacts](#Save-model-environment)
-  * [Deploy Locally to Docker](#Deploy-to-Docker)
-  * [Deploy Locally to Kubernetes](#Deploy-to-Kubernetes)
+  - Train MNIST Model using mlflow and pytorch
+  - Create tempo artifacts
+  - Deploy Locally to Docker
+  - Deploy Locally to Kubernetes
 
 ## Prerequisites
 
