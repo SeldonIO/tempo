@@ -5,10 +5,15 @@
 
 TODO
 
-## Create Tempo Artifacts
+### Workflow Overview
 
- * Here we create the Tempo models and orchestration Pipeline for our final service using our models.
- * For illustration the final service will call the sklearn model and based on the result will decide to return that prediction or call the xgboost model and return that prediction instead.
+In this example we will be doing the following:
+* Download & optimize pre-trained artifacts
+* Deploy GPT2 Model and Test in Docker
+* Deploy GPT2 Pipeline and Test in Docker
+* Deploy GPT2 Pipeline & Model to Kuberntes and Test
+
+## Download & Optimize pre-trained artifacts
 
 
 ```python
@@ -44,6 +49,8 @@ tokenizer.save_pretrained("./artifacts/gpt2-transformer")
 !python -m tf2onnx.convert --saved-model ./artifacts/gpt2-model/saved_model/1 --opset 11  --output ./artifacts/gpt2-onnx-model/gpt2-model/1/model.onnx
 ```
 
+## Deploy GPT2 ONNX Model in Triton
+
 
 ```python
 import os
@@ -61,6 +68,8 @@ from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline, predictmethod
 
 ```
+
+#### Define as tempo model
 
 
 ```python
@@ -80,12 +89,16 @@ gpt2_model = Model(
     WARNING:tempo:Insights Manager not initialised as empty URL provided.
 
 
+#### Deploy gpt2 model to docker
+
 
 ```python
 from tempo.serve.deploy import deploy_local
 
 remote_gpt2_model = deploy_local(gpt2_model)
 ```
+
+#### Send predictions
 
 
 ```python
@@ -121,6 +134,8 @@ gpt2_outputs = remote_gpt2_model.predict(**gpt2_inputs)
     
 
 
+#### Print single next token generated
+
 
 ```python
 logits = gpt2_outputs["logits"]
@@ -136,6 +151,8 @@ print(next_token_str)
 
     of
 
+
+## Define Transformer Pipeline
 
 
 ```python
@@ -193,6 +210,8 @@ class GPT2Transformer:
     INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
     WARNING:tempo:Insights Manager not initialised as empty URL provided.
 
+
+#### Test locally against deployed model
 
 
 ```python
@@ -337,7 +356,7 @@ print(gpt2_output)
     I love artificial intelligence , but I 'm not sure if it 's worth
 
 
-## Save Classifier Environment
+## Deploy GPT2 Transformer to Docker and Test
 
  * In preparation for running our models we save the Python environment needed for the orchestration to run as defined by a `conda.yaml` in our project.
 
@@ -359,6 +378,8 @@ dependencies:
     Overwriting artifacts/gpt2-transformer/conda.yaml
 
 
+#### Save environment and pipeline artifact
+
 
 ```python
 from tempo.serve.loader import save
@@ -371,9 +392,18 @@ save(gpt2_transformer)
     INFO:tempo:Saving tempo model to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-transformer/model.pickle
     INFO:tempo:Using found conda.yaml
     INFO:tempo:Creating conda env with: conda env create --name tempo-40d229b4-4ca9-405a-80a1-d336b174add1 --file /tmp/tmpwm6mf7mo.yml
+    INFO:tempo:packing conda environment from tempo-40d229b4-4ca9-405a-80a1-d336b174add1
 
 
-## Test Locally on Docker
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-40d229b4-4ca9-405a-80a1-d336b174add1' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-transformer/environment.tar.gz'
+    [########################################] | 100% Completed | 16.0s
+
+
+    INFO:tempo:Removing conda env with: conda remove --name tempo-40d229b4-4ca9-405a-80a1-d336b174add1 --all --yes
+
+
+#### Deploy locally on Docker
 
  * Here we test our models using production images but running locally on Docker. This allows us to ensure the final production deployed model will behave as expected when deployed.
 
@@ -393,7 +423,7 @@ remote_model.predict(["I love artificial intelligence"])
 remote_model.undeploy()
 ```
 
-## Production Option 1 (Deploy to Kubernetes with Tempo)
+## Deploy to Kubernetes
 
  * Here we illustrate how to run the final models in "production" on Kubernetes by using Tempo to deploy
  
@@ -446,10 +476,6 @@ remote_model = deploy_remote(gpt2_pipeline, options=runtime_options)
 ```python
 remote_model.predict(["I love artificial intelligence"])
 ```
-
-    {'output0': array([1.], dtype=float32), 'output1': 'sklearn prediction'}
-    {'output0': array([[0.00847207, 0.03168793, 0.95984   ]], dtype=float32), 'output1': 'xgboost prediction'}
-
 
 
 ```python
