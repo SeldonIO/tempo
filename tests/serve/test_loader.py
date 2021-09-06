@@ -3,14 +3,16 @@ import os
 import pytest
 
 from tempo import ModelFramework
-from tempo.serve.constants import DefaultEnvFilename, MLServerEnvDeps
+from tempo.serve.constants import DefaultEnvFilename
 from tempo.serve.loader.env import (
     _add_required_deps,
     _create_and_pack_environment,
     _get_env,
     _get_environment,
+    _get_mlserver_deps,
     _get_pip_deps,
     _has_required_deps,
+    _is_dep_not_defined,
     save_environment,
 )
 
@@ -23,8 +25,9 @@ def test_save_environment(tmp_path):
     assert os.path.isfile(env_path)
 
 
-def test_create_and_pack_environment(tmp_path):
-    env = {"dependencies": [{"pip": MLServerEnvDeps}]}
+@pytest.mark.parametrize("platform", [None, ModelFramework.MLFlow])
+def test_create_and_pack_environment(tmp_path, platform):
+    env = {"dependencies": [{"pip": _get_mlserver_deps(platform)}]}
     env_path = os.path.join(tmp_path, DefaultEnvFilename)
 
     _create_and_pack_environment(env=env, file_path=env_path)
@@ -50,29 +53,64 @@ def test_get_environment():
         },
     ],
 )
-def test_add_required_deps(env):
-    env_with_deps = _add_required_deps(env=env)
+@pytest.mark.parametrize("platform", [None, ModelFramework.MLFlow])
+def test_add_required_deps(env, platform):
+    env_with_deps = _add_required_deps(env=env, platform=platform)
 
     pip_deps = _get_pip_deps(env_with_deps["dependencies"])
-    for dep in MLServerEnvDeps:
-        assert dep in pip_deps["pip"]
+    for dep in _get_mlserver_deps(platform):
+        assert not _is_dep_not_defined(dep, pip_deps["pip"])
 
 
 @pytest.mark.parametrize(
-    "env, expected",
+    "env, platform, expected",
     [
-        ({}, False),
+        ({}, None, False),
         (
             {
                 "foo": "bar",
                 "dependencies": ["foo==1.0", {"pip": ["mlserver"]}],
             },
+            None,
+            True,
+        ),
+        (
+            {
+                "foo": "bar",
+                "dependencies": ["foo==1.0", {"pip": ["mlserver"]}],
+            },
+            ModelFramework.MLFlow,
+            False,
+        ),
+        (
+            {
+                "foo": "bar",
+                "dependencies": ["foo==1.0", {"pip": ["mlserver", "mlserver-dummy"]}],
+            },
+            ModelFramework.MLFlow,
+            False,
+        ),
+        (
+            {
+                "foo": "bar",
+                "dependencies": ["foo==1.0", {"pip": ["mlserver", "mlserver-mlflow"]}],
+            },
+            ModelFramework.MLFlow,
+            True,
+        ),
+        (
+            {
+                "foo": "bar",
+                # old version is still accepted
+                "dependencies": ["foo==1.0", {"pip": ["mlserver", "mlserver-mlflow==0.1.0"]}],
+            },
+            ModelFramework.MLFlow,
             True,
         ),
     ],
 )
-def test_has_required_deps(env, expected):
-    has_deps = _has_required_deps(env)
+def test_has_required_deps(env, platform, expected):
+    has_deps = _has_required_deps(env, platform)
     assert has_deps == expected
 
 

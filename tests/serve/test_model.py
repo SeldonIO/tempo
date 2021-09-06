@@ -265,3 +265,4 @@ def test_pytorch_model_save():
     data = np.random.randn(1, 28 * 28).astype(np.float32)
 
     remote_model.predict(data)
+    remote_model.undeploy()
