@@ -41,12 +41,12 @@ We train MNIST model below:
 !git clone https://github.com/mlflow/mlflow.git
 ```
 
+### Train model using `mlflow`
+
 
 ```python
 %cd mlflow/examples/pytorch/MNIST
 ```
-
-### Train model using `mlflow`
 
 
 ```python
