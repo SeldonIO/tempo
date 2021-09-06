@@ -4,12 +4,13 @@ In this example we are going to build a model using `mlflow`, pack and deploy lo
 
 We are are going to use follow the MNIST pytorch example from `mlflow`, check this [link](https://github.com/mlflow/mlflow/tree/master/examples/pytorch/MNIST) for more information.
 
-In this example we will:
 
-  - Train MNIST Model using mlflow and pytorch
-  - Create tempo artifacts
-  - Deploy Locally to Docker
-  - Deploy Locally to Kubernetes
+
+In this example we will:
+  * [Train MNIST Model using mlflow and pytorch](#Train-model)
+  * [Create tempo artifacts](#Save-model-environment)
+  * [Deploy Locally to Docker](#Deploy-to-Docker)
+  * [Deploy Locally to Kubernetes](#Deploy-to-Kubernetes)
 
 ## Prerequisites
 
@@ -19,11 +20,11 @@ This notebooks needs to be run in the `tempo-examples` conda environment defined
 conda env create --name tempo-examples --file conda/tempo-examples.yaml
 ```
 
-# Train model
+## Train model
 
 We train MNIST model below:
 
-## Install prerequisites
+### Install prerequisites
 
 
 ```python
@@ -45,7 +46,7 @@ We train MNIST model below:
 %cd mlflow/examples/pytorch/MNIST
 ```
 
-## Train model using `mlflow`
+### Train model using `mlflow`
 
 
 ```python
@@ -57,7 +58,7 @@ We train MNIST model below:
 !tree -L 1 mlruns/0
 ```
 
-## Choose test image
+### Choose test image
 
 
 ```python
@@ -70,7 +71,7 @@ display(img)
 print(category)
 ```
 
-## Tranform test image to numpy
+### Tranform test image to numpy
 
 
 ```python
@@ -78,7 +79,7 @@ import numpy as np
 img_np = np.asarray(img).reshape((1, 28*28)).astype(np.float32)
 ```
 
-# Save model environment
+## Save model environment
 
 
 ```python
@@ -93,7 +94,7 @@ ARTIFACTS_FOLDER = os.path.join(
 print(ARTIFACTS_FOLDER)
 ```
 
-## Define `tempo` model
+### Define `tempo` model
 
 
 ```python
@@ -114,7 +115,7 @@ pytorch_mnist_model = Model(
 
 ```
 
-## Save model (environment) using `tempo`
+### Save model (environment) using `tempo`
 
 Tempo hides many details required to save the model environment for `mlserver`:
 - Add required runtime dependencies
@@ -126,7 +127,7 @@ from tempo.serve.loader import save
 save(pytorch_mnist_model)
 ```
 
-# Deploy to Docker
+## Deploy to Docker
 
 
 ```python
@@ -145,7 +146,7 @@ print(np.nonzero(local_prediction.flatten() == 0))
 local_deployed_model.undeploy()
 ```
 
-# Deploy to Kubernetes
+## Deploy to Kubernetes
 
 ### Prerequisites
  
@@ -161,7 +162,7 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 !kubectl apply -f k8s/rbac -n seldon
 ```
 
-## Upload artifacts to minio
+### Upload artifacts to minio
 
 
 ```python
@@ -187,7 +188,7 @@ runtime_options = SeldonCoreOptions(**{
     })
 ```
 
-## Deploy to `kind`
+### Deploy to `kind`
 
 
 ```python
