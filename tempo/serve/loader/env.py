@@ -17,11 +17,16 @@ def _get_env(conda_env_file_path: str = None, env_name: str = None, platform: Mo
         with open(conda_env_file_path) as file:
             logger.info(f"Using found conda env: {conda_env_file_path}")
             env = yaml.safe_load(file)
-            if not _has_required_deps(env):
-                logger.info(f"conda.yaml does not contain {MLServerEnvDeps}, adding them")
-                env = _add_required_deps(env, platform)
+            env = _add_required_deps_if_missing(env, platform)
     else:
         env = _get_environment(env_name=env_name)
+        env = _add_required_deps_if_missing(env, platform)
+    return env
+
+
+def _add_required_deps_if_missing(env: dict, platform: Optional[ModelFramework]) -> dict:
+    if not _has_required_deps(env, platform):
+        logger.info(f"conda.yaml does not contain {MLServerEnvDeps}, adding them")
         env = _add_required_deps(env, platform)
     return env
 

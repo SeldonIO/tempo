@@ -14,7 +14,7 @@ MLServerEnvDeps = ["mlserver==0.4.1.dev1"]
 
 # for each runtime we require separate dependencies to be packed
 MLServerRuntimeEnvDeps = {
-    ModelFramework.MLFlow: ["mlserver_mlflow==0.4.1.dev1"],
+    ModelFramework.MLFlow: ["mlserver-mlflow==0.4.1.dev1"],
 }
 
 DefaultCondaFile = "conda.yaml"
