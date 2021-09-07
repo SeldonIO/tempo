@@ -43,6 +43,8 @@ cd ansible
 ansible-playbook playbooks/seldon_core.yaml
 ```
 
+Note: this requires python 3.8 or greater.
+
 ### Kubernetes Cluster with KFServing
 
 To create a Kind cluster with istio, knative serving, KFServing and Minio run:
