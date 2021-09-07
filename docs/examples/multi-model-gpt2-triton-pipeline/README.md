@@ -33,11 +33,64 @@ model = TFGPT2LMHeadModel.from_pretrained(
 )
 ```
 
+    All PyTorch model weights were used when initializing TFGPT2LMHeadModel.
+    
+    All the weights of TFGPT2LMHeadModel were initialized from the PyTorch model.
+    If your task is similar to the task the model of the checkpoint was trained on, you can already use TFGPT2LMHeadModel for predictions without further training.
+
+
 
 ```python
 model.save_pretrained("./artifacts/gpt2-model", saved_model=True)
 tokenizer.save_pretrained("./artifacts/gpt2-transformer")
 ```
+
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:AutoGraph could not transform <bound method Socket.send of <zmq.sugar.socket.Socket object at 0x7faebec9aad0>> and will run it as-is.
+    Please report this to the TensorFlow team. When filing the bug, set the verbosity to 10 (on Linux, `export AUTOGRAPH_VERBOSITY=10`) and attach the full output.
+    Cause: module, class, method, function, traceback, frame, or code object was expected, got cython_function_or_method
+    To silence this warning, decorate the function with @tf.autograph.experimental.do_not_convert
+    WARNING: AutoGraph could not transform <bound method Socket.send of <zmq.sugar.socket.Socket object at 0x7faebec9aad0>> and will run it as-is.
+    Please report this to the TensorFlow team. When filing the bug, set the verbosity to 10 (on Linux, `export AUTOGRAPH_VERBOSITY=10`) and attach the full output.
+    Cause: module, class, method, function, traceback, frame, or code object was expected, got cython_function_or_method
+    To silence this warning, decorate the function with @tf.autograph.experimental.do_not_convert
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+    WARNING:tensorflow:The parameters `output_attentions`, `output_hidden_states` and `use_cache` cannot be updated when calling a model.They have to be set to True/False in the config object (i.e.: `config=XConfig.from_pretrained('name', output_attentions=True)`).
+    WARNING:tensorflow:The parameter `return_dict` cannot be set in graph mode and will always be set to `True`.
+
+
+    WARNING:absl:Found untraced functions such as wte_layer_call_and_return_conditional_losses, wte_layer_call_fn, dropout_layer_call_and_return_conditional_losses, dropout_layer_call_fn, ln_f_layer_call_and_return_conditional_losses while saving (showing 5 of 735). These functions will not be directly callable after loading.
+    WARNING:absl:Found untraced functions such as wte_layer_call_and_return_conditional_losses, wte_layer_call_fn, dropout_layer_call_and_return_conditional_losses, dropout_layer_call_fn, ln_f_layer_call_and_return_conditional_losses while saving (showing 5 of 735). These functions will not be directly callable after loading.
+
+
+    INFO:tensorflow:Assets written to: ./artifacts/gpt2-model/saved_model/1/assets
+
+
+    INFO:tensorflow:Assets written to: ./artifacts/gpt2-model/saved_model/1/assets
+
+
+
+
+
+    ('./artifacts/gpt2-transformer/tokenizer_config.json',
+     './artifacts/gpt2-transformer/special_tokens_map.json',
+     './artifacts/gpt2-transformer/vocab.json',
+     './artifacts/gpt2-transformer/merges.txt',
+     './artifacts/gpt2-transformer/added_tokens.json')
+
+
 
 
 ```python
@@ -48,6 +101,54 @@ tokenizer.save_pretrained("./artifacts/gpt2-transformer")
 ```python
 !python -m tf2onnx.convert --saved-model ./artifacts/gpt2-model/saved_model/1 --opset 11  --output ./artifacts/gpt2-onnx-model/gpt2-model/1/model.onnx
 ```
+
+    2021-09-07 08:43:11.186716: I tensorflow/stream_executor/platform/default/dso_loader.cc:49] Successfully opened dynamic library libcudart.so.11.0
+    /home/alejandro/miniconda3/lib/python3.7/runpy.py:125: RuntimeWarning: 'tf2onnx.convert' found in sys.modules after import of package 'tf2onnx', but prior to execution of 'tf2onnx.convert'; this may result in unpredictable behaviour
+      warn(RuntimeWarning(msg))
+    2021-09-07 08:43:12.886148: I tensorflow/compiler/jit/xla_cpu_device.cc:41] Not creating XLA devices, tf_xla_enable_xla_devices not set
+    2021-09-07 08:43:12.886345: W tensorflow/stream_executor/platform/default/dso_loader.cc:60] Could not load dynamic library 'libcuda.so.1'; dlerror: libcuda.so.1: cannot open shared object file: No such file or directory
+    2021-09-07 08:43:12.886376: W tensorflow/stream_executor/cuda/cuda_driver.cc:326] failed call to cuInit: UNKNOWN ERROR (303)
+    2021-09-07 08:43:12.886392: I tensorflow/stream_executor/cuda/cuda_diagnostics.cc:156] kernel driver does not appear to be running on this host (DESKTOP-CSLUJOT): /proc/driver/nvidia/version does not exist
+    2021-09-07 08:43:12.888970: I tensorflow/compiler/jit/xla_gpu_device.cc:99] Not creating XLA devices, tf_xla_enable_xla_devices not set
+    2021-09-07 08:43:12,892 - WARNING - '--tag' not specified for saved_model. Using --tag serve
+    2021-09-07 08:43:19,256 - INFO - Signatures found in model: [serving_default].
+    2021-09-07 08:43:19,256 - WARNING - '--signature_def' not specified, using first signature: serving_default
+    2021-09-07 08:43:19,256 - INFO - Output names: ['logits', 'past_key_values']
+    2021-09-07 08:43:19.306853: I tensorflow/core/grappler/devices.cc:69] Number of eligible GPUs (core count >= 8, compute capability >= 0.0): 0
+    2021-09-07 08:43:19.307167: I tensorflow/core/grappler/clusters/single_machine.cc:356] Starting new session
+    2021-09-07 08:43:19.307630: I tensorflow/compiler/jit/xla_gpu_device.cc:99] Not creating XLA devices, tf_xla_enable_xla_devices not set
+    2021-09-07 08:43:19.316142: I tensorflow/core/platform/profile_utils/cpu_utils.cc:112] CPU Frequency: 2400005000 Hz
+    2021-09-07 08:43:19.501937: I tensorflow/core/grappler/optimizers/meta_optimizer.cc:928] Optimization results for grappler item: graph_to_optimize
+      function_optimizer: Graph size after: 3213 nodes (3060), 4128 edges (3974), time = 99.635ms.
+      function_optimizer: function_optimizer did nothing. time = 1.408ms.
+    
+    2021-09-07 08:43:27.473999: I tensorflow/compiler/jit/xla_gpu_device.cc:99] Not creating XLA devices, tf_xla_enable_xla_devices not set
+    WARNING:tensorflow:From /home/alejandro/miniconda3/lib/python3.7/site-packages/tf2onnx/tf_loader.py:603: extract_sub_graph (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+    Instructions for updating:
+    Use `tf.compat.v1.graph_util.extract_sub_graph`
+    2021-09-07 08:43:29,277 - WARNING - From /home/alejandro/miniconda3/lib/python3.7/site-packages/tf2onnx/tf_loader.py:603: extract_sub_graph (from tensorflow.python.framework.graph_util_impl) is deprecated and will be removed in a future version.
+    Instructions for updating:
+    Use `tf.compat.v1.graph_util.extract_sub_graph`
+    2021-09-07 08:43:29.353446: I tensorflow/core/grappler/devices.cc:69] Number of eligible GPUs (core count >= 8, compute capability >= 0.0): 0
+    2021-09-07 08:43:29.353640: I tensorflow/core/grappler/clusters/single_machine.cc:356] Starting new session
+    2021-09-07 08:43:29.353974: I tensorflow/compiler/jit/xla_gpu_device.cc:99] Not creating XLA devices, tf_xla_enable_xla_devices not set
+    2021-09-07 08:43:36.123024: I tensorflow/core/grappler/optimizers/meta_optimizer.cc:928] Optimization results for grappler item: graph_to_optimize
+      constant_folding: Graph size after: 2720 nodes (-318), 3646 edges (-319), time = 4489.73486ms.
+      function_optimizer: function_optimizer did nothing. time = 2.24ms.
+      constant_folding: Graph size after: 2720 nodes (0), 3646 edges (0), time = 1504.76294ms.
+      function_optimizer: function_optimizer did nothing. time = 13.628ms.
+    
+    2021-09-07 08:43:39,251 - INFO - Using tensorflow=2.4.0, onnx=1.9.0, tf2onnx=1.8.5/50049d
+    2021-09-07 08:43:39,252 - INFO - Using opset <onnx, 11>
+    2021-09-07 08:43:51,608 - INFO - Computed 0 values for constant folding
+    2021-09-07 08:44:27,844 - INFO - Optimizing ONNX model
+    2021-09-07 08:44:38,170 - INFO - After optimization: Cast -123 (311->188), Concat -37 (126->89), Const -1854 (2032->178), Gather +12 (2->14), GlobalAveragePool +50 (0->50), Identity -76 (76->0), ReduceMean -50 (50->0), Shape -37 (112->75), Slice -74 (235->161), Squeeze -198 (223->25), Transpose -12 (61->49), Unsqueeze -361 (435->74)
+    2021-09-07 08:44:39,069 - INFO - 
+    2021-09-07 08:44:39,069 - INFO - Successfully converted TensorFlow model ./artifacts/gpt2-model/saved_model/1 to ONNX
+    2021-09-07 08:44:39,069 - INFO - Model inputs: ['attention_mask:0', 'input_ids:0']
+    2021-09-07 08:44:39,070 - INFO - Model outputs: ['logits', 'past_key_values']
+    2021-09-07 08:44:39,070 - INFO - ONNX model is saved at ./artifacts/gpt2-onnx-model/gpt2-model/1/model.onnx
+
 
 ## Deploy GPT2 ONNX Model in Triton
 
@@ -78,16 +179,11 @@ gpt2_model = Model(
     platform=ModelFramework.ONNX,
     local_folder=ARTIFACT_FOLDER + "/gpt2-onnx-model",
     uri="s3://tempo/gpt2/model",
-    # TODO: Simplify without need to add output types if array by default
-    # TODO: Create a doc page that explains inputs
-    inputs={},
-    outputs=(np.ndarray,np.ndarray,),
     description="GPT-2 ONNX Triton Model",
 )
 ```
 
-    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
-    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+    Insights Manager not initialised as empty URL provided.
 
 
 #### Deploy gpt2 model to docker
@@ -116,27 +212,7 @@ print(gpt2_inputs)
 gpt2_outputs = remote_gpt2_model.predict(**gpt2_inputs)
 ```
 
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-
-
     {'input_ids:0': array([[1212,  318,  257, 1332]], dtype=int32), 'attention_mask:0': array([[1, 1, 1, 1]], dtype=int32)}
-
-
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 5360795
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
 
 
 #### Print single next token generated
@@ -161,6 +237,7 @@ print(next_token_str)
 
 
 ```python
+
 @pipeline(
     name="gpt2-transformer",
     uri="s3://tempo/gpt2/transformer",
@@ -169,18 +246,14 @@ print(next_token_str)
     description="A pipeline to use either an sklearn or xgboost model for Iris classification",
 )
 class GPT2Transformer:
-    # TODO: Set ready = false in init to avoid having to set it
     def __init__(self):
-        self.ready = False
+        try:
+            self.tokenizer = GPT2Tokenizer.from_pretrained("/mnt/models/")
+        except:
+            self.tokenizer = GPT2Tokenizer.from_pretrained(ARTIFACT_FOLDER + "/gpt2-transformer/")
         
-    # TODO: Bug - Pipeline locally doesn't call the load function (expected?)
-    # TODO: Update load function to change ready to true by default
-    def load(self, tokenizer_path="/mnt/models/"):
-        self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_path)       
-        self.ready = True
-
     @predictmethod
-    def predict(self, payload: np.array) -> np.array:
+    def predict(self, payload: str) -> str:
         count = 0
         # TODO: Update to allow this to be passed as parameters
         max_gen_len = 10
@@ -195,13 +268,13 @@ class GPT2Transformer:
                 "attention_mask:0": attention_mask
             }
 
-            gpt2_outputs = remote_gpt2_model.predict(**gpt2_inputs)
+            gpt2_outputs = self.models.gpt2_model.predict(**gpt2_inputs)
 
             logits = gpt2_outputs["logits"]
 
             # take the best next token probability of the last token of input ( greedy approach)
             next_token = logits.argmax(axis=2)[0]
-            next_token_str = tokenizer.decode(
+            next_token_str = self.tokenizer.decode(
                 next_token[-1:], skip_special_tokens=True, clean_up_tokenization_spaces=True
             ).strip()
             
@@ -221,177 +294,12 @@ class GPT2Transformer:
 
 ```python
 gpt2_transformer = GPT2Transformer()
-# Load locally manually
-gpt2_transformer.load(tokenizer_path=ARTIFACT_FOLDER + "/gpt2-transformer")
 ```
 
 
 ```python
 gpt2_output = gpt2_transformer.predict("I love artificial intelligence")
 ```
-
-    DEBUG:tempo:Setting context to context for insights manager
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 5296925
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 6621721
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 7965054
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 9308014
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 12004625
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 13347162
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 14689468
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 16044702
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 17399133
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:39609/v2/models/gpt2-model/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:39609
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:39609 "POST /v2/models/gpt2-model/infer HTTP/1.1" 200 20083773
-    IOPub data rate exceeded.
-    The notebook server will temporarily stop sending output
-    to the client in order to avoid crashing it.
-    To change this limit, set the config variable
-    `--NotebookApp.iopub_data_rate_limit`.
-    
-    Current values:
-    NotebookApp.iopub_data_rate_limit=1000000.0 (bytes/sec)
-    NotebookApp.rate_limit_window=3.0 (secs)
-    
-
 
 
 ```python
@@ -431,13 +339,24 @@ dependencies:
 
 ```python
 from tempo.serve.loader import save
-save(gpt2_transformer)
+save(GPT2Transformer)
 ```
 
     INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
     WARNING:tempo:Insights Manager not initialised as empty URL provided.
     INFO:tempo:Saving environment
     INFO:tempo:Saving tempo model to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-transformer/model.pickle
+    INFO:tempo:Using found conda.yaml
+    INFO:tempo:Creating conda env with: conda env create --name tempo-cb69ce65-9d45-4683-bdfd-592f735994f1 --file /tmp/tmp1vsizgk7.yml
+    INFO:tempo:packing conda environment from tempo-cb69ce65-9d45-4683-bdfd-592f735994f1
+
+
+    Collecting packages...
+    Packing environment at '/home/alejandro/miniconda3/envs/tempo-cb69ce65-9d45-4683-bdfd-592f735994f1' to '/home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-transformer/environment.tar.gz'
+    [########################################] | 100% Completed | 49.2s
+
+
+    INFO:tempo:Removing conda env with: conda remove --name tempo-cb69ce65-9d45-4683-bdfd-592f735994f1 --all --yes
 
 
 #### Deploy locally on Docker
@@ -447,44 +366,13 @@ save(gpt2_transformer)
 
 ```python
 from tempo import deploy_local
-remote_pipeline = deploy_local(gpt2_transformer)
-```
-
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-model/json HTTP/1.1" 200 None
-
-
-
-```python
-log = logging.getLogger('urllib3')
-log.setLevel(logging.DEBUG) 
-logg = logging.getLogger('requests.packages.urllib3')
-logg.setLevel(logging.DEBUG) 
+remote_transformer = deploy_local(gpt2_transformer)
 ```
 
 
 ```python
-remote_pipeline.predict("I love artificial intelligence")
+remote_transformer.predict("I love artificial intelligence")
 ```
-
-    DEBUG:tempo:Using remote class tempo.seldon.SeldonDockerRuntime
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /version HTTP/1.1" 200 None
-    DEBUG:urllib3.connectionpool:http://localhost:None "GET /v1.41/containers/gpt2-transformer/json HTTP/1.1" 200 None
-    DEBUG:tempo:Calling requests POST with endpoint=http://0.0.0.0:57937/v2/models/gpt2-transformer/infer headers={} verify=True
-    DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 0.0.0.0:57937
-    DEBUG:urllib3.connectionpool:http://0.0.0.0:57937 "POST /v2/models/gpt2-transformer/infer HTTP/1.1" 200 455
-    DEBUG:tempo:b'{"model_name":"gpt2-transformer","model_version":"NOTIMPLEMENTED","id":"debcb373-6b87-4c2f-8ed4-47b1d2f45931","parameters":null,"outputs":[{"name":"output0","shape":[65],"datatype":"BYTES","parameters":null,"data":[73,32,108,111,118,101,32,97,114,116,105,102,105,99,105,97,108,32,105,110,116,101,108,108,105,103,101,110,99,101,32,44,32,98,117,116,32,73,32,39,109,32,110,111,116,32,115,117,114,101,32,105,102,32,105,116,32,39,115,32,119,111,114,116,104]}]}'
-
 
 
 
@@ -495,8 +383,12 @@ remote_pipeline.predict("I love artificial intelligence")
 
 
 ```python
-remote_model.undeploy()
+remote_transformer.undeploy()
 ```
+
+    INFO:tempo:Undeploying gpt2-transformer
+    INFO:tempo:Undeploying gpt2-model
+
 
 ## Deploy to Kubernetes
 
@@ -508,13 +400,15 @@ Create a Kind Kubernetes cluster with Minio and Seldon Core installed using Ansi
 
 
 ```python
+!kubectl create ns production
 !kubectl apply -f k8s/rbac -n production
 ```
 
-    secret/minio-secret created
-    serviceaccount/tempo-pipeline created
-    role.rbac.authorization.k8s.io/tempo-pipeline created
-    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding created
+    Error from server (AlreadyExists): namespaces "production" already exists
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
 
 
 
@@ -527,8 +421,13 @@ create_minio_rclone(os.getcwd()+"/rclone.conf")
 
 ```python
 from tempo.serve.loader import upload
-upload(gpt2_pipeline)
+upload(gpt2_transformer)
+upload(gpt2_model)
 ```
+
+    INFO:tempo:Uploading /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-transformer/ to s3://tempo/gpt2/transformer
+    INFO:tempo:Uploading /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/multi-model-gpt2-triton-pipeline/artifacts/gpt2-onnx-model to s3://tempo/gpt2/model
+
 
 
 ```python
@@ -544,15 +443,31 @@ runtime_options = SeldonCoreOptions(**{
 
 ```python
 from tempo import deploy_remote
-remote_model = deploy_remote(gpt2_pipeline, options=runtime_options)
+remote_gpt2_transformer = deploy_remote(gpt2_transformer, options=runtime_options)
 ```
 
 
 ```python
-remote_model.predict(["I love artificial intelligence"])
+remote_gpt2_transformer.predict("I love artificial intelligence")
 ```
 
 
+
+
+    "I love artificial intelligence , but I 'm not sure if it 's worth"
+
+
+
+
 ```python
-remote_model.undeploy()
+remote_gpt2_transformer.undeploy()
+```
+
+    INFO:tempo:Undeploying gpt2-transformer
+    INFO:tempo:Undeploying gpt2-model
+
+
+
+```python
+
 ```
