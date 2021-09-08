@@ -20,6 +20,7 @@ Tempo
     :caption: Examples:
 
     Introductory Custom Python Model <examples/custom-model/README.md>
+    MLFlow end-to-end Example <examples/mlflow_e2e/README.md>
     Multi-model Orchestration with Seldon Core <examples/multi-model/README.md>
     Multi-model Orchestration with KFServing <examples/kfserving/README.md>    
     Model Explanation (using Alibi) <examples/explainer/README.md>

@@ -6,6 +6,8 @@ import numpy as np
 from tempo.serve.metadata import ModelDataArgs, ModelDetails
 from tempo.serve.protocol import Protocol
 
+_REQUEST_NUMPY_CONTENT_TYPE = {"content_type": "np"}
+
 _v2tymap: Dict[str, np.dtype] = {
     "BOOL": np.dtype("bool"),
     "UINT8": np.dtype("uint8"),
@@ -79,24 +81,39 @@ class KFServingV2Protocol(Protocol):
         # if len(args) > 0:
         #    raise ValueError("KFserving V2 protocol only supports named arguments")
 
+        # We have numpy codec in mlserver for the inference request that would assume that there is only one numpy
+        # array in the input to be parsed. this is a special case and we need to deal with it here as well.
+        # So if we only have one input that is ndarray, we append `_REQUEST_NUMPY_CONTENT_TYPE`
+        # to the inference request.
+
         inputs = []
+        args_num = 0
+        numpy_args_num = 0
         if len(args) > 0:
             for idx, raw in enumerate(args):
                 raw_type = type(raw)
+                args_num += 1
                 if raw_type == np.ndarray:
+                    numpy_args_num += 1
                     inputs.append(KFServingV2Protocol.create_v2_from_np(raw, "input-" + str(idx)))
                 else:
                     inputs.append(KFServingV2Protocol.create_v2_from_any(raw, "input-" + str(idx)))
         else:
             for (name, raw) in kwargs.items():
                 raw_type = type(raw)
-
+                args_num += 1
                 if raw_type == np.ndarray:
+                    numpy_args_num += 1
                     inputs.append(KFServingV2Protocol.create_v2_from_np(raw, name))
                 else:
                     inputs.append(KFServingV2Protocol.create_v2_from_any(raw, name))
 
-        return {"inputs": inputs}
+        request_ret = {"inputs": inputs}
+        np_inference_request_enabled = {"parameters": _REQUEST_NUMPY_CONTENT_TYPE}
+        if args_num == numpy_args_num == 1:
+            return {**request_ret, **np_inference_request_enabled}
+
+        return request_ret
 
     @staticmethod
     def get_ty(name: str, idx: int, tys: ModelDataArgs) -> Optional[Type]:

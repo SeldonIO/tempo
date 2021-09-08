@@ -2,34 +2,43 @@ import re
 import uuid
 from subprocess import run
 from tempfile import NamedTemporaryFile
-from typing import Optional
+from typing import List, Optional
 
 import conda_pack
 import yaml
 
 from ...utils import logger
-from ..constants import MLServerEnvDeps
+from ..constants import MLServerEnvDeps, MLServerRuntimeEnvDeps
+from ..metadata import ModelFramework
 
 
-def _get_env(conda_env_file_path: str = None, env_name: str = None) -> dict:
+def _get_env(conda_env_file_path: str = None, env_name: str = None, platform: ModelFramework = None) -> dict:
     if conda_env_file_path:
         with open(conda_env_file_path) as file:
+            logger.info(f"Using found conda env: {conda_env_file_path}")
             env = yaml.safe_load(file)
-            if not _has_required_deps(env):
-                raise ValueError(f"conda.yaml does not contain {MLServerEnvDeps}")
-            else:
-                logger.info("Using found conda.yaml")
+            env = _add_required_deps_if_missing(env, platform)
     else:
         env = _get_environment(env_name=env_name)
-        env = _add_required_deps(env)
+        env = _add_required_deps_if_missing(env, platform)
     return env
 
 
-def save_environment(conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None):
+def _add_required_deps_if_missing(env: dict, platform: Optional[ModelFramework]) -> dict:
+    if not _has_required_deps(env, platform):
+        logger.info(f"conda.yaml does not contain {MLServerEnvDeps}, adding them")
+        env = _add_required_deps(env, platform)
+    return env
+
+
+def save_environment(
+    conda_pack_file_path: str, conda_env_file_path: str = None, env_name: str = None, platform: ModelFramework = None
+) -> None:
     if env_name:
+        # TODO: add mlserver deps here if not present?
         _pack_environment(env_name, conda_pack_file_path)
     else:
-        env = _get_env(conda_env_file_path, env_name)
+        env = _get_env(conda_env_file_path, env_name, platform)
         _create_and_pack_environment(env=env, file_path=conda_pack_file_path)
 
 
@@ -43,7 +52,7 @@ def _get_environment(env_name: str = None) -> dict:
     return yaml.safe_load(proc.stdout)
 
 
-def _has_required_deps(env: dict) -> bool:
+def _has_required_deps(env: dict, platform: ModelFramework = None) -> bool:
     if "dependencies" not in env:
         return False
 
@@ -52,18 +61,24 @@ def _has_required_deps(env: dict) -> bool:
     if not pip_deps:
         return False
 
-    for dep in MLServerEnvDeps:
-        parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
-        module = parts[0]
-        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
-        newlist = list(filter(r.match, pip_deps["pip"]))
-        if len(newlist) == 0:
+    deps = _get_mlserver_deps(platform)
+
+    for dep in deps:
+        if _is_dep_not_defined(dep, pip_deps["pip"]):
             return False
 
     return True
 
 
-def _add_required_deps(env: dict) -> dict:
+def _get_mlserver_deps(platform: Optional[ModelFramework]) -> List[str]:
+    runtime_deps = MLServerRuntimeEnvDeps.get(platform)  # type: ignore
+    deps = MLServerEnvDeps
+    if runtime_deps:
+        return deps + runtime_deps
+    return deps
+
+
+def _add_required_deps(env: dict, platform: ModelFramework = None) -> dict:
     if "dependencies" not in env:
         env["dependencies"] = []
 
@@ -73,15 +88,21 @@ def _add_required_deps(env: dict) -> dict:
         pip_deps = {"pip": []}
         dependencies.append(pip_deps)
 
-    for dep in MLServerEnvDeps:
-        parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
-        module = parts[0]
-        r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
-        newlist = list(filter(r.match, pip_deps["pip"]))
-        if len(newlist) == 0:
-            pip_deps["pip"].extend(MLServerEnvDeps)
+    deps = _get_mlserver_deps(platform)
+
+    for dep in deps:
+        if _is_dep_not_defined(dep, pip_deps["pip"]):
+            pip_deps["pip"].append(dep)
 
     return env
+
+
+def _is_dep_not_defined(dep: str, deps: List[str]) -> bool:
+    parts = re.split(r"==|>=|<=|~=|!=|>|<|==:", dep)
+    module = parts[0]
+    r = re.compile(fr"{module}$|({module}((==|>=|<=|~=|!=|>|<|==:)[0-9]+\.[0-9]+.[0-9]+))")
+    newlist = list(filter(r.match, deps))
+    return len(newlist) == 0
 
 
 def _get_pip_deps(dependencies: dict) -> Optional[dict]:
@@ -94,7 +115,7 @@ def _get_pip_deps(dependencies: dict) -> Optional[dict]:
 
 
 def _pack_environment(env_name: str, file_path: str):
-    logger.info("packing conda environment from %s", env_name)
+    logger.info(f"packing conda environment from {env_name} to {file_path}")
     # Pack environment
     conda_pack.pack(
         name=env_name,

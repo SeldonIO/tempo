@@ -139,3 +139,8 @@ def inference_pipeline_class(sklearn_model, xgboost_model: Model):
 
     myc = MyClass()
     return myc
+
+
+@pytest.fixture
+def conda_yaml_no_mlserver_deps():
+    return os.path.join(os.path.dirname(__file__), "serve", "data", "conda_missing_mlserver.yaml")

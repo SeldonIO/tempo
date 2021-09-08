@@ -27,12 +27,13 @@ Install [Docker](https://www.docker.com/) to run with the Docker runtime.
 ## Kubernetes Runtime Prequisites
 
 We provide a set of Ansible playbooks to create reproducible Kubernetes clusters with Kind for the demos.
+
 These playbooks depend on Ansible roles that we publish in  [SeldonIO/ansible-k8s-collection](https://github.com/SeldonIO/ansible-k8s-collection) repository.
 
 To obtain required ansible tools:
 ```bash
 pip install ansible openshift
-ansible-galaxy collection install git+https://github.com/SeldonIO/ansible-k8s-collection.git,v0.1.0
+ansible-galaxy collection install git+https://github.com/SeldonIO/ansible-k8s-collection.git,v0.2.0
 ```
 
 ### Kubernetes Cluster with Seldon Core
@@ -42,6 +43,7 @@ To create a Kind cluster with istio, Seldon-Core and Minio run:
 cd ansible
 ansible-playbook playbooks/seldon_core.yaml
 ```
+
 
 ### Kubernetes Cluster with KFServing
 

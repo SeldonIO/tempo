@@ -1,0 +1,12 @@
+mlflow
+astunparse==1.6.3
+cffi==1.14.6
+cloudpickle==1.6.0
+defusedxml==0.7.1
+dill==0.3.4
+ipython==7.26.0
+pydeprecate==0.3.1
+pytorch-lightning==1.4.0
+scipy==1.7.1
+torch==1.9.0
+torchvision==0.10.0
