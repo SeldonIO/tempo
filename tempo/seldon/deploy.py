@@ -14,13 +14,13 @@ from seldon_deploy_sdk.models.seldon_deployment_spec import SeldonDeploymentSpec
 from tempo.seldon.endpoint import Endpoint
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.specs import KubernetesSpec
-from tempo.serve.base import DeployedModel, ModelSpec, Runtime
+from tempo.serve.base import ClientModel, ModelSpec, Runtime
 from tempo.serve.metadata import EnterpriseRuntimeAuthType, EnterpriseRuntimeOptions
 
 
 # FIXME: Needs updating for runtime options to include EnterpriseRuntimeOptions
 class SeldonDeployRuntime(Runtime):
-    def list_models(self) -> Sequence[DeployedModel]:
+    def list_models(self) -> Sequence[ClientModel]:
         pass
 
     def __init__(self):

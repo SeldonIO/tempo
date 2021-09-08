@@ -12,7 +12,7 @@ from tempo.kfserving.endpoint import Endpoint
 from tempo.kfserving.protocol import KFServingV2Protocol
 from tempo.seldon.constants import MLSERVER_IMAGE
 from tempo.seldon.specs import DefaultModelsPath, DefaultServiceAccountName
-from tempo.serve.base import DeployedModel, ModelSpec, Runtime
+from tempo.serve.base import ClientModel, ModelSpec, Runtime
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
 from tempo.serve.metadata import KubernetesRuntimeOptions, ModelFramework
 from tempo.serve.stub import deserialize
@@ -247,7 +247,7 @@ class KFServingKubernetesRuntime(Runtime):
         d = self._get_spec(model_spec)
         return yaml.safe_dump(d)
 
-    def list_models(self, namespace: Optional[str] = None) -> Sequence[DeployedModel]:
+    def list_models(self, namespace: Optional[str] = None) -> Sequence[ClientModel]:
         self.create_k8s_client()
         api_instance = client.CustomObjectsApi()
 

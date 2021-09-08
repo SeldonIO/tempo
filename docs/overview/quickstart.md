@@ -27,7 +27,8 @@ Install [Docker](https://www.docker.com/) to run with the Docker runtime.
 ## Kubernetes Runtime Prequisites
 
 We provide a set of Ansible playbooks to create reproducible Kubernetes clusters with Kind for the demos.
-These playbooks are published as part of [SeldonIO/ansible-k8s-collection](https://github.com/SeldonIO/ansible-k8s-collection) repository.
+
+These playbooks depend on Ansible roles that we publish in  [SeldonIO/ansible-k8s-collection](https://github.com/SeldonIO/ansible-k8s-collection) repository.
 
 To obtain required ansible tools:
 ```bash
