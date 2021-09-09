@@ -1,10 +1,6 @@
 # Tempo GPT2 Triton ONNX Example
 
 
-## Prerequisites
-
-TODO
-
 ### Workflow Overview
 
 In this example we will be doing the following:
