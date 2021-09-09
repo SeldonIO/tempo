@@ -120,8 +120,8 @@ class KFServingV2Protocol(Protocol):
         ty = tys[name]
         if ty is None:
             ty = tys[idx]
-        # if ty is None:
-        #    return np.ndarray
+        if ty is None:
+            return np.ndarray
         return ty
 
     def to_protocol_response(self, model_details: ModelDetails, *args, **kwargs) -> Dict:
@@ -149,11 +149,11 @@ class KFServingV2Protocol(Protocol):
         for idx, input in enumerate(res["inputs"]):
             ty = KFServingV2Protocol.get_ty(input["name"], idx, tys)
 
-            if ty == np.ndarray:
+            if input["datatype"] == "BYTES":
+                inp[input["name"]] = KFServingV2Protocol.convert_from_bytes(input, ty)
+            elif ty == np.ndarray:
                 arr = KFServingV2Protocol.create_np_from_v2(input["data"], input["datatype"], input["shape"])
                 inp[input["name"]] = arr
-            elif input["datatype"] == "BYTES":
-                inp[input["name"]] = KFServingV2Protocol.convert_from_bytes(input, ty)
             else:
                 raise ValueError(f"Unknown ty {ty} in conversion")
 
@@ -167,11 +167,11 @@ class KFServingV2Protocol(Protocol):
         for idx, output in enumerate(res["outputs"]):
             ty = KFServingV2Protocol.get_ty(output["name"], idx, tys)
 
-            if ty == np.ndarray:
+            if output["datatype"] == "BYTES":
+                out[output["name"]] = KFServingV2Protocol.convert_from_bytes(output, ty)
+            elif ty == np.ndarray:
                 arr = KFServingV2Protocol.create_np_from_v2(output["data"], output["datatype"], output["shape"])
                 out[output["name"]] = arr
-            elif output["datatype"] == "BYTES":
-                out[output["name"]] = KFServingV2Protocol.convert_from_bytes(output, ty)
             else:
                 raise ValueError(f"Unknown ty {ty} in conversion")
 

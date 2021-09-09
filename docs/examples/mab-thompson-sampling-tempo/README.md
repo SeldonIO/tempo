@@ -8,11 +8,21 @@ logger.setLevel(logging.INFO)
 logging.info("test")
 ```
 
+    INFO:root:test
+
+
 
 ```python
 !kaggle datasets download -d uciml/default-of-credit-card-clients-dataset
 !unzip -o default-of-credit-card-clients-dataset.zip
 ```
+
+    Downloading default-of-credit-card-clients-dataset.zip to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo
+    100%|██████████████████████████████████████| 0.98M/0.98M [00:00<00:00, 2.16MB/s]
+    100%|██████████████████████████████████████| 0.98M/0.98M [00:00<00:00, 2.15MB/s]
+    Archive:  default-of-credit-card-clients-dataset.zip
+      inflating: UCI_Credit_Card.csv     
+
 
 
 ```python
@@ -78,11 +88,36 @@ rf.fit(X_train1, y_train1)
 ```
 
 
+
+
+    RandomForestClassifier(random_state=1)
+
+
+
+
 ```python
 from xgboost import XGBClassifier
 xgb = XGBClassifier(random_state=1)
 xgb.fit(X_train2, y_train2)
 ```
+
+    INFO:numexpr.utils:Note: NumExpr detected 16 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 8.
+    INFO:numexpr.utils:NumExpr defaulting to 8 threads.
+
+
+
+
+
+    XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+                  colsample_bynode=1, colsample_bytree=1, gamma=0, gpu_id=-1,
+                  importance_type='gain', interaction_constraints='',
+                  learning_rate=0.300000012, max_delta_step=0, max_depth=6,
+                  min_child_weight=1, missing=nan, monotone_constraints='()',
+                  n_estimators=100, n_jobs=0, num_parallel_tree=1, random_state=1,
+                  reg_alpha=0, reg_lambda=1, scale_pos_weight=1, subsample=1,
+                  tree_method='exact', validate_parameters=1, verbosity=None)
+
+
 
 
 ```python
@@ -95,6 +130,13 @@ xgb.fit(X_train2, y_train2)
 import joblib
 joblib.dump(rf, 'artifacts/mab/sklearn/model.joblib')
 ```
+
+
+
+
+    ['artifacts/mab/sklearn/model.joblib']
+
+
 
 
 ```python
@@ -120,6 +162,12 @@ xgboost_tempo = Model(
         local_folder=os.getcwd()+"/artifacts/mab/xgboost/")
 ```
 
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+
+
 
 ```python
 from tempo import deploy_local
@@ -133,9 +181,23 @@ remote_sklearn.predict(X_test2[0:1])
 ```
 
 
+
+
+    array([0])
+
+
+
+
 ```python
 remote_xgboost.predict(X_test2[0:1])
 ```
+
+
+
+
+    array([0.0865844], dtype=float32)
+
+
 
 
 ```python
@@ -206,16 +268,51 @@ class MABRouter(object):
             return self.models.sklearn(payload)
 ```
 
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+
+
 
 ```python
 mab_router = MABRouter()
 ```
+
+    INFO:root:Setting up MAB routing pipeline
+
 
 
 ```python
 for i in range(10):
     print(mab_router.predict(X_test2[0:1]))
 ```
+
+    INFO:root:routing to branch: 1
+    INFO:root:routing to branch: 1
+    INFO:root:routing to branch: 1
+    INFO:root:routing to branch: 0
+    INFO:root:routing to branch: 0
+    INFO:root:routing to branch: 0
+
+
+    [0.0865844]
+    [0.0865844]
+    [0.0865844]
+    [0]
+    [0]
+
+
+    INFO:root:routing to branch: 0
+    INFO:root:routing to branch: 0
+    INFO:root:routing to branch: 0
+    INFO:root:routing to branch: 1
+
+
+    [0]
+    [0]
+    [0]
+    [0]
+    [0.0865844]
+
 
 
 ```python
@@ -236,6 +333,11 @@ TEMPO_DIR = os.path.abspath(os.path.join(os.getcwd(), '..', '..', '..'))
 
 
 ```python
+!mkdir -p artifacts/mab/router/
+```
+
+
+```python
 %%writetemplate artifacts/mab/router/conda.yaml
 name: tempo-insights
 channels:
@@ -251,8 +353,16 @@ dependencies:
 
 ```python
 from tempo.serve.loader import save
-save(mab_router, save_env=True)
+save(MABRouter, save_env=True)
 ```
+
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+    INFO:tempo:Saving environment
+    INFO:tempo:Saving tempo model to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/router/model.pickle
+
 
 
 ```python
@@ -269,6 +379,18 @@ remote_mab_router = deploy_local(mab_router, runtime_options)
 for i in range(10):
     print(remote_mab_router.predict(X_test2[0:1]))
 ```
+
+    [0]
+    [0.0865844]
+    [0.0865844]
+    [0]
+    [0.0865844]
+    [0]
+    [0]
+    [0.0865844]
+    [0]
+    [0.0865844]
+
 
 
 ```python
@@ -309,6 +431,10 @@ class MABFeedback(object):
         
 ```
 
+    INFO:tempo:Initialising Insights Manager with Args: ('', 1, 1, 3, 0)
+    WARNING:tempo:Insights Manager not initialised as empty URL provided.
+
+
 
 ```python
 mab_feedback = MABFeedback()
@@ -332,8 +458,12 @@ dependencies:
 
 
 ```python
-save(mab_feedback, save_env=True)
+save(MABFeedback, save_env=True)
 ```
+
+    INFO:tempo:Saving environment
+    INFO:tempo:Saving tempo model to /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/feedback/model.pickle
+
 
 
 ```python
@@ -348,6 +478,18 @@ for i in range(10):
     print(remote_mab_feedback.predict(payload=X_rest[0:1], parameters={ "reward": 1, "routing": 0}))
 ```
 
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+
+
 ## See now most requests being sent to sklearn model
 
 
@@ -355,6 +497,18 @@ for i in range(10):
 for i in range(10):
     print(remote_mab_router.predict(X_test2[0:1]))
 ```
+
+    [0]
+    [0]
+    [0]
+    [0]
+    [0]
+    [0]
+    [0]
+    [0]
+    [0]
+    [0]
+
 
 ### Now send 20 positive requests showing xgboost performing better
 
@@ -364,6 +518,28 @@ for i in range(20):
     print(remote_mab_feedback.predict(payload=X_rest[0:1], parameters={ "reward": 1, "routing": 1}))
 ```
 
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+    [1 0]
+
+
 ### We should now see the xgboost model receiving most requests
 
 
@@ -372,6 +548,18 @@ for i in range(10):
     print(remote_mab_router.predict(X_test2[0:1]))
 ```
 
+    [0]
+    [0.0865844]
+    [0]
+    [0.0865844]
+    [0.0865844]
+    [0.0865844]
+    [0]
+    [0.0865844]
+    [0]
+    [0.0865844]
+
+
 ### Clean up Docker
 
 
@@ -379,6 +567,12 @@ for i in range(10):
 remote_mab_router.undeploy()
 remote_mab_feedback.undeploy()
 ```
+
+    INFO:tempo:Undeploying mab-router
+    INFO:tempo:Undeploying test-iris-sklearn
+    INFO:tempo:Undeploying test-iris-xgboost
+    INFO:tempo:Undeploying mab-feedback
+
 
 
 ```python
@@ -390,13 +584,14 @@ undeploy_redis()
 
 
 ```python
-!kubectl create ns production
-```
-
-
-```python
 !kubectl apply -f k8s/rbac -n default
 ```
+
+    secret/minio-secret configured
+    serviceaccount/tempo-pipeline unchanged
+    role.rbac.authorization.k8s.io/tempo-pipeline unchanged
+    rolebinding.rbac.authorization.k8s.io/tempo-pipeline-rolebinding unchanged
+
 
 
 ```python
@@ -412,12 +607,25 @@ upload(mab_router)
 upload(mab_feedback)
 ```
 
+    INFO:tempo:Uploading /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/router/ to s3://tempo/mab/route
+    INFO:tempo:Uploading /home/alejandro/Programming/kubernetes/seldon/tempo/docs/examples/mab-thompson-sampling-tempo/artifacts/mab/feedback/ to s3://tempo/mab/feedback
+
+
 
 ```python
 from tempo.k8s.utils import deploy_redis
 
 deploy_redis()
 ```
+
+
+```python
+runtime_options.remote_options.authSecretName = "minio-secret"
+print(runtime_options.remote_options.authSecretName)
+```
+
+    minio-secret
+
 
 
 ```python
@@ -432,9 +640,23 @@ k8s_mab_router.predict(payload=X_rest[0:1])
 ```
 
 
+
+
+    array([0])
+
+
+
+
 ```python
 k8s_mab_feedback.predict(payload=X_rest[0:1], parameters={"reward":0.0,"routing":0} )
 ```
+
+
+
+
+    array([0, 1])
+
+
 
 
 ```python
