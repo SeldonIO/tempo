@@ -13,6 +13,23 @@ In this example we will be doing the following:
 * Deploy GPT2 Pipeline and Test in Docker
 * Deploy GPT2 Pipeline & Model to Kuberntes and Test
 
+### Install Dependencies
+
+
+```python
+%%writefile requirements-dev.txt
+transformers==4.5.1
+torch==1.8.1
+tokenizers==0.10.3
+tensorflow==2.4.1
+tf2onnx==1.8.5
+```
+
+
+```python
+pip install -r requirements-dev.txt
+```
+
 ## Download & Optimize pre-trained artifacts
 
 
