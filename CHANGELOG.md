@@ -1,8 +1,33 @@
 # Changelog
 
-## [v0.3.0](https://github.com/seldonio/tempo/tree/v0.3.0) (2021-08-05)
+## [v0.5.0](https://github.com/SeldonIO/tempo/tree/v0.5.0) (2021-09-10)
 
-[Full Changelog](https://github.com/seldonio/tempo/compare/v0.2.0...v0.3.0)
+[Full Changelog](https://github.com/SeldonIO/tempo/compare/v0.3.0...v0.5.0)
+
+**Closed issues:**
+
+- Create MLFlow Example showcasing Seldon Core MLServer V2 MLFlow server [\#188](https://github.com/SeldonIO/tempo/issues/188)
+- Release Tempo v0.3.0 [\#182](https://github.com/SeldonIO/tempo/issues/182)
+- Run tests across multiple Python versions [\#181](https://github.com/SeldonIO/tempo/issues/181)
+- Rearchitect/refactor runtime options to provide consistent mappings [\#150](https://github.com/SeldonIO/tempo/issues/150)
+
+**Merged pull requests:**
+
+- Update metaflow to 0.5.0 [\#201](https://github.com/SeldonIO/tempo/pull/201) ([cliveseldon](https://github.com/cliveseldon))
+- use mlserver 0.4.1 in examples [\#200](https://github.com/SeldonIO/tempo/pull/200) ([sakoush](https://github.com/sakoush))
+- use mlserver 0.4.1 [\#199](https://github.com/SeldonIO/tempo/pull/199) ([sakoush](https://github.com/sakoush))
+- Fix metaflow readme [\#198](https://github.com/SeldonIO/tempo/pull/198) ([cliveseldon](https://github.com/cliveseldon))
+- clarify note on k8s ansible collection [\#193](https://github.com/SeldonIO/tempo/pull/193) ([RafalSkolasinski](https://github.com/RafalSkolasinski))
+- Adding GPT2 Example [\#192](https://github.com/SeldonIO/tempo/pull/192) ([axsaucedo](https://github.com/axsaucedo))
+- WIP: Update tempo to 0.5.0 and update metaflow example [\#191](https://github.com/SeldonIO/tempo/pull/191) ([cliveseldon](https://github.com/cliveseldon))
+- Update docs for Metaflow [\#190](https://github.com/SeldonIO/tempo/pull/190) ([cliveseldon](https://github.com/cliveseldon))
+- Various fixes to enable tempo to pack environment for single models [\#189](https://github.com/SeldonIO/tempo/pull/189) ([sakoush](https://github.com/sakoush))
+- Added 0.3.0 changelog [\#185](https://github.com/SeldonIO/tempo/pull/185) ([axsaucedo](https://github.com/axsaucedo))
+- Metaflow demo [\#170](https://github.com/SeldonIO/tempo/pull/170) ([cliveseldon](https://github.com/cliveseldon))
+
+## [v0.3.0](https://github.com/SeldonIO/tempo/tree/v0.3.0) (2021-08-05)
+
+[Full Changelog](https://github.com/SeldonIO/tempo/compare/v0.2.0...v0.3.0)
 
 **Closed issues:**
 
@@ -40,9 +65,9 @@
 - Added changelog [\#143](https://github.com/SeldonIO/tempo/pull/143) ([axsaucedo](https://github.com/axsaucedo))
 - use link to .html instead of .md [\#142](https://github.com/SeldonIO/tempo/pull/142) ([RafalSkolasinski](https://github.com/RafalSkolasinski))
 
-## [v0.2.0](https://github.com/seldonio/tempo/tree/v0.2.0) (2021-06-16)
+## [v0.2.0](https://github.com/SeldonIO/tempo/tree/v0.2.0) (2021-06-16)
 
-[Full Changelog](https://github.com/seldonio/tempo/compare/v0.1.0...v0.2.0)
+[Full Changelog](https://github.com/SeldonIO/tempo/compare/v0.1.0...v0.2.0)
 
 **Closed issues:**
 
@@ -72,9 +97,9 @@
 - Add knative eventing plus playbook [\#116](https://github.com/SeldonIO/tempo/pull/116) ([cliveseldon](https://github.com/cliveseldon))
 - Fix docs and add FAQ [\#114](https://github.com/SeldonIO/tempo/pull/114) ([cliveseldon](https://github.com/cliveseldon))
 
-## [v0.1.0](https://github.com/seldonio/tempo/tree/v0.1.0) (2021-05-06)
+## [v0.1.0](https://github.com/SeldonIO/tempo/tree/v0.1.0) (2021-05-06)
 
-[Full Changelog](https://github.com/seldonio/tempo/compare/0.1.0.dev0...v0.1.0)
+[Full Changelog](https://github.com/SeldonIO/tempo/compare/0.1.0.dev0...v0.1.0)
 
 **Closed issues:**
 
@@ -151,23 +176,10 @@
 - Move notebooks to docs/examples folder [\#45](https://github.com/SeldonIO/tempo/pull/45) ([adriangonz](https://github.com/adriangonz))
 - Add step to set up Docker [\#44](https://github.com/SeldonIO/tempo/pull/44) ([adriangonz](https://github.com/adriangonz))
 - Add black, flake8, isort and mypy [\#39](https://github.com/SeldonIO/tempo/pull/39) ([adriangonz](https://github.com/adriangonz))
-- Added docs [\#36](https://github.com/SeldonIO/tempo/pull/36) ([axsaucedo](https://github.com/axsaucedo))
-- clean up explainer example [\#35](https://github.com/SeldonIO/tempo/pull/35) ([cliveseldon](https://github.com/cliveseldon))
-- clean up explainer example with params [\#34](https://github.com/SeldonIO/tempo/pull/34) ([cliveseldon](https://github.com/cliveseldon))
-- update v2 type handling for BYTES [\#33](https://github.com/SeldonIO/tempo/pull/33) ([cliveseldon](https://github.com/cliveseldon))
-- add explainer conda.yaml [\#32](https://github.com/SeldonIO/tempo/pull/32) ([cliveseldon](https://github.com/cliveseldon))
-- WIP: Explainer updates [\#31](https://github.com/SeldonIO/tempo/pull/31) ([cliveseldon](https://github.com/cliveseldon))
-- Environment update [\#28](https://github.com/SeldonIO/tempo/pull/28) ([cliveseldon](https://github.com/cliveseldon))
-- State exploration with mab example [\#25](https://github.com/SeldonIO/tempo/pull/25) ([axsaucedo](https://github.com/axsaucedo))
-- WIP : Add end-to-end example for Tempo pipelines [\#20](https://github.com/SeldonIO/tempo/pull/20) ([adriangonz](https://github.com/adriangonz))
-- Updates from MLServer work [\#19](https://github.com/SeldonIO/tempo/pull/19) ([cliveseldon](https://github.com/cliveseldon))
-- Add kfserving [\#10](https://github.com/SeldonIO/tempo/pull/10) ([cliveseldon](https://github.com/cliveseldon))
-- Fix tests [\#9](https://github.com/SeldonIO/tempo/pull/9) ([cliveseldon](https://github.com/cliveseldon))
-- Pack environment and upload alongside model / pipeline artifact [\#8](https://github.com/SeldonIO/tempo/pull/8) ([adriangonz](https://github.com/adriangonz))
 
-## [0.1.0.dev0](https://github.com/seldonio/tempo/tree/0.1.0.dev0) (2021-02-12)
+## [0.1.0.dev0](https://github.com/SeldonIO/tempo/tree/0.1.0.dev0) (2021-02-12)
 
-[Full Changelog](https://github.com/seldonio/tempo/compare/180082f692d8324a2de042488b35b3e40dfe88bd...0.1.0.dev0)
+[Full Changelog](https://github.com/SeldonIO/tempo/compare/180082f692d8324a2de042488b35b3e40dfe88bd...0.1.0.dev0)
 
 **Merged pull requests:**
 
@@ -177,4 +189,4 @@
 
 
 
-\* *This Changelog was automatically generated       by [github_changelog_generator]      (https://github.com/github-changelog-generator/github-changelog-generator)*
+\* *This Changelog was automatically generated by [github_changelog_generator](https://github.com/github-changelog-generator/github-changelog-generator)*
