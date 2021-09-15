@@ -26,6 +26,7 @@ Tempo
     Model Explanation (using Alibi) <examples/explainer/README.md>
     Outlier Detection (using Alibi-Detect) <examples/outlier/README.md>
     End to End Pipeline with Metaflow and Tempo <examples/metaflow/README.md>
+    GPT-2 Hugging Face with ONNX Triton and Seldon Core <examples/metaflow/README.md>
 
 
 .. toctree::
