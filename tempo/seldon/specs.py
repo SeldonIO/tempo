@@ -35,9 +35,9 @@ class _V1ContainerFactory:
         ModelFramework.SKLearn: "seldonio/sklearnserver:1.6.0-dev",
         ModelFramework.XGBoost: "seldonio/xgboostserver:1.6.0-dev",
         ModelFramework.Tensorflow: "tensorflow/serving:2.1.0",
-        ModelFramework.TensorRT: "nvcr.io/nvidia/tritonserver:20.08-py3",
-        ModelFramework.ONNX: "nvcr.io/nvidia/tritonserver:20.08-py3",
-        ModelFramework.PyTorch: "nvcr.io/nvidia/tritonserver:20.08-py3",
+        ModelFramework.TensorRT: "nvcr.io/nvidia/tritonserver:21.08-py3",
+        ModelFramework.ONNX: "nvcr.io/nvidia/tritonserver:21.08-py3",
+        ModelFramework.PyTorch: "nvcr.io/nvidia/tritonserver:21.08-py3",
     }
 
     @classmethod
