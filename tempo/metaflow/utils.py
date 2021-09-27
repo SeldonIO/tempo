@@ -194,7 +194,6 @@ def running_aws_batch(step: Step) -> bool:
 
     """
     running_on_aws_batch = False
-    print(step.decorators)  # pylint: disable=maybe-no-member
     for deco in step.decorators:  # pylint: disable=maybe-no-member
         if isinstance(deco, BatchDecorator):
             running_on_aws_batch = True
