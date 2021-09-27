@@ -1,7 +1,7 @@
 from typing import Any
 
-from metaflow import S3, FlowSpec, IncludeFile
-
+from metaflow import S3, FlowSpec, IncludeFile, Step
+from metaflow.plugins.aws.batch.batch_decorator import BatchDecorator
 
 def save_artifact(model: Any, filename: str):
     """
@@ -178,3 +178,23 @@ def save_pipeline_with_conda(pipeline, folder: str, conda_env: IncludeFile):
     with open(conda_env_path, "w") as f:
         f.write(conda_env)
     save(pipeline)
+
+
+def running_aws_batch(step : Step) -> bool:
+    """
+    Test if a Step is running on AWS batch
+    Parameters
+    ----------
+    step The step to test
+
+    Returns
+    -------
+    True if flow is running on AWS Batch
+
+    """
+    running_on_aws_batch = False
+    print(step.decorators)  # pylint: disable=maybe-no-member
+    for deco in step.decorators:  # pylint: disable=maybe-no-member
+        if isinstance(deco, BatchDecorator):
+            running_on_aws_batch = True
+    return running_on_aws_batch
