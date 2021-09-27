@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.5.1](https://github.com/SeldonIO/tempo/tree/v0.5.1) (2021-09-27)
+
+[Full Changelog](https://github.com/SeldonIO/tempo/compare/v0.5.0...v0.5.1)
+
+**Closed issues:**
+
+- test-issue [\#206](https://github.com/SeldonIO/tempo/issues/206)
+- test issue [\#204](https://github.com/SeldonIO/tempo/issues/204)
+- Create an mlflow example in tempo [\#187](https://github.com/SeldonIO/tempo/issues/187)
+- Add GPT-2 example [\#160](https://github.com/SeldonIO/tempo/issues/160)
+
+**Merged pull requests:**
+
+- Github Actions Tests [\#208](https://github.com/SeldonIO/tempo/pull/208) ([cliveseldon](https://github.com/cliveseldon))
+- Fix metaflow local/remote decision and update to 0.5.1 release [\#207](https://github.com/SeldonIO/tempo/pull/207) ([cliveseldon](https://github.com/cliveseldon))
+- Updating triton image [\#203](https://github.com/SeldonIO/tempo/pull/203) ([axsaucedo](https://github.com/axsaucedo))
+
 ## [v0.5.0](https://github.com/SeldonIO/tempo/tree/v0.5.0) (2021-09-10)
 
 [Full Changelog](https://github.com/SeldonIO/tempo/compare/v0.3.0...v0.5.0)
@@ -13,6 +30,7 @@
 
 **Merged pull requests:**
 
+- Update changelog for 0.5.0 [\#202](https://github.com/SeldonIO/tempo/pull/202) ([cliveseldon](https://github.com/cliveseldon))
 - Update metaflow to 0.5.0 [\#201](https://github.com/SeldonIO/tempo/pull/201) ([cliveseldon](https://github.com/cliveseldon))
 - use mlserver 0.4.1 in examples [\#200](https://github.com/SeldonIO/tempo/pull/200) ([sakoush](https://github.com/sakoush))
 - use mlserver 0.4.1 [\#199](https://github.com/SeldonIO/tempo/pull/199) ([sakoush](https://github.com/sakoush))
