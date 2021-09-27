@@ -3,6 +3,7 @@ from typing import Any
 from metaflow import S3, FlowSpec, IncludeFile, Step
 from metaflow.plugins.aws.batch.batch_decorator import BatchDecorator
 
+
 def save_artifact(model: Any, filename: str):
     """
 
@@ -180,7 +181,7 @@ def save_pipeline_with_conda(pipeline, folder: str, conda_env: IncludeFile):
     save(pipeline)
 
 
-def running_aws_batch(step : Step) -> bool:
+def running_aws_batch(step: Step) -> bool:
     """
     Test if a Step is running on AWS batch
     Parameters

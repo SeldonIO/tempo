@@ -171,6 +171,7 @@ class IrisFlow(FlowSpec):
         --tempo-on-docker parameter
         """
         from tempo.metaflow.utils import running_aws_batch
+
         classifier, s3_active = self.create_tempo_artifacts()
         if s3_active and running_aws_batch(self.tempo):
             print("Deploying to remote k8s cluster")
