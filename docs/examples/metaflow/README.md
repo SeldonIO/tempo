@@ -32,13 +32,6 @@ conda config --add channels conda-forge
 
 ## Run Flow locally to deploy to Docker
 
-To run the workflow with a local Docker deployment use the flag:
-
-```
---tempo-on-docker true
-```
-
-
 
 ```python
 !python src/irisflow.py --environment=conda run 
@@ -60,8 +53,6 @@ client.predict(np.array([[1, 2, 3, 4]]))
 We will now run our flow on AWS Batch and will launch Tempo artifacts onto a remote Kubernetes cluster. 
 
 ### Setup AWS Metaflow Support
-
-Note at present this is required even for a local run as artifacts are stored on S3.
 
 [Install Metaflow with remote AWS support](https://docs.metaflow.org/metaflow-on-aws/metaflow-on-aws).
 

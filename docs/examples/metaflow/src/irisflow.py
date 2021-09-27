@@ -162,7 +162,7 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "0.5.0", "conda_env": "2.4.2"})
+    @pip(libraries={"mlops-tempo": "0.5.1", "conda_env": "2.4.2"})
     @step
     def tempo(self):
         """
@@ -170,11 +170,14 @@ class IrisFlow(FlowSpec):
         Then either deploy locally to Docker or deploy to a remote Kubernetes cluster based on the
         --tempo-on-docker parameter
         """
-        classifier, remote = self.create_tempo_artifacts()
+        from tempo.metaflow.utils import running_aws_batch
 
-        if remote:
+        classifier, s3_active = self.create_tempo_artifacts()
+        if s3_active and running_aws_batch(self.tempo):
+            print("Deploying to remote k8s cluster")
             self.deploy_tempo_remote(classifier)
         else:
+            print("Deploying to local Docker")
             self.deploy_tempo_local(classifier)
 
         self.next(self.end)
