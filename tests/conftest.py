@@ -7,7 +7,8 @@ import pytest
 import yaml
 
 from tempo import Model, ModelFramework, Pipeline, PipelineModels, model, pipeline, predictmethod
-from tempo.kfserving import KFServingV1Protocol, KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
+from tempo.protocols.tensorflow import TensorflowProtocol
 from tempo.seldon import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.metadata import KubernetesRuntimeOptions
@@ -75,7 +76,7 @@ def xgboost_model() -> Model:
 def custom_model() -> Model:
     @model(
         name="custom-model",
-        protocol=KFServingV2Protocol(),
+        protocol=V2Protocol(),
         platform=ModelFramework.Custom,
     )
     def _custom_model(payload: np.ndarray) -> np.ndarray:
@@ -114,7 +115,7 @@ def cifar10_model() -> Model:
         platform=ModelFramework.Tensorflow,
         uri="gs://seldon-models/tfserving/cifar10/resnet32",
         local_folder=model_path,
-        protocol=KFServingV1Protocol(),
+        protocol=TensorflowProtocol(),
     )
 
 

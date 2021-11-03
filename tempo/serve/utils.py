@@ -3,7 +3,7 @@ from inspect import getmembers, isclass, isfunction
 from types import SimpleNamespace
 from typing import Any, Callable, Optional, Type
 
-from ..kfserving.protocol import KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
 from .base import BaseModel
 from .metadata import BaseRuntimeOptionsType, DockerOptions, ModelFramework
 from .model import Model
@@ -119,7 +119,7 @@ def _bind_tempo_interface(artifact: Any, model: BaseModel) -> Any:
 
 def pipeline(
     name: str,
-    protocol: Protocol = KFServingV2Protocol(),
+    protocol: Protocol = V2Protocol(),
     local_folder: str = None,
     uri: str = None,
     models: PipelineModels = None,
@@ -207,7 +207,7 @@ def model(
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
-    protocol: Protocol = KFServingV2Protocol(),
+    protocol: Protocol = V2Protocol(),
     runtime_options: BaseRuntimeOptionsType = DockerOptions(),
     description: str = "",
 ):

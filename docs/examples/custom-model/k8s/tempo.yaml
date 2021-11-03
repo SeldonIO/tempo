@@ -7,7 +7,7 @@ metadata:
       "/home/clive/work/mlops/fork-tempo/docs/examples/custom-model/artifacts", "uri":
       "s3://tempo/divorce", "platform": "custom", "inputs": {"args": [{"ty": "numpy.ndarray",
       "name": "marriage"}, {"ty": "numpy.ndarray", "name": "age"}]}, "outputs": {"args":
-      [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+      [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.protocols.v2.V2Protocol",
       "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "state_options":
       {"state_type": "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options":
       {"worker_endpoint": "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time":
@@ -47,7 +47,7 @@ spec:
               true}, "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
               "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
               false, "namespace": "production"}'
-          image: seldonio/mlserver:0.3.2
+          image: seldonio/mlserver:0.4.1
           name: numpyro-divorce
     graph:
       envSecretRefName: minio-secret

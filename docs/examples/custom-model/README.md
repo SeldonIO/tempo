@@ -103,7 +103,7 @@ from src.train import train, save, model_function
 mcmc = train()
 ```
 
-    sample: 100%|██████████| 3000/3000 [00:05<00:00, 547.59it/s, 3 steps of size 7.77e-01. acc. prob=0.91]
+    sample: 100%|██████████| 3000/3000 [00:06<00:00, 445.23it/s, 3 steps of size 7.77e-01. acc. prob=0.91]
 
 
     
@@ -250,8 +250,8 @@ save(numpyro_divorce)
 ```
 
     Collecting packages...
-    Packing environment at '/home/clive/anaconda3/envs/tempo-792d47bc-3391-4a9b-949b-bc38fe1cd5dd' to '/home/clive/work/mlops/fork-tempo/docs/examples/custom-model/artifacts/environment.tar.gz'
-    [########################################] | 100% Completed | 19.0s
+    Packing environment at '/home/clive/anaconda3/envs/tempo-7dfc12cb-53ee-44f4-ae37-fb0e9e60a4b8' to '/home/clive/work/mlops/fork-tempo/docs/examples/custom-model/artifacts/environment.tar.gz'
+    [########################################] | 100% Completed | 25.2s
 
 
 
@@ -379,7 +379,7 @@ with open(os.getcwd()+"/k8s/tempo.yaml","w") as f:
           "/home/clive/work/mlops/fork-tempo/docs/examples/custom-model/artifacts", "uri":
           "s3://tempo/divorce", "platform": "custom", "inputs": {"args": [{"ty": "numpy.ndarray",
           "name": "marriage"}, {"ty": "numpy.ndarray", "name": "age"}]}, "outputs": {"args":
-          [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.kfserving.protocol.KFServingV2Protocol",
+          [{"ty": "numpy.ndarray", "name": null}]}, "description": ""}, "protocol": "tempo.protocols.v2.V2Protocol",
           "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime", "state_options":
           {"state_type": "LOCAL", "key_prefix": "", "host": "", "port": ""}, "insights_options":
           {"worker_endpoint": "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time":

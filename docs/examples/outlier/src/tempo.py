@@ -5,7 +5,8 @@ import numpy as np
 from alibi_detect.base import NumpyEncoder
 from src.constants import ARTIFACTS_FOLDER, MODEL_FOLDER, OUTLIER_FOLDER
 
-from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
+from tempo.protocols.tensorflow import TensorflowProtocol
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
@@ -16,7 +17,7 @@ def create_outlier_cls():
     @model(
         name="outlier",
         platform=ModelFramework.Custom,
-        protocol=KFServingV2Protocol(),
+        protocol=V2Protocol(),
         uri="s3://tempo/outlier/cifar10/outlier",
         local_folder=os.path.join(ARTIFACTS_FOLDER, OUTLIER_FOLDER),
     )
@@ -48,7 +49,7 @@ def create_model():
 
     cifar10_model = Model(
         name="resnet32",
-        protocol=KFServingV1Protocol(),
+        protocol=TensorflowProtocol(),
         platform=ModelFramework.Tensorflow,
         uri="gs://seldon-models/tfserving/cifar10/resnet32",
         local_folder=os.path.join(ARTIFACTS_FOLDER, MODEL_FOLDER),
@@ -60,7 +61,7 @@ def create_model():
 def create_svc_cls(outlier, model):
     @pipeline(
         name="cifar10-service",
-        protocol=KFServingV2Protocol(),
+        protocol=V2Protocol(),
         uri="s3://tempo/outlier/cifar10/svc",
         local_folder=os.path.join(ARTIFACTS_FOLDER, "svc"),
         models=PipelineModels(outlier=outlier, cifar10=model),

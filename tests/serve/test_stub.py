@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
 from tempo.serve.base import ModelSpec
 from tempo.serve.metadata import KFServingOptions, ModelDataArg, ModelDataArgs, ModelDetails, ModelFramework
 
@@ -39,11 +39,11 @@ def test_model_spec():
             inputs=ModelDataArgs(args=[ModelDataArg(ty=str)]),
             outputs=ModelDataArgs(args=[]),
         ),
-        protocol=KFServingV2Protocol(),
+        protocol=V2Protocol(),
         runtime_options=KFServingOptions().local_options,
     )
     s = ms.json()
     j = json.loads(s)
     ms2 = ModelSpec(**j)
-    assert isinstance(ms2.protocol, KFServingV2Protocol)
+    assert isinstance(ms2.protocol, V2Protocol)
     assert ms2.model_details.inputs.args[0].ty == str

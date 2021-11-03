@@ -1,7 +1,8 @@
 import json
 
 from tempo.k8s.constants import TempoK8sDescriptionAnnotation, TempoK8sLabel, TempoK8sModelSpecAnnotation
-from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
+from tempo.protocols.tensorflow import TensorflowProtocol
 from tempo.seldon.constants import MLSERVER_IMAGE, TRITON_IMAGE
 from tempo.serve.base import ModelSpec
 from tempo.serve.constants import ENV_TEMPO_RUNTIME_OPTIONS
@@ -24,7 +25,7 @@ def get_container_spec(model_details: ModelSpec) -> dict:
     ):
         return _V2ContainerFactory.get_container_spec(model_details.model_details, runtime_options)
 
-    if isinstance(model_details.protocol, KFServingV2Protocol):
+    if isinstance(model_details.protocol, V2Protocol):
         return _V2ContainerFactory.get_container_spec(model_details.model_details, runtime_options)
 
     return _V1ContainerFactory.get_container_spec(model_details.model_details)
@@ -220,10 +221,10 @@ class KubernetesSpec:
         ]
 
     def _get_spec_protocol(self) -> str:
-        if isinstance(self._details.protocol, KFServingV2Protocol):
+        if isinstance(self._details.protocol, V2Protocol):
             return "kfserving"
 
-        if isinstance(self._details.protocol, KFServingV1Protocol):
+        if isinstance(self._details.protocol, TensorflowProtocol):
             return "tensorflow"
 
         return "seldon"

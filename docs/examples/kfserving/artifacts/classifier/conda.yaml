@@ -1,8 +1,0 @@
-name: tempo
-channels:
-  - defaults
-dependencies:
-  - python=3.7.9
-  - pip:
-    - mlops-tempo
-    - mlserver==0.4.0

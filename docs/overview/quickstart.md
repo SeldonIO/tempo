@@ -44,15 +44,6 @@ cd ansible
 ansible-playbook playbooks/seldon_core.yaml
 ```
 
-
-### Kubernetes Cluster with KFServing
-
-To create a Kind cluster with istio, knative serving, KFServing and Minio run:
-```bash
-cd ansible
-ansible-playbook playbooks/kfserving.yaml
-```
-
 ## Next Step
 
 Create the `tempo-examples` conda environment and try the [introductory example](../examples/custom-model/README.html)

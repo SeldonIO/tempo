@@ -28,9 +28,8 @@ Tempo provides a unified interface to multiple MLOps projects that enable data s
      * Deploy locally to Docker to test with Docker runtimes.
      * Deploy to production on Kubernetes
      * Extract declarative Kubernetes yaml to follow GitOps workflows.
- * Supporting a wide range of production runtimes
+ * Supporting Seldon production runtimes
      * Seldon Core open source
-     * KFServing open source
      * Seldon Deploy enterprise
  * Create stateful services. Examples:
     * Multi-Armed Bandits.

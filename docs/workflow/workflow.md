@@ -205,7 +205,7 @@ Once uploaded you can run your pipelines you can deploy to production in two mai
 
 #### Update RuntimeOptions with the production runtime
 
-For Kubernetes you can use a Kubernetes Runtime such as [SeldonKubernetesRuntime](../api/tempo.seldon.k8s.html) or [KFServingKubernetesRuntime](../api/tempo.kfserving.k8s.html). 
+For Kubernetes you can use a Kubernetes Runtime such as [SeldonKubernetesRuntime](../api/tempo.seldon.k8s.html).
 
 Create appropriate Kubernetes settings as shown below for your use case. This may require creating the appropriate RBAC to allow components to access the remote bucket storage.
 

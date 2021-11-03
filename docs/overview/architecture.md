@@ -37,11 +37,11 @@ Models when deployed will expose endpoints that respect a particular protocol. T
 
 | Protocol | Description |
 |--------|---------|
-| KFServingV2Protocol |  [V2 definition](https://github.com/kubeflow/kfserving/tree/master/docs/predict-api/v2) |
-| KFServingV1Protocol | [Tensorflow protocol](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/api_rest.md) |
+| V2Protocol |  [V2 definition](https://github.com/kserve/kserve/tree/master/docs/predict-api/v2) |
+| TensorflowProtocol | [Tensorflow protocol](https://github.com/tensorflow/serving/blob/master/tensorflow_serving/g3doc/api_rest.md) |
 | SeldonProtocol | [Seldon protcol definition](https://docs.seldon.io/projects/seldon-core/en/latest/graph/protocols.html#rest-and-grpc-seldon-protocol) |
 
 
-The default protocol is KFServingV2 protocol.
+The default protocol is the V2 protocol.
 
 If calling the model with tempo you will not need to deal with the protocol explicitly as translation from the defined python types to runtime payloads and vice versa  will be automatic.

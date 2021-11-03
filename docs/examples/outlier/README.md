@@ -122,7 +122,8 @@ import numpy as np
 from alibi_detect.base import NumpyEncoder
 from src.constants import ARTIFACTS_FOLDER, MODEL_FOLDER, OUTLIER_FOLDER
 
-from tempo.kfserving.protocol import KFServingV1Protocol, KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
+from tempo.protocols.tensorflow import TensorflowProtocol
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels
@@ -133,7 +134,7 @@ def create_outlier_cls():
     @model(
         name="outlier",
         platform=ModelFramework.Custom,
-        protocol=KFServingV2Protocol(),
+        protocol=V2Protocol(),
         uri="s3://tempo/outlier/cifar10/outlier",
         local_folder=os.path.join(ARTIFACTS_FOLDER, OUTLIER_FOLDER),
     )
@@ -165,7 +166,7 @@ def create_model():
 
     cifar10_model = Model(
         name="resnet32",
-        protocol=KFServingV1Protocol(),
+        protocol=TensorflowProtocol(),
         platform=ModelFramework.Tensorflow,
         uri="gs://seldon-models/tfserving/cifar10/resnet32",
         local_folder=os.path.join(ARTIFACTS_FOLDER, MODEL_FOLDER),
@@ -177,7 +178,7 @@ def create_model():
 def create_svc_cls(outlier, model):
     @pipeline(
         name="cifar10-service",
-        protocol=KFServingV2Protocol(),
+        protocol=V2Protocol(),
         uri="s3://tempo/outlier/cifar10/svc",
         local_folder=os.path.join(ARTIFACTS_FOLDER, "svc"),
         models=PipelineModels(outlier=outlier, cifar10=model),
@@ -239,7 +240,7 @@ def test_svc_inlier():
     [1m============================= test session starts ==============================[0m
     platform linux -- Python 3.7.9, pytest-6.2.0, py-1.10.0, pluggy-0.13.1
     rootdir: /home/clive/work/mlops/fork-tempo, configfile: setup.cfg
-    plugins: cases-3.4.6, asyncio-0.14.0
+    plugins: cases-3.4.6, cov-2.12.1, asyncio-0.14.0
     collected 2 items                                                              [0m[1m
     
     tests/test_tempo.py [32m.[0m[32m.[0m[33m                                                   [100%][0m
@@ -254,7 +255,7 @@ def test_svc_inlier():
         DeprecationWarning,
     
     -- Docs: https://docs.pytest.org/en/stable/warnings.html
-    [33m======================== [32m2 passed[0m, [33m[1m2 warnings[0m[33m in 3.77s[0m[33m =========================[0m
+    [33m======================== [32m2 passed[0m, [33m[1m2 warnings[0m[33m in 4.69s[0m[33m =========================[0m
     Unresolved object in checkpoint: (root).encoder.fc_mean.kernel
     Unresolved object in checkpoint: (root).encoder.fc_mean.bias
     Unresolved object in checkpoint: (root).encoder.fc_log_var.kernel
@@ -276,8 +277,8 @@ tempo.save(OutlierModel)
 ```
 
     Collecting packages...
-    Packing environment at '/home/clive/anaconda3/envs/tempo-c08c4322-62be-4461-82bc-d69ae2432671' to '/home/clive/work/mlops/fork-tempo/docs/examples/outlier/artifacts/outlier/environment.tar.gz'
-    [########################################] | 100% Completed |  1min  9.5s
+    Packing environment at '/home/clive/anaconda3/envs/tempo-c4fe11aa-1cd6-43dd-9fab-0dcb4fca7a62' to '/home/clive/work/mlops/fork-tempo/docs/examples/outlier/artifacts/outlier/environment.tar.gz'
+    [########################################] | 100% Completed |  1min 21.6s
 
 
 
@@ -286,8 +287,8 @@ tempo.save(Cifar10Svc)
 ```
 
     Collecting packages...
-    Packing environment at '/home/clive/anaconda3/envs/tempo-27f221b3-8635-4b7e-ace6-443f6d7e3b15' to '/home/clive/work/mlops/fork-tempo/docs/examples/outlier/artifacts/svc/environment.tar.gz'
-    [########################################] | 100% Completed | 11.5s
+    Packing environment at '/home/clive/anaconda3/envs/tempo-cfface3b-1080-47d2-a3b6-113db8e286e5' to '/home/clive/work/mlops/fork-tempo/docs/examples/outlier/artifacts/svc/environment.tar.gz'
+    [########################################] | 100% Completed | 16.1s
 
 
 ## Test Locally on Docker
