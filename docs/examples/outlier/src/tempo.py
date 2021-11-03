@@ -5,8 +5,8 @@ import numpy as np
 from alibi_detect.base import NumpyEncoder
 from src.constants import ARTIFACTS_FOLDER, MODEL_FOLDER, OUTLIER_FOLDER
 
-from tempo.protocols.v2 import V2Protocol
 from tempo.protocols.tensorflow import TensorflowProtocol
+from tempo.protocols.v2 import V2Protocol
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.pipeline import PipelineModels

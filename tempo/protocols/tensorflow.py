@@ -1,9 +1,9 @@
-from typing import Dict, Optional, Type, List, Union, Any
+from typing import Any, Dict, List, Optional, Type, Union
 
 import numpy as np
 
 from tempo.protocols.v2 import V2Protocol
-from tempo.serve.metadata import ModelDetails, ModelDataArgs
+from tempo.serve.metadata import ModelDataArgs, ModelDetails
 from tempo.serve.protocol import Protocol
 
 

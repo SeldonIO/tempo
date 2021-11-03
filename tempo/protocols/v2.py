@@ -179,5 +179,3 @@ class V2Protocol(Protocol):
             return list(out.values())[0]
         else:
             return out
-
-

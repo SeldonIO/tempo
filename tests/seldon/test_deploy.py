@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
+from tempo.protocols.seldon import SeldonProtocol
 from tempo.seldon.deploy import SeldonDeployRuntime
 from tempo.seldon.k8s import SeldonKubernetesRuntime
-from tempo.protocols.seldon import SeldonProtocol
 from tempo.serve.metadata import (
     EnterpriseRuntimeAuthType,
     EnterpriseRuntimeOptions,

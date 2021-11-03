@@ -1,6 +1,7 @@
 from inspect import isclass
 
 from tempo.protocols.v2 import V2Protocol
+
 from ..serve.metadata import BaseRuntimeOptionsType, DockerOptions, ModelFramework
 from ..serve.pipeline import PipelineModels
 from ..serve.protocol import Protocol

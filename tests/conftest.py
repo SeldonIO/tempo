@@ -7,8 +7,8 @@ import pytest
 import yaml
 
 from tempo import Model, ModelFramework, Pipeline, PipelineModels, model, pipeline, predictmethod
-from tempo.protocols.v2 import V2Protocol
 from tempo.protocols.tensorflow import TensorflowProtocol
+from tempo.protocols.v2 import V2Protocol
 from tempo.seldon import SeldonProtocol
 from tempo.serve.constants import MLServerEnvDeps
 from tempo.serve.metadata import KubernetesRuntimeOptions
