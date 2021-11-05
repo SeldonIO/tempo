@@ -1,6 +1,7 @@
 from inspect import isclass
 
-from ..kfserving.protocol import KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
+
 from ..serve.metadata import BaseRuntimeOptionsType, DockerOptions, ModelFramework
 from ..serve.pipeline import PipelineModels
 from ..serve.protocol import Protocol
@@ -12,7 +13,7 @@ from .pipeline import Pipeline
 
 def pipeline(
     name: str,
-    protocol: Protocol = KFServingV2Protocol(),
+    protocol: Protocol = V2Protocol(),
     local_folder: str = None,
     uri: str = None,
     models: PipelineModels = None,
@@ -100,7 +101,7 @@ def model(
     inputs: ModelDataType = None,
     outputs: ModelDataType = None,
     conda_env: str = None,
-    protocol: Protocol = KFServingV2Protocol(),
+    protocol: Protocol = V2Protocol(),
     runtime_options: BaseRuntimeOptionsType = DockerOptions(),
     description: str = "",
 ):

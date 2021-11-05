@@ -1,4 +1,4 @@
-from tempo.seldon.protocol import SeldonProtocol
+from tempo.protocols.seldon import SeldonProtocol
 from tempo.seldon.specs import KubernetesSpec, get_container_spec
 from tempo.serve.base import ModelSpec
 from tempo.serve.metadata import KubernetesRuntimeOptions, ModelDataArgs, ModelDetails, ModelFramework

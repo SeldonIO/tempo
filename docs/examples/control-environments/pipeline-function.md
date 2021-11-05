@@ -114,7 +114,7 @@ dependencies:
 ```python
 from tempo.serve.metadata import ModelFramework, KubernetesOptions
 
-from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
 
 from tempo.seldon.k8s import SeldonKubernetesRuntime
 from tempo.seldon.docker import SeldonDockerRuntime

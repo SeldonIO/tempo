@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from tempo import deploy_local
-from tempo.kfserving.protocol import KFServingV2Protocol
+from tempo.protocols.v2 import V2Protocol
 from tempo.serve.metadata import ModelFramework
 from tempo.serve.model import Model
 from tempo.serve.utils import model, predictmethod
@@ -47,7 +47,7 @@ from tests.conftest import TESTS_PATH
 def test_custom_model(v2_input, expected):
     @model(
         name="custom",
-        protocol=KFServingV2Protocol(),
+        protocol=V2Protocol(),
         platform=ModelFramework.Custom,
     )
     def custom_model(a: np.ndarray) -> np.ndarray:

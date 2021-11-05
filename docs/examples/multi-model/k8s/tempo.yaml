@@ -10,13 +10,13 @@ metadata:
       [{"ty": "numpy.ndarray", "name": "payload"}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
       "name": null}, {"ty": "builtins.str", "name": null}]}, "description": "A pipeline
       to use either an sklearn or xgboost model for Iris classification"}, "protocol":
-      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      "tempo.seldon.SeldonKubernetesRuntime", "state_options": {"state_type": "LOCAL",
-      "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
-      "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
-      "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
-      "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
-      null, "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
+      "tempo.protocols.v2.V2Protocol", "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime",
+      "state_options": {"state_type": "LOCAL", "key_prefix": "", "host": "", "port":
+      ""}, "insights_options": {"worker_endpoint": "", "batch_size": 1, "parallelism":
+      1, "retries": 3, "window_time": 0, "mode_type": "NONE", "in_asyncio": false},
+      "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false,
+      "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas": null,
+      "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
       false, "namespace": "production"}}'
   labels:
     seldon.io/tempo: 'true'
@@ -50,7 +50,7 @@ spec:
               true}, "replicas": 1, "minReplicas": null, "maxReplicas": null, "authSecretName":
               "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
               false, "namespace": "production"}'
-          image: seldonio/mlserver:0.3.2
+          image: seldonio/mlserver:0.4.1
           name: classifier
     graph:
       envSecretRefName: minio-secret
@@ -74,13 +74,13 @@ metadata:
       "uri": "s3://tempo/basic/sklearn", "platform": "sklearn", "inputs": {"args":
       [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
       "name": null}]}, "description": "An SKLearn Iris classification model"}, "protocol":
-      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      "tempo.seldon.SeldonKubernetesRuntime", "state_options": {"state_type": "LOCAL",
-      "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
-      "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
-      "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
-      "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
-      null, "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
+      "tempo.protocols.v2.V2Protocol", "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime",
+      "state_options": {"state_type": "LOCAL", "key_prefix": "", "host": "", "port":
+      ""}, "insights_options": {"worker_endpoint": "", "batch_size": 1, "parallelism":
+      1, "retries": 3, "window_time": 0, "mode_type": "NONE", "in_asyncio": false},
+      "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false,
+      "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas": null,
+      "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
       false, "namespace": "production"}}'
   labels:
     seldon.io/tempo: 'true'
@@ -111,13 +111,13 @@ metadata:
       "uri": "s3://tempo/basic/xgboost", "platform": "xgboost", "inputs": {"args":
       [{"ty": "numpy.ndarray", "name": null}]}, "outputs": {"args": [{"ty": "numpy.ndarray",
       "name": null}]}, "description": "An XGBoost Iris classification model"}, "protocol":
-      "tempo.kfserving.protocol.KFServingV2Protocol", "runtime_options": {"runtime":
-      "tempo.seldon.SeldonKubernetesRuntime", "state_options": {"state_type": "LOCAL",
-      "key_prefix": "", "host": "", "port": ""}, "insights_options": {"worker_endpoint":
-      "", "batch_size": 1, "parallelism": 1, "retries": 3, "window_time": 0, "mode_type":
-      "NONE", "in_asyncio": false}, "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress",
-      "ssl": false, "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas":
-      null, "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
+      "tempo.protocols.v2.V2Protocol", "runtime_options": {"runtime": "tempo.seldon.SeldonKubernetesRuntime",
+      "state_options": {"state_type": "LOCAL", "key_prefix": "", "host": "", "port":
+      ""}, "insights_options": {"worker_endpoint": "", "batch_size": 1, "parallelism":
+      1, "retries": 3, "window_time": 0, "mode_type": "NONE", "in_asyncio": false},
+      "ingress_options": {"ingress": "tempo.ingress.istio.IstioIngress", "ssl": false,
+      "verify_ssl": true}, "replicas": 1, "minReplicas": null, "maxReplicas": null,
+      "authSecretName": "minio-secret", "serviceAccountName": null, "add_svc_orchestrator":
       false, "namespace": "production"}}'
   labels:
     seldon.io/tempo: 'true'

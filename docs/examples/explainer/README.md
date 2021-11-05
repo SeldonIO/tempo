@@ -195,8 +195,8 @@ tempo.save(Explainer)
 ```
 
     Collecting packages...
-    Packing environment at '/home/clive/anaconda3/envs/tempo-27d7d340-70df-4095-92b7-b9ef722eda26' to '/home/clive/work/mlops/fork-tempo/docs/examples/explainer/artifacts/explainer/environment.tar.gz'
-    [########################################] | 100% Completed | 59.8s
+    Packing environment at '/home/clive/anaconda3/envs/tempo-d87b2b65-e7d9-4e82-9c0d-0f83f48c07a3' to '/home/clive/work/mlops/fork-tempo/docs/examples/explainer/artifacts/explainer/environment.tar.gz'
+    [########################################] | 100% Completed |  1min 13.1s
 
 
 ## Test Locally on Docker
@@ -224,7 +224,7 @@ r = json.loads(remote_model.predict(payload=data.X_test[0:1], parameters={"thres
 print(r["data"]["anchor"])
 ```
 
-    ['Marital Status = Separated', 'Sex = Female', 'Capital Gain <= 0.00', 'Education = Associates', 'Age > 28.00']
+    ['Marital Status = Separated', 'Sex = Female', 'Capital Gain <= 0.00', 'Education = Associates', 'Country = United-States']
 
 
 

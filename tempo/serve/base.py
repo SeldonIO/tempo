@@ -250,6 +250,7 @@ class BaseModel:
         response_raw.raise_for_status()
 
         response_json = response_raw.json()
+        logger.debug("Response raw %s", response_json)
         output_schema = model_spec.model_details.outputs
 
         return prot.from_protocol_response(response_json, output_schema)
@@ -273,7 +274,9 @@ class BaseModel:
         response_json = response_raw.json()
         output_schema = model_spec.model_details.outputs
 
-        return prot.from_protocol_response(response_json, output_schema)
+        res = prot.from_protocol_response(response_json, output_schema)
+        logger.debug("protocol decoded %s", res)
+        return res
 
     def wait_ready(self, runtime: Runtime, timeout_secs=None):
         return runtime.wait_ready_spec(self._get_model_spec(runtime), timeout_secs=timeout_secs)
@@ -331,7 +334,7 @@ class ClientModel(BaseModel):
         if self.client_details is not None:
             return super().remote_with_client(self.model_spec, self.client_details, *args, **kwargs)
         else:
-            super().predict(*args, **kwargs)
+            return super().predict(*args, **kwargs)
 
     def deploy(self, runtime: Runtime):
         logger.warn("Remote model %s can't be deployed", self.model_spec.model_details.name)
