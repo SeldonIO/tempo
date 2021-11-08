@@ -1,5 +1,4 @@
 from metaflow import FlowSpec, IncludeFile, Parameter, conda, step
-
 from utils import pip
 
 PIPELINE_FOLDER_NAME = "classifier"
@@ -133,8 +132,9 @@ class IrisFlow(FlowSpec):
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
     def create_tempo_artifacts(self):
-        from tempo.metaflow.utils import create_sklearn_model, create_xgboost_model
         from deploy import get_tempo_artifacts
+
+        from tempo.metaflow.utils import create_sklearn_model, create_xgboost_model
 
         sklearn_model = create_sklearn_model(self.buffered_lr_model, self)
         xgboost_model = create_xgboost_model(self.buffered_xgb_model, self)
