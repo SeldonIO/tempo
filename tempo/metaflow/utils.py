@@ -2,8 +2,9 @@ from typing import Any
 
 from metaflow import S3, FlowSpec, IncludeFile, Step
 from metaflow.plugins.aws.batch.batch_decorator import BatchDecorator
-from tempo.serve.model import Model
+
 from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
 
 
 def save_artifact(model: Any, filename: str):
