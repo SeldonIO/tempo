@@ -138,8 +138,7 @@ class IrisFlow(FlowSpec):
         sklearn_model = create_sklearn_model(self.buffered_lr_model, self)
         xgboost_model = create_xgboost_model(self.buffered_xgb_model, self)
 
-        classifier, remote_s3 = get_tempo_artifacts(self, sklearn_model, xgboost_model,
-                                                    self.conda_env)
+        classifier, remote_s3 = get_tempo_artifacts(self, sklearn_model, xgboost_model, self.conda_env)
 
         return classifier, remote_s3
 

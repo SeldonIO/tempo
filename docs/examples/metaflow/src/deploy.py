@@ -7,16 +7,13 @@ from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline
 import tempfile
-from tempo.metaflow.utils import create_s3_folder, save_pipeline_with_conda,\
-            upload_s3_folder
+from tempo.metaflow.utils import create_s3_folder, save_pipeline_with_conda, upload_s3_folder
 
 PipelineFolder = "classifier"
 
+
 def get_tempo_artifacts(
-    flow_spec: FlowSpec,
-    sklearn_model: Model,
-    xgboost_model: Model,
-    conda_env_path: IncludeFile
+    flow_spec: FlowSpec, sklearn_model: Model, xgboost_model: Model, conda_env_path: IncludeFile
 ) -> Tuple[Pipeline, bool]:
 
     classifier_local_path = tempfile.mkdtemp()

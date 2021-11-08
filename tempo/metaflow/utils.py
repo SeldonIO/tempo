@@ -5,6 +5,7 @@ from metaflow.plugins.aws.batch.batch_decorator import BatchDecorator
 from tempo.serve.model import Model
 from tempo.serve.metadata import ModelFramework
 
+
 def save_artifact(model: Any, filename: str):
     """
 
