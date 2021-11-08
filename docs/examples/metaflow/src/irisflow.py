@@ -92,36 +92,6 @@ class IrisFlow(FlowSpec):
 
         self.next(self.tempo)
 
-    def create_tempo_artifacts(self):
-        import tempfile
-
-        from deploy import get_tempo_artifacts
-
-        from tempo.metaflow.utils import create_s3_folder, save_artifact, save_pipeline_with_conda, upload_s3_folder
-
-        # Store models to local artifact locations
-        local_sklearn_path = save_artifact(self.buffered_lr_model, "model.joblib")
-        local_xgb_path = save_artifact(self.buffered_xgb_model, "model.bst")
-        local_pipeline_path = tempfile.mkdtemp()
-        # Create S3 folders for artifacts
-        classifier_url = create_s3_folder(self, PIPELINE_FOLDER_NAME)
-        sklearn_url = create_s3_folder(self, SKLEARN_FOLDER_NAME)
-        xgboost_url = create_s3_folder(self, XGBOOST_FOLDER_NAME)
-
-        classifier, sklearn_model, xgboost_model = get_tempo_artifacts(
-            local_sklearn_path, local_xgb_path, local_pipeline_path, sklearn_url, xgboost_url, classifier_url
-        )
-        # Create pipeline artifacts
-        save_pipeline_with_conda(classifier, local_pipeline_path, self.conda_env)
-        if classifier_url:  # Check running with S3 access
-            # Upload artifacts to S3
-            upload_s3_folder(self, PIPELINE_FOLDER_NAME, local_pipeline_path)
-            upload_s3_folder(self, SKLEARN_FOLDER_NAME, local_sklearn_path)
-            upload_s3_folder(self, XGBOOST_FOLDER_NAME, local_xgb_path)
-            return classifier, True
-        else:
-            return classifier, False
-
     def deploy_tempo_local(self, classifier):
         import time
 
@@ -161,8 +131,20 @@ class IrisFlow(FlowSpec):
         time.sleep(10)
         print(self.client_model.predict(np.array([[1, 2, 3, 4]])))
 
+    def create_tempo_artifacts(self):
+        from tempo.metaflow.utils import create_sklearn_model, create_xgboost_model
+        from deploy import get_tempo_artifacts
+
+        sklearn_model = create_sklearn_model(self.buffered_lr_model, self)
+        xgboost_model = create_xgboost_model(self.buffered_xgb_model, self)
+
+        classifier, remote_s3 = get_tempo_artifacts(self, sklearn_model, xgboost_model,
+                                                    self.conda_env)
+
+        return classifier, remote_s3
+
     @conda(libraries={"numpy": "1.19.5"})
-    @pip(libraries={"mlops-tempo": "0.5.1", "conda_env": "2.4.2"})
+    @pip(libraries={"mlops-tempo": "0.5.2", "conda_env": "2.4.2"})
     @step
     def tempo(self):
         """
