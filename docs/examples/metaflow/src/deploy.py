@@ -1,13 +1,13 @@
+import tempfile
 from typing import Tuple
 
 import numpy as np
-
 from metaflow import FlowSpec, IncludeFile
+
+from tempo.metaflow.utils import create_s3_folder, save_pipeline_with_conda, upload_s3_folder
 from tempo.serve.model import Model
 from tempo.serve.pipeline import Pipeline, PipelineModels
 from tempo.serve.utils import pipeline
-import tempfile
-from tempo.metaflow.utils import create_s3_folder, save_pipeline_with_conda, upload_s3_folder
 
 PipelineFolder = "classifier"
 
