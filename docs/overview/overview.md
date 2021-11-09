@@ -3,7 +3,7 @@
 Tempo is a python SDK for data scientists to help them move their models to production. It has 4 core goals:
 
   1. Data science friendly.
-  2. Pluggable runtimes.
+  2. Pluggable Seldon runtimes.
   3. Custom python inference components.
   4. Powerful orchestration logic.
 
