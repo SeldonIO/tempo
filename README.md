@@ -8,7 +8,11 @@
 
 [Documentation](https://tempo.readthedocs.io/en/latest/)
 
-An open source framework to enable data scientists to productionise, test and deploy models with simple workflows that abstract the underlying complexity of scalable MLOps platforms.
+An open source Python SDK to allow data scientists to test and deploy machine learning inference pipelines.
+
+ * Create and test inference locally.
+ * Deploy to Seldon for production.
+
 
 ![](https://raw.githubusercontent.com/SeldonIO/tempo/master/docs/assets/tempo-logo.jpg)
 
@@ -26,15 +30,13 @@ Tempo provides a unified interface to multiple MLOps projects that enable data s
  * Test Locally - Deploy to Production
      * Run with local unit tests.
      * Deploy locally to Docker to test with Docker runtimes.
-     * Deploy to production on Kubernetes
+     * Deploy to production on Kubernetes with Seldon
      * Extract declarative Kubernetes yaml to follow GitOps workflows.
  * Supporting Seldon production runtimes
      * Seldon Core open source
      * Seldon Deploy enterprise
  * Create stateful services. Examples:
     * Multi-Armed Bandits.
-
-
 
 ## Workflow
 
