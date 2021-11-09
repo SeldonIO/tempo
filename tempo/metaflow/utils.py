@@ -3,6 +3,9 @@ from typing import Any
 from metaflow import S3, FlowSpec, IncludeFile, Step
 from metaflow.plugins.aws.batch.batch_decorator import BatchDecorator
 
+from tempo.serve.metadata import ModelFramework
+from tempo.serve.model import Model
+
 
 def save_artifact(model: Any, filename: str):
     """
@@ -198,3 +201,59 @@ def running_aws_batch(step: Step) -> bool:
         if isinstance(deco, BatchDecorator):
             running_on_aws_batch = True
     return running_on_aws_batch
+
+
+def create_sklearn_model(artifact: Any, flow_spec: FlowSpec) -> Model:
+    """
+    Save and upload to flow S3 a Tempo SKLearn model
+
+    Parameters
+    ----------
+    artifact: SKLearn artifact
+    flow_spec: running Flow
+
+    Returns
+    -------
+    Tempo SKLearn model
+
+    """
+    sklearn_local_path = save_artifact(artifact, "model.joblib")
+    sklearn_url = create_s3_folder(flow_spec, "sklearn")
+    sklearn_model = Model(
+        name="test-iris-sklearn",
+        platform=ModelFramework.SKLearn,
+        local_folder=sklearn_local_path,
+        uri=sklearn_url,
+        description="An SKLearn Iris classification model",
+    )
+    if sklearn_url:
+        upload_s3_folder(flow_spec, "sklearn", sklearn_local_path)
+    return sklearn_model
+
+
+def create_xgboost_model(artifact: Any, flow_spec: FlowSpec) -> Model:
+    """
+    Save and upload to flow S3 a Tempo XGBoost model
+
+    Parameters
+    ----------
+    artifact: XGBost artifact
+    flow_spec: running Flow
+
+    Returns
+    -------
+    Tempo XGBoost model
+
+    """
+    xgboost_local_path = save_artifact(artifact, "model.bst")
+    xgboost_url = create_s3_folder(flow_spec, "xgboost")
+    xgboost_model = Model(
+        name="test-iris-xgboost",
+        platform=ModelFramework.XGBoost,
+        local_folder=xgboost_local_path,
+        uri=xgboost_url,
+        description="An XGBoost Iris classification model",
+    )
+    if xgboost_url:
+        upload_s3_folder(flow_spec, "xgboost", xgboost_local_path)
+    return xgboost_model
