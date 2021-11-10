@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.5.2](https://github.com/SeldonIO/tempo/tree/v0.5.2)
+
+[Full Changelog](https://github.com/SeldonIO/tempo/compare/v0.5.1...v0.5.2)
+
+**Merged pull requests:**
+
+- Small docs update [\#213](https://github.com/SeldonIO/tempo/pull/213) ([cliveseldon](https://github.com/cliveseldon))
+- Metaflow updates [\#212](https://github.com/SeldonIO/tempo/pull/212) ([cliveseldon](https://github.com/cliveseldon))
+- Remove non-seldon runtimes [\#210](https://github.com/SeldonIO/tempo/pull/210) ([cliveseldon](https://github.com/cliveseldon))
+- update changelog for 0.5.1 [\#209](https://github.com/SeldonIO/tempo/pull/209) ([cliveseldon](https://github.com/cliveseldon))
+
 ## [v0.5.1](https://github.com/SeldonIO/tempo/tree/v0.5.1) (2021-09-27)
 
 [Full Changelog](https://github.com/SeldonIO/tempo/compare/v0.5.0...v0.5.1)
@@ -41,6 +52,7 @@
 - Update docs for Metaflow [\#190](https://github.com/SeldonIO/tempo/pull/190) ([cliveseldon](https://github.com/cliveseldon))
 - Various fixes to enable tempo to pack environment for single models [\#189](https://github.com/SeldonIO/tempo/pull/189) ([sakoush](https://github.com/sakoush))
 - Added 0.3.0 changelog [\#185](https://github.com/SeldonIO/tempo/pull/185) ([axsaucedo](https://github.com/axsaucedo))
+- Rerun examples and add aio deploy\_local/remote [\#178](https://github.com/SeldonIO/tempo/pull/178) ([cliveseldon](https://github.com/cliveseldon))
 - Metaflow demo [\#170](https://github.com/SeldonIO/tempo/pull/170) ([cliveseldon](https://github.com/cliveseldon))
 
 ## [v0.3.0](https://github.com/SeldonIO/tempo/tree/v0.3.0) (2021-08-05)
@@ -60,7 +72,6 @@
 - Update version for 0.3.0 release [\#184](https://github.com/SeldonIO/tempo/pull/184) ([cliveseldon](https://github.com/cliveseldon))
 - Bump MLServer to 0.4.0 [\#183](https://github.com/SeldonIO/tempo/pull/183) ([adriangonz](https://github.com/adriangonz))
 - Sherif akoush/quickfix/improve docs [\#180](https://github.com/SeldonIO/tempo/pull/180) ([sakoush](https://github.com/sakoush))
-- Rerun examples and add aio deploy\_local/remote [\#178](https://github.com/SeldonIO/tempo/pull/178) ([cliveseldon](https://github.com/cliveseldon))
 - Added sphinx search extension to docs [\#176](https://github.com/SeldonIO/tempo/pull/176) ([axsaucedo](https://github.com/axsaucedo))
 - Updated tempo logo [\#175](https://github.com/SeldonIO/tempo/pull/175) ([axsaucedo](https://github.com/axsaucedo))
 - Add tensorrt fix for Docker and incubating example [\#174](https://github.com/SeldonIO/tempo/pull/174) ([cliveseldon](https://github.com/cliveseldon))
