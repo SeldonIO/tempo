@@ -1,5 +1,7 @@
 from metaflow import FlowSpec, IncludeFile, Parameter, conda, step
 from utils import pip
+import os
+
 
 PIPELINE_FOLDER_NAME = "classifier"
 SKLEARN_FOLDER_NAME = "sklearn"
@@ -28,14 +30,6 @@ class IrisFlow(FlowSpec):
     conda_env = IncludeFile(
         "conda_env", help="The path to conda environment for classifier", default=script_path("conda.yaml")
     )
-    kubeconfig = IncludeFile("kubeconfig", help="The path to kubeconfig", default=script_path("kubeconfig.yaml"))
-    gsa_key = IncludeFile(
-        "gsa_key", help="The path to google service account json", default=script_path("gsa-key.json")
-    )
-    k8s_provider = Parameter(
-        "k8s_provider", help="kubernetes provider. Needed for non local run to deploy", default="gke"
-    )
-    eks_cluster_name = Parameter("eks_cluster_name", help="AWS EKS cluster name (if using EKS)", default="")
 
     @conda(libraries={"scikit-learn": "0.24.1"})
     @step
@@ -111,16 +105,8 @@ class IrisFlow(FlowSpec):
         import numpy as np
 
         from tempo import deploy_remote
-        from tempo.metaflow.utils import aws_authenticate, gke_authenticate
         from tempo.serve.deploy import get_client
         from tempo.serve.metadata import SeldonCoreOptions
-
-        if self.k8s_provider == "gke":
-            gke_authenticate(self.kubeconfig, self.gsa_key)
-        elif self.k8s_provider == "aws":
-            aws_authenticate(self.eks_cluster_name)
-        else:
-            raise Exception(f"Unknown Kubernetes Provider {self.k8s_provider}")
 
         runtime_options = SeldonCoreOptions(
             **{"remote_options": {"namespace": "production", "authSecretName": "s3-secret"}}
@@ -155,8 +141,8 @@ class IrisFlow(FlowSpec):
         from tempo.metaflow.utils import running_aws_batch
 
         classifier, s3_active = self.create_tempo_artifacts()
-        if s3_active and running_aws_batch(self.tempo):
-            print("Deploying to remote k8s cluster")
+        if os.getenv("KUBERNETES_SERVICE_HOST"):
+            print("Deploying to k8s cluster")
             self.deploy_tempo_remote(classifier)
         else:
             print("Deploying to local Docker")
