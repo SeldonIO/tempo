@@ -18,8 +18,8 @@ Subpackages
    tempo.ingress
    tempo.insights
    tempo.k8s
-   tempo.kfserving
    tempo.metaflow
+   tempo.protocols
    tempo.seldon
    tempo.serve
    tempo.state

@@ -17,5 +17,4 @@ Submodules
    tempo.seldon.docker
    tempo.seldon.endpoint
    tempo.seldon.k8s
-   tempo.seldon.protocol
    tempo.seldon.specs

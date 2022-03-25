@@ -1,6 +1,16 @@
 # Quickstart
 
-## Tempo Prequisites
+## Installation
+The latest Tempo release can be installed from [PyPI](https://pypi.org/project/mlops-tempo/):
+```
+pip install mlops-tempo
+```
+Alternatively, the development version can be installed:
+```
+pip install git+https://github.com/SeldonIO/tempo.git
+```
+
+## Tempo Prerequisites
 
 
  * [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html)
